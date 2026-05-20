@@ -1,0 +1,136 @@
+import React, { useEffect, useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
+import { ajustaMoedaBanco, AnosSelect, diasMesSelect, mesesSelect, numberFormat, UFEstadosSelect, useNavegacao, validarDiaMes } from 'helpers/functions_helpers'; // Importe o hook personalizado
+
+
+import { useLocation, useNavigate } from 'react-router-dom';
+import { setActiveMenu } from 'helpers/system_helpers';
+import { Breadcrumb, BreadcrumbItem, Card, CardBody, Col, Container, Label, Row } from 'reactstrap';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { InputTextControlled } from 'Components/ComponentController/Inputs/Text/InputTextControlled';
+import { SelectListControlled } from 'Components/ComponentController/Selects/Select/SelectListControlled';
+import { SelectOptions } from 'interfaces/SystemInterfaces/SelectInterface';
+import { required } from 'Components/ComponentController/ValidatorForm/ValidatorForm';
+import { ClientesDefaultValues, ClientesModel } from 'interfaces/Clientes/ClientesInterface';
+import { ClientesService } from 'services/Clientes/ClientesService';
+import { ClientesFormPartial } from './ClientesFormPartial';
+import { ClientesFormSubmit } from './ClientesFormSubmit';
+
+const ClientesFormAlterarr = () => {
+    const { state } = useLocation()
+
+    const [clientes, setClientes] = useState<ClientesModel>(state ? state.source : ClientesDefaultValues)
+    const { register, handleSubmit, control, getValues, setValue, watch, reset, setError, clearErrors, formState: { errors, } } = useForm<ClientesModel>({
+        defaultValues: clientes
+    })
+    const [display, setDisplay] = useState<boolean>(false)
+    const { voltarParaRotaAnterior } = useNavegacao();
+    const location = useLocation();
+    const navigate = useNavigate()
+    const clientesService = new ClientesService();
+
+    // const onSubmit: SubmitHandler<ClientesModel> = async (data: any) => {
+    //     try {
+    //         if (clientes.cliente_id) {
+    //             await clientesService.editClientes(data);
+    //         } else {
+    //             const id = await clientesService.createClientes(data);
+    //             setValue('id', id);
+    //         }
+
+    //         navigate(`/clientes`);
+    //     } catch (error: any) {
+    //         throw error;
+    //     }
+    // };
+    const onSubmit: SubmitHandler<ClientesModel> = async (data: any) => {
+        try {
+            await ClientesFormSubmit(data, setValue, () => navigate('/clientes'));
+            navigate(`/clientes`);
+        } catch (error: any) {
+            throw error;
+        }   
+    };
+
+    useEffect(() => {
+        setTimeout(() => {
+            setDisplay(true)
+        }, 300);
+    }, [])
+
+    // Seta o menu lateral
+    useEffect(() => {
+        setActiveMenu('/clientes')
+    }, [])
+
+    return (
+        <React.Fragment>
+            <div className="page-content">
+                <Container fluid>
+                    <Row>
+                        <Col xs={12}>
+                            <div className="page-title-box d-sm-flex align-items-center justify-content-between">
+                                <div className="d-flex align-items-center">
+                                    <Link to="/clientes" className="me-2">
+                                        <i className="bx bx-arrow-back bx-sm"></i>
+                                    </Link>
+                                    <h4 className="mb-0">Adicionar Clientes</h4>
+                                </div>
+                                <Breadcrumb pageTitle="Adicionar Clientes" listClassName='mb-sm-0 pt-1 py-2'>
+                                    <BreadcrumbItem> <Link to="/dashboard"> <i className="ri-home-5-fill"></i> </Link> </BreadcrumbItem>
+                                    <BreadcrumbItem> <Link to="/clientes"> Clientes</Link> </BreadcrumbItem>
+                                    <BreadcrumbItem active> Adicionar Clientes</BreadcrumbItem>
+                                </Breadcrumb>
+                            </div>
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col xxl={12}>
+                            <Card >
+                                <CardBody>
+                                    <div className="">
+                                        <form onSubmit={handleSubmit(onSubmit)}>
+                                            <ClientesFormPartial control={control} />
+                                            {/* <Row>
+                                                <Col md={5}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="nome" className="form-label">Nome</Label>
+                                                        <InputTextControlled<ClientesModel>
+                                                            field={"nome"}
+                                                            control={control}
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={3}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="telefone" className="form-label">Celular</Label>
+                                                        <InputTextControlled<ClientesModel>
+                                                            field={"telefone"}
+                                                            control={control}
+                                                            mask="tel"
+                                                        />
+                                                    </div>
+                                                </Col>
+                                            </Row> */}
+                                            <hr />
+                                            <Row className='mt-5'>
+                                                <Col md={12}>
+                                                    <div className="hstack gap-2 justify-content-end">
+                                                        <button type="submit" className="btn btn-primary">Salvar</button>
+                                                        <button type="button" className="btn btn-soft-success" onClick={voltarParaRotaAnterior}>Voltar</button>
+                                                    </div>
+                                                </Col>
+                                            </Row>
+                                        </form>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        </Col>
+                    </Row>
+                </Container>
+            </div>
+        </React.Fragment >
+    );
+};
+
+export default ClientesForm;
