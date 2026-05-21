@@ -797,19 +797,52 @@ Adicione dentro do array de rotas:
 
 ## 8. Menu Sidebar — `src/Layouts/LayoutMenuData.tsx`
 
-### Menu simples (item único):
+⚠️ **Regras Importantes de Navegação em Menus:**
+
+Sempre que criar componentes de menu ou menus expansíveis (com submenus), adicione `stateVariables` logo abaixo de `link` e adicione o `set` do estado correspondente dentro da função `click`.
+
+Ao adicionar sua declaração, não use manipulação condicional de rotas nem injeção de classes no DOM.
+
+**❌ PADRÃO INCORRETO:**
+```typescript
+         if (iscurrentState === 'Filamentos') {
+             history("/cores"); // Redirecionar ao clicar na raiz ou apenas expandir, o comum no template é history e layout
+             document.body.classList.add('twocolumn-panel');
+         }
+```
+
+Use o padrão para desativar os outros states condicionalmente quando não estiver no menu atual. Certifique-se de que se `iscurrentState` não for o do seu menu, o estado dele reseta:
+
+**✅ PADRÃO CORRETO (Regra no `useEffect` do LayoutMenuData):**
+```typescript
+        if (iscurrentState !== '{Entidade}') {
+            setIs{Entidade}(false);
+        }
+```
+
+### Exemplo de Menu com Submenus:
 
 ```tsx
 {
-    id: "{Entidade}",
+    id: "{entidade}",
     label: "{Entidade}",
-    icon: "ri-settings-line",       // ← Troque pelo ícone adequado
-    link: "/{entidade}",
+    icon: "ri-settings-line",
+    link: "/#",
+    stateVariables: is{Entidade}, // ← Adicionar sempre em caso de ter subitems
     click: function (e: any) {
-        e.preventDefault()
-        setIscurrentState('{Entidade}')
-        updateIconSidebar(e)
-    }
+        e.preventDefault();
+        setIs{Entidade}(!is{Entidade}); // ← Usar o Setter de estado
+        setIscurrentState('{Entidade}');
+        updateIconSidebar(e);
+    },
+    subItems: [
+        {
+            id: "{entidade}-lista",
+            label: "Lista",
+            link: "/{entidade}",
+            parentId: "{entidade}",
+        }
+    ]
 },
 ```
 
@@ -817,13 +850,12 @@ Adicione dentro do array de rotas:
 
 ```tsx
 {
-    id: "{entidade}",
-    label: "{Entidade}",
-    link: "/{entidade}",
+    id: "{entidade}-novo",
+    label: "Novo {Entidade}",
+    link: "/{entidade}/add",
     parentId: "id-do-menu-pai",
 },
 ```
-
 ---
 
 ## 📌 Convenções de Nomenclatura

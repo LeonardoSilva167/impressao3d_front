@@ -19,7 +19,7 @@ import Register from "../pages/Authentication/Register";
 // // Usuários
 import UsuarioPage from "pages/Pages/Usuario/UsuarioPage";
 import UsuarioForm from "pages/Pages/Usuario/UsuarioForm/UsuarioForm";
-import Clientes from "pages/Pages/Clientes/ClientesPage";
+
 import VendasForm from "pages/Pages/Vendas/VendasForm/VendasForm";
 import Vendas from "pages/Pages/Vendas/VendasPage";
 import FluxoCaixa from "pages/Pages/FluxoCaixa/FluxoCaixaPage";
@@ -28,19 +28,15 @@ import MovimentoCaixa from "pages/Pages/MovimentoCaixa/MovimentoCaixaPage";
 import Servicos from "pages/Pages/Servicos/ServicosPage";
 import ServicosForm from "pages/Pages/Servicos/ServicosForm/ServicosForm";
 import MovimentoCaixaForm from "pages/Pages/MovimentoCaixa/MovimentoCaixaForm/MovimentoCaixaForm";
-import ClientesForm from "../pages/Pages/Clientes/ClientesForm/ClientesForm";
+
 import DashboardsHome from "pages/Pages/Dashboards/DashboardHome/DashboardsHome";
 import FluxoCaixaView from "pages/Pages/FluxoCaixa/FluxoCaixaView/FluxoCaixaView";
-import Licitacoes from "pages/Pages/Licitacoes/LicitacoesPage";
-import LicitacoesForm from "pages/Pages/Licitacoes/LicitacoesForm/LicitacoesForm";
-import Orgao from "pages/Pages/Orgao/OrgaoPage";
-import OrgaoForm from "pages/Pages/Orgao/OrgaoForm/OrgaoForm";
-import LicitacoesGetLicitacao from "pages/Pages/Licitacoes/LicitacoesForm/LicitacoesGetLicitacao";
-import TipoProduto from "pages/Pages/TipoProduto/TipoProdutoPage";
-import TipoProdutoForm from "pages/Pages/TipoProduto/TipoProdutoForm/TipoProdutoForm";
-import SubtipoProduto from "pages/Pages/SubtipoProduto/SubtipoProdutoPage";
-import SubtipoProdutoForm from "pages/Pages/SubtipoProduto/SubtipoProdutoForm/SubtipoProdutoForm";
 
+
+import CoresPage from "../pages/Pages/Cores/CoresPage";
+import CoresForm from "../pages/Pages/Cores/CoresForm/CoresForm";
+import MarcasPage from "../pages/Pages/Marcas/MarcasPage";
+import MarcasForm from "../pages/Pages/Marcas/MarcasForm/MarcasForm";
 
 
 
@@ -59,14 +55,7 @@ const authProtectedRoutes = [
   { path: "/profile", component: <SimplePage /> },
   { path: "/pages-profile-settings", component: <Settings /> },
 
-  // // Clientes
-  { path: "/clientes", component: <Clientes /> },
-  { path: "/clientes/add", component: <ClientesForm /> },
-  { path: "/clientes/edit/:idCliente", component: <ClientesForm /> },
 
-  { path: "/orgao-participante", component: <Orgao /> },
-  { path: "/orgao-participante/add", component: <OrgaoForm /> },
-  { path: "/orgao-participante/edit/:idOrgao", component: <OrgaoForm /> },
 
   // Serviços
   { path: "/servicos", component: <Servicos /> },
@@ -88,23 +77,19 @@ const authProtectedRoutes = [
   { path: "/fluxo-caixa/caixa/:dataInicio/:dataFim?", component: <FluxoCaixaView /> },
 
 
-  // // Licitacoes
-  // { path: "/analise-edital-itens", component: <AnaliseEdital /> },
-  // { path: "/analise-edital-itens/add", component: <AnaliseEditalForm /> },
-  { path: "/licitacoes", component: <Licitacoes /> },
-  { path: "/licitacoes/add", component: <LicitacoesGetLicitacao /> },
-  { path: "/licitacoes/edit/:idLicitacao", component: <LicitacoesForm /> },
 
-  // Produtos
-  { path: "/tipo-produto", component: <TipoProduto /> },
-  { path: "/tipo-produto/add", component: <TipoProdutoForm /> },
-  { path: "/tipo-produto/edit/:idTipoProduto", component: <TipoProdutoForm /> },
-  
-  { path: "/subtipo-produto", component: <SubtipoProduto /> },
-  { path: "/subtipo-produto/add", component: <SubtipoProdutoForm /> },
-  { path: "/subtipo-produto/edit/:idSubtipoProduto", component: <SubtipoProdutoForm /> },
+  // Cores
+  { path: "/cores", component: <CoresPage /> },
+
+  { path: "/cores/add", component: <CoresForm /> },
+  { path: "/cores/edit/:idCor", component: <CoresForm /> },
 
   
+
+  // Marcas
+  { path: "/marcas", component: <MarcasPage /> },
+  { path: "/marcas/add", component: <MarcasForm /> },
+  { path: "/marcas/edit/:id", component: <MarcasForm /> },
   // // // ContasBancarias
   // { path: "/linha-produto", component: <LinhasProdutos /> },
   // { path: "/linha-produto/add", component: <LinhasProdutosForm /> },

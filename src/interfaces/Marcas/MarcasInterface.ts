@@ -1,50 +1,48 @@
-import { FormatToDaySQLDate } from "helpers/functions_helpers"
-
-// import { PaginateInterface } from "../default"
-export type RecorrenciaStatusList = {
-    id: number
-    descricao: string
-}
-export interface MarcasInterface {
-    // listMarcasPaginate(params: MarcasSearch): Promise<PaginateInterface<MarcasList> | undefined>
-    getLookupsMarcas(): Promise<LookupsMarcas | undefined>
-}
-export interface LookupsMarcas {
-    // recorrencias: RecorrenciaStatusList[]
-
-}
-
-
 export interface MarcasSearch {
-    //Elementos Padroes para formulario
-    palavra_chave?: string | null
-    // ativo?: boolean,
-    nome?: string | undefined | null,
-    codigo?: string | undefined | null,
+    id?: number | string | undefined | null
+    palavra_chave?: string | null | undefined | unknown
+    descricao?: string | undefined | null
+    
 }
 
 export interface MarcasView {
     id: number
-    nome: string
-    codigo: string
+    descricao: string
+    
+    ativo?: boolean
 }
 
 export interface MarcasList {
     id?: number | undefined
+    descricao?: string
+    
+    ativo?: boolean
 }
 
 export interface MarcasModel {
-    id?: number | undefined | null,
-    ativo?: boolean,
-    nome?: string | undefined | null,
-    codigo?: string | null,
+    id?: number | undefined | null
+    ativo?: boolean
+    descricao?: string | undefined | null
+    
 }
 
-export const MarcasDefaultValues = {
+export interface LookupsMarcas {
+    // recorrencias: RecorrenciaStatusList[]
+}
+
+export interface MarcasInterface {
+    getLookupsMarcas(): Promise<LookupsMarcas | undefined>
+    getViewMarcas(params: any): Promise<MarcasView | undefined>
+    listMarcasPaginate(params: MarcasSearch): Promise<any>
+    AsyncListMarcas(params: MarcasSearch): Promise<MarcasModel[] | undefined>
+    createMarcas(params: MarcasModel): Promise<any>
+    editMarcas(params: MarcasModel): Promise<any>
+    deleteMarcas(id: number): Promise<any>
+}
+
+export const MarcasDefaultValues: MarcasModel = {
     id: null,
     ativo: true,
-    nome: null,
-    codigo: null,
+    descricao: null,
+    
 }
-
-

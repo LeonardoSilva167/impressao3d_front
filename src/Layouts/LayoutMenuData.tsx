@@ -11,7 +11,7 @@ const Navdata = () => {
     const [isProdutoConfig, setIsProdutoConfig] = useState<boolean>(false);
     const [isCaixa, setIsCaixa] = useState<boolean>(false);
     const [isProdutos, setIsProdutos] = useState<boolean>(false);
-
+    const [isFilamentos, setIsFilamentos] = useState<boolean>(false);
 
     // Multi Level
     const [isLevel1, setIsLevel1] = useState<boolean>(false);
@@ -82,6 +82,13 @@ const Navdata = () => {
         if (iscurrentState !== 'Produtos') {
             setIsProdutos(false);
         }
+        if (iscurrentState !== 'Filamentos') {
+            setIsFilamentos(false);
+        }
+        // if (iscurrentState === 'Filamentos') {
+        //     history("/cores"); // Redirecionar ao clicar na raiz ou apenas expandir, o comum no template é history e layout
+        //     document.body.classList.add('twocolumn-panel');
+        // }
     }, [
         history,
         iscurrentState,
@@ -243,6 +250,13 @@ const Navdata = () => {
                     badgeColor: "success",
                     // badgeName: "New",
                 },
+                // {
+                //     id: "marcas",
+                //     label: "Marcas",
+                //     link: "/marcas",
+                //     parentId: "Produtos",
+                //     badgeColor: "success",
+                // },
                 {
                     id: "subtipoProduto",
                     label: "Subtipo de Produto",
@@ -261,6 +275,71 @@ const Navdata = () => {
                 },
             ],
         },
+        {
+            id: "Filamentos",
+            label: "Filamentos",
+            icon: "ri-paint-line",
+            link: "/#",
+            stateVariables: isFilamentos,
+            click: function (e: any) {
+                e.preventDefault();
+                setIsFilamentos(!isFilamentos);
+                setIscurrentState('Filamentos');
+                updateIconSidebar(e);
+            },
+            subItems: [
+                {
+                    id: "cores",
+                    label: "Cores",
+                    link: "/cores",
+                    parentId: "Filamentos",
+                },
+                {
+                    id: "marcas",
+                    label: "Marcas",
+                    link: "/marcas",
+                    parentId: "Filamentos",
+                    badgeColor: "success",
+                },
+            ],
+        },
+
+        // {
+        //     id: "Filamentos",
+        //     label: "Filamentos",
+        //     icon: "ri-currency-fill",
+        //     link: "/#",
+        //     stateVariables: isCaixa,
+        //     click: function (e: any) {
+        //         e.preventDefault();
+        //         setIsCaixa(!isCaixa);
+        //         setIscurrentState('Caixa');
+        //         updateIconSidebar(e);
+        //     },
+        //     subItems: [
+
+        //         {
+        //             id: "caixa-sangria-suprimento-despesa",
+        //             label: "Movimentações de Caixa",
+        //             link: "/movimento-caixa",
+        //             parentId: "Caixa",
+        //             badgeColor: "success",
+        //             // badgeName: "New",
+        //         },
+        //         {
+        //             id: "caixa-fluxo-caixa",
+        //             label: "Fluxo de Caixa",
+        //             link: "/fluxo-caixa",
+        //             parentId: "Caixa",
+        //             badgeColor: "success",
+        //             // badgeName: "New",
+        //         },
+        //     ],
+        // },  
+
+
+
+
         // {
         //     id: "ContasBancarias",
         //     label: "Contas Bancárias",
