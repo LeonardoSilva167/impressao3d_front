@@ -109,9 +109,9 @@ export const FilamentosTable = ({ data, getData, setPerPage, setPage, perPage, f
                                                             <tr>
                                                                 <th scope="col" className="text-start">Código</th>
                                                                 <th scope="col" className="text-start">Resumo</th>
-                                                                <th scope="col" className="text-start">Cor</th>
-                                                                <th scope="col" className="text-start">Quantidade</th>
-                                                                <th scope="col" className="text-start">Preço Méd. Grama</th>
+                                                                <th scope="col" className="text-end">Cor</th>
+                                                                <th scope="col" className="text-end">Quantidade</th>
+                                                                <th scope="col" className="text-end">Preço Méd. Grama</th>
                                                                 <th scope="col" style={{ width: "150px" }}>Ação</th>
                                                             </tr>
                                                         </thead>
@@ -120,29 +120,29 @@ export const FilamentosTable = ({ data, getData, setPerPage, setPage, perPage, f
                                                                 <tr key={row.id ? row.id : index}>
                                                                     <td className="text-start">{row.codigo}</td>
                                                                     <td className="text-start">{row.resumo}</td>
-                                                                        <td>
-                                                                            <div className="d-flex align-items-center gap-2">
-                                                                                <span>{row.cor_descricao}</span>
+                                                                    <td className="text-end">
+                                                                        <div className="d-flex align-items-end justify-content-end gap-2">
+                                                                            <span>{row.cor_descricao}</span>
 
-                                                                                {row.cor_hexadecimal ? (
-                                                                                    <div
-                                                                                        style={{
-                                                                                            width: '24px',
-                                                                                            height: '24px',
-                                                                                            borderRadius: '50%',
-                                                                                            background: row.cor_hexadecimal.startsWith('#')
-                                                                                                ? row.cor_hexadecimal
-                                                                                                : `#${row.cor_hexadecimal}`,
-                                                                                            border: '1px solid #ccc',
-                                                                                            flexShrink: 0,
-                                                                                        }}
-                                                                                        title={row.cor_hexadecimal}
-                                                                                    />
-                                                                                ) : (
-                                                                                    '—'
-                                                                                )}
-                                                                            </div>
-                                                                        </td>
+                                                                            {row.cor_hexadecimal ? (
+                                                                                <div
+                                                                                    style={{
+                                                                                        width: '24px',
+                                                                                        height: '24px',
+                                                                                        borderRadius: '50%',
+                                                                                        background: row.cor_hexadecimal.startsWith('#')
+                                                                                            ? row.cor_hexadecimal
+                                                                                            : `#${row.cor_hexadecimal}`,
+                                                                                        border: '1px solid #ccc',
+                                                                                        flexShrink: 0,
+                                                                                    }}
+                                                                                    title={row.cor_hexadecimal}
+                                                                                />
+                                                                            ) : (
+                                                                                '—'
+                                                                            )}
+                                                                        </div>
+                                                                    </td>
                                                                     <td className="text-start">{row.qtd}</td>
                                                                     <td className="text-start">{row.preco_medio_grama}</td>
                                                                     <td>
