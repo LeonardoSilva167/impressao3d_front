@@ -301,6 +301,18 @@ const Navdata = () => {
                     parentId: "Filamentos",
                     badgeColor: "success",
                 },
+                {
+                    id: "linhas-marcas",
+                    label: "Linhas",
+                    link: "/linhas-marcas",
+                    parentId: "Filamentos",
+                },
+                {
+                    id: "tipo-material",
+                    label: "Tipo Material",
+                    link: "/tipo-material",
+                    parentId: "Filamentos",
+                },
             ],
         },
 

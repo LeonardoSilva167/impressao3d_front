@@ -1,25 +1,28 @@
 import { AxiosHttpClient, HttpStatusCode } from "../../libs/api/ApiConfig"
 import { AccessDeniedError } from "../../libs/api/exceptions/AccessDeniedError"
 import { UnexpectedError } from "../../libs/api/exceptions/UnexpectedError"
-import { PaginateInterface } from "interfaces/SystemInterfaces/PaginateInterface"
-// import { ValidationError } from "yup"
 import { ValidationError } from "../../libs/api/exceptions/ValidationError"
-import { ClientesInterface, ClientesModel, ClientesSearch, ClientesView, LookupsClientes } from "interfaces/Clientes/ClientesInterface"
-// import { ClientesInterface, ClientesModel, ClientesSearch, ClientesView, LookupsClientes } from "interfaces/Clientes"
+import { PaginateInterface } from "interfaces/SystemInterfaces/PaginateInterface"
+import {
+    LinhasMarcasInterface,
+    LinhasMarcasModel,
+    LinhasMarcasSearch,
+    LinhasMarcasView,
+} from "interfaces/LinhasMarcas/LinhasMarcasInterface"
 
-export class ClientesService implements ClientesInterface {
+export class LinhasMarcasService implements LinhasMarcasInterface {
     private readonly url: string
     private readonly httpClient: AxiosHttpClient
 
     constructor() {
-        this.url = 'clientes'
+        this.url = 'linhas-marcas'          
         this.httpClient = new AxiosHttpClient()
     }
-    async getViewClientes(params: any): Promise<ClientesView | undefined> {
-        const response = await this.httpClient.get<ClientesView>({
+
+    async getViewLinhasMarcas(params: any): Promise<LinhasMarcasView | undefined> {
+        const response = await this.httpClient.get<LinhasMarcasView>({
             url: `${this.url}/listar/${params.id}`
         })
-
         switch (response.statusCode) {
             case HttpStatusCode.ok: return response.body
             case HttpStatusCode.unauthorized: throw new AccessDeniedError()
@@ -27,51 +30,40 @@ export class ClientesService implements ClientesInterface {
         }
     }
 
-    async listClientesPaginate(params: ClientesSearch): Promise<PaginateInterface<ClientesSearch> | undefined> {
+    async listLinhasMarcasPaginate(params: LinhasMarcasSearch): Promise<PaginateInterface<LinhasMarcasSearch> | undefined> {
         try {
-            const response = await this.httpClient.get<PaginateInterface<ClientesSearch>>({
+            const response = await this.httpClient.get<PaginateInterface<LinhasMarcasSearch>>({
                 url: this.url + '/listar',
                 body: params
-            });
-    
-            if (!response || !response.statusCode) {
-                throw new UnexpectedError(); // ou retorne undefined
-            }
-    
+            })
+            if (!response || !response.statusCode) throw new UnexpectedError()
             switch (response.statusCode) {
-                case HttpStatusCode.ok:
-                    return response.body;
-                case HttpStatusCode.unauthorized:
-                    throw new AccessDeniedError();
-                default:
-                    throw new UnexpectedError();
+                case HttpStatusCode.ok: return response.body
+                case HttpStatusCode.unauthorized: throw new AccessDeniedError()
+                default: throw new UnexpectedError()
             }
         } catch (error) {
-            console.error("Erro ao buscar clientes:", error);
-            throw error; // ou retorne undefined, se preferir
+            console.error(`Erro ao buscar linhas-marcas:`, error)
+            throw error
         }
     }
-    
 
-    async AsyncListClientes(params: ClientesSearch): Promise<ClientesModel[] | undefined> {
+    async AsyncListLinhasMarcas(params: LinhasMarcasSearch): Promise<LinhasMarcasModel[] | undefined> {
         const response = await this.httpClient.get<any>({
-            url: this.url + '/clientes-list',
-            // url: this.url + '/',
+            url: this.url + '/linhas-marcas-list',
             body: params
         })
         switch (response.statusCode) {
-
             case HttpStatusCode.ok: return response.body
             case HttpStatusCode.unauthorized: throw new AccessDeniedError()
             default: throw new UnexpectedError()
         }
-    }    
-    
-    async createClientes(params: ClientesModel) {
+    }
+
+    async createLinhasMarcas(params: LinhasMarcasModel) {
         const response = await this.httpClient.post({
             url: this.url + '/cadastrar', body: params
         })
-
         switch (response.statusCode) {
             case HttpStatusCode.ok: return response.body
             case HttpStatusCode.noContent: return
@@ -81,11 +73,10 @@ export class ClientesService implements ClientesInterface {
         }
     }
 
-    async editClientes(params: ClientesModel) {
+    async editLinhasMarcas(params: LinhasMarcasModel) {
         const response = await this.httpClient.put({
             url: this.url + '/editar', body: params
         })
-
         switch (response.statusCode) {
             case HttpStatusCode.ok: return response.body
             case HttpStatusCode.noContent: return
@@ -95,11 +86,10 @@ export class ClientesService implements ClientesInterface {
         }
     }
 
-    async deleteClientes(id: number) {
+    async deleteLinhasMarcas(id: number) {
         const response = await this.httpClient.delete({
             url: this.url + '/excluir/' + id
         })
-
         switch (response.statusCode) {
             case HttpStatusCode.ok: return response
             case HttpStatusCode.noContent: return

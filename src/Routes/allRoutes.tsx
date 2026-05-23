@@ -37,6 +37,10 @@ import CoresPage from "../pages/Pages/Cores/CoresPage";
 import CoresForm from "../pages/Pages/Cores/CoresForm/CoresForm";
 import MarcasPage from "../pages/Pages/Marcas/MarcasPage";
 import MarcasForm from "../pages/Pages/Marcas/MarcasForm/MarcasForm";
+import LinhasMarcasPage from "../pages/Pages/LinhasMarcas/LinhasMarcasPage";
+import LinhasMarcasForm from "../pages/Pages/LinhasMarcas/LinhasMarcasForm/LinhasMarcasForm";
+import TipoMaterialPage from "../pages/Pages/TipoMaterial/TipoMaterialPage";
+import TipoMaterialForm from "../pages/Pages/TipoMaterial/TipoMaterialForm/TipoMaterialForm";
 
 
 
@@ -90,6 +94,16 @@ const authProtectedRoutes = [
   { path: "/marcas", component: <MarcasPage /> },
   { path: "/marcas/add", component: <MarcasForm /> },
   { path: "/marcas/edit/:id", component: <MarcasForm /> },
+
+  // Linhas Marcas
+  { path: "/linhas-marcas", component: <LinhasMarcasPage /> },
+  { path: "/linhas-marcas/add", component: <LinhasMarcasForm /> },
+  { path: "/linhas-marcas/edit/:id", component: <LinhasMarcasForm /> },
+  
+  // Tipo Material
+  { path: "/tipo-material", component: <TipoMaterialPage /> },
+  { path: "/tipo-material/add", component: <TipoMaterialForm /> },
+  { path: "/tipo-material/edit/:id", component: <TipoMaterialForm /> },
   // // // ContasBancarias
   // { path: "/linha-produto", component: <LinhasProdutos /> },
   // { path: "/linha-produto/add", component: <LinhasProdutosForm /> },
