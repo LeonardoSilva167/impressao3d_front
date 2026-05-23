@@ -124,12 +124,14 @@ export const CoresTable = ({ data, getData, setPerPage, setPage, perPage, filter
                                                                         {row.hexadecimal ? (
                                                                             <div
                                                                                 style={{
-                                                                                    display: 'inline-block',
                                                                                     width: '24px',
                                                                                     height: '24px',
                                                                                     borderRadius: '50%',
-                                                                                    backgroundColor: row.hexadecimal,
+                                                                                    background: row.hexadecimal.startsWith('#')
+                                                                                        ? row.hexadecimal
+                                                                                        : `#${row.hexadecimal}`,
                                                                                     border: '1px solid #ccc',
+                                                                                    flexShrink: 0,
                                                                                 }}
                                                                                 title={row.hexadecimal}
                                                                             />

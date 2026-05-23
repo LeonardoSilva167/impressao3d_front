@@ -216,6 +216,7 @@ const FilamentosForm = () => {
                                                             control={control}
                                                             readOnly={true}
                                                             placeholder="Preenchido automaticamente"
+                                                            disabled={true} 
                                                         />
                                                     </div>
                                                 </Col>
