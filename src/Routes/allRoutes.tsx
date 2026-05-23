@@ -41,6 +41,8 @@ import LinhasMarcasPage from "../pages/Pages/LinhasMarcas/LinhasMarcasPage";
 import LinhasMarcasForm from "../pages/Pages/LinhasMarcas/LinhasMarcasForm/LinhasMarcasForm";
 import TipoMaterialPage from "../pages/Pages/TipoMaterial/TipoMaterialPage";
 import TipoMaterialForm from "../pages/Pages/TipoMaterial/TipoMaterialForm/TipoMaterialForm";
+import FilamentosPage from "../pages/Pages/Filamentos/FilamentosPage";
+import FilamentosForm from "../pages/Pages/Filamentos/FilamentosForm/FilamentosForm";
 
 
 
@@ -104,6 +106,11 @@ const authProtectedRoutes = [
   { path: "/tipo-material", component: <TipoMaterialPage /> },
   { path: "/tipo-material/add", component: <TipoMaterialForm /> },
   { path: "/tipo-material/edit/:id", component: <TipoMaterialForm /> },
+  
+  // Filamentos
+  { path: "/filamentos", component: <FilamentosPage /> },
+  { path: "/filamentos/add", component: <FilamentosForm /> },
+  { path: "/filamentos/edit/:id", component: <FilamentosForm /> },
   // // // ContasBancarias
   // { path: "/linha-produto", component: <LinhasProdutos /> },
   // { path: "/linha-produto/add", component: <LinhasProdutosForm /> },

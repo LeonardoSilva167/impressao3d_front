@@ -289,6 +289,12 @@ const Navdata = () => {
             },
             subItems: [
                 {
+                    id: "filamentos-lista",
+                    label: "Filamentos",
+                    link: "/filamentos",
+                    parentId: "Filamentos",
+                },
+                {
                     id: "cores",
                     label: "Cores",
                     link: "/cores",
