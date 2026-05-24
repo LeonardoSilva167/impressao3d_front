@@ -47,6 +47,8 @@ import CategoriasPage from "../pages/Pages/Categorias/CategoriasPage";
 import CategoriasForm from "../pages/Pages/Categorias/CategoriasForm/CategoriasForm";
 import ItensPage from "../pages/Pages/Itens/ItensPage";
 import ItensForm from "../pages/Pages/Itens/ItensForm/ItensForm";
+import PlataformasCompraPage from "../pages/Pages/PlataformasCompra/PlataformasCompraPage";
+import PlataformasCompraForm from "../pages/Pages/PlataformasCompra/PlataformasCompraForm/PlataformasCompraForm";
 
 
 
@@ -125,6 +127,11 @@ const authProtectedRoutes = [
   { path: "/itens", component: <ItensPage /> },
   { path: "/itens/add", component: <ItensForm /> },
   { path: "/itens/edit/:id", component: <ItensForm /> },
+
+  // Plataformas de Compra
+  { path: "/plataformas-compra", component: <PlataformasCompraPage /> },
+  { path: "/plataformas-compra/add", component: <PlataformasCompraForm /> },
+  { path: "/plataformas-compra/edit/:id", component: <PlataformasCompraForm /> },
   // // // ContasBancarias
   // { path: "/linha-produto", component: <LinhasProdutos /> },
   // { path: "/linha-produto/add", component: <LinhasProdutosForm /> },
