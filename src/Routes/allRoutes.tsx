@@ -43,6 +43,8 @@ import TipoMaterialPage from "../pages/Pages/TipoMaterial/TipoMaterialPage";
 import TipoMaterialForm from "../pages/Pages/TipoMaterial/TipoMaterialForm/TipoMaterialForm";
 import FilamentosPage from "../pages/Pages/Filamentos/FilamentosPage";
 import FilamentosForm from "../pages/Pages/Filamentos/FilamentosForm/FilamentosForm";
+import CategoriasPage from "../pages/Pages/Categorias/CategoriasPage";
+import CategoriasForm from "../pages/Pages/Categorias/CategoriasForm/CategoriasForm";
 
 
 
@@ -111,6 +113,11 @@ const authProtectedRoutes = [
   { path: "/filamentos", component: <FilamentosPage /> },
   { path: "/filamentos/add", component: <FilamentosForm /> },
   { path: "/filamentos/edit/:id", component: <FilamentosForm /> },
+
+  // Categorias
+  { path: "/categorias-itens", component: <CategoriasPage /> },
+  { path: "/categorias-itens/add", component: <CategoriasForm /> },
+  { path: "/categorias-itens/edit/:id", component: <CategoriasForm /> },
   // // // ContasBancarias
   // { path: "/linha-produto", component: <LinhasProdutos /> },
   // { path: "/linha-produto/add", component: <LinhasProdutosForm /> },

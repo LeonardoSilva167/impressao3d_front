@@ -10,8 +10,9 @@ const Navdata = () => {
     const [isDashboard, setIsDashboard] = useState<boolean>(false);
     const [isProdutoConfig, setIsProdutoConfig] = useState<boolean>(false);
     const [isCaixa, setIsCaixa] = useState<boolean>(false);
-    const [isProdutos, setIsProdutos] = useState<boolean>(false);
+    // const [isProdutos, setIsProdutos] = useState<boolean>(false);
     const [isFilamentos, setIsFilamentos] = useState<boolean>(false);
+    const [isCompras, setIsCompras] = useState<boolean>(false);
 
     // Multi Level
     const [isLevel1, setIsLevel1] = useState<boolean>(false);
@@ -79,11 +80,14 @@ const Navdata = () => {
         if (iscurrentState !== 'Vendas') {
             setIsCaixa(false);
         }
-        if (iscurrentState !== 'Produtos') {
-            setIsProdutos(false);
-        }
+        // if (iscurrentState !== 'Produtos') {
+        //     setIsProdutos(false);
+        // }
         if (iscurrentState !== 'Filamentos') {
             setIsFilamentos(false);
+        }
+        if (iscurrentState !== 'Compras') {
+            setIsCompras(false);
         }
         // if (iscurrentState === 'Filamentos') {
         //     history("/cores"); // Redirecionar ao clicar na raiz ou apenas expandir, o comum no template é history e layout
@@ -152,39 +156,39 @@ const Navdata = () => {
                 updateIconSidebar(e);
             }
         },
-        {
-            id: "Serviços",
-            label: "Serviços",
-            icon: "ri-user-line",
-            link: "/servicos",
-            click: function (e: any) {
-                e.preventDefault();
-                setIscurrentState('Serviços');
-                updateIconSidebar(e);
-            }
-        },
-        {
-            id: "Produtos",
-            label: "Orgãos participantes",
-            icon: "ri-shopping-bag-line",
-            link: "/orgao-participante",
-            click: function (e: any) {
-                e.preventDefault();
-                setIscurrentState('Produtos');
-                updateIconSidebar(e);
-            }
-        },
-        {
-            id: "Licitacoes",
-            label: "Licitacoes",
-            icon: "ri-user-line",
-            link: "/licitacoes",
-            click: function (e: any) {
-                e.preventDefault();
-                setIscurrentState('Licitacoes');
-                updateIconSidebar(e);
-            }
-        },
+        // {
+        //     id: "Serviços",
+        //     label: "Serviços",
+        //     icon: "ri-user-line",
+        //     link: "/servicos",
+        //     click: function (e: any) {
+        //         e.preventDefault();
+        //         setIscurrentState('Serviços');
+        //         updateIconSidebar(e);
+        //     }
+        // },
+        // {
+        //     id: "Produtos",
+        //     label: "Orgãos participantes",
+        //     icon: "ri-shopping-bag-line",
+        //     link: "/orgao-participante",
+        //     click: function (e: any) {
+        //         e.preventDefault();
+        //         setIscurrentState('Produtos');
+        //         updateIconSidebar(e);
+        //     }
+        // },
+        // {
+        //     id: "Licitacoes",
+        //     label: "Licitacoes",
+        //     icon: "ri-user-line",
+        //     link: "/licitacoes",
+        //     click: function (e: any) {
+        //         e.preventDefault();
+        //         setIscurrentState('Licitacoes');
+        //         updateIconSidebar(e);
+        //     }
+        // },
         {
             id: "Vendas",
             label: "Vendas",
@@ -228,53 +232,53 @@ const Navdata = () => {
                 },
             ],
         },  
-        {
-            id: "Produtos",
-            label: "Produtos",
-            icon: "ri-currency-fill",
-            link: "/#",
-            stateVariables: isProdutos,
-            click: function (e: any) {
-                e.preventDefault();
-                setIsProdutos(!isProdutos);
-                setIscurrentState('Produtos');
-                updateIconSidebar(e);
-            },
-            subItems: [
+        // {
+        //     id: "Produtos",
+        //     label: "Produtos",
+        //     icon: "ri-currency-fill",
+        //     link: "/#",
+        //     stateVariables: isProdutos,
+        //     click: function (e: any) {
+        //         e.preventDefault();
+        //         setIsProdutos(!isProdutos);
+        //         setIscurrentState('Produtos');
+        //         updateIconSidebar(e);
+        //     },
+        //     subItems: [
 
-                {
-                    id: "tipoProduto",
-                    label: "Tipo de Produto",
-                    link: "/tipo-produto",
-                    parentId: "Produtos",
-                    badgeColor: "success",
-                    // badgeName: "New",
-                },
-                // {
-                //     id: "marcas",
-                //     label: "Marcas",
-                //     link: "/marcas",
-                //     parentId: "Produtos",
-                //     badgeColor: "success",
-                // },
-                {
-                    id: "subtipoProduto",
-                    label: "Subtipo de Produto",
-                    link: "/subtipo-produto",
-                    parentId: "Produtos",
-                    badgeColor: "success",
-                    // badgeName: "New",
-                },
-                {
-                    id: "atributosProduto",
-                    label: "Atributos de Produto",
-                    link: "/atributos-produto",
-                    parentId: "Produtos",
-                    badgeColor: "success",
-                    // badgeName: "New",
-                },
-            ],
-        },
+        //         {
+        //             id: "tipoProduto",
+        //             label: "Tipo de Produto",
+        //             link: "/tipo-produto",
+        //             parentId: "Produtos",
+        //             badgeColor: "success",
+        //             // badgeName: "New",
+        //         },
+        //         // {
+        //         //     id: "marcas",
+        //         //     label: "Marcas",
+        //         //     link: "/marcas",
+        //         //     parentId: "Produtos",
+        //         //     badgeColor: "success",
+        //         // },
+        //         {
+        //             id: "subtipoProduto",
+        //             label: "Subtipo de Produto",
+        //             link: "/subtipo-produto",
+        //             parentId: "Produtos",
+        //             badgeColor: "success",
+        //             // badgeName: "New",
+        //         },
+        //         {
+        //             id: "atributosProduto",
+        //             label: "Atributos de Produto",
+        //             link: "/atributos-produto",
+        //             parentId: "Produtos",
+        //             badgeColor: "success",
+        //             // badgeName: "New",
+        //         },
+        //     ],
+        // },
         {
             id: "Filamentos",
             label: "Filamentos",
@@ -318,6 +322,27 @@ const Navdata = () => {
                     label: "Tipo Material",
                     link: "/tipo-material",
                     parentId: "Filamentos",
+                },
+            ],
+        },
+        {
+            id: "Compras",
+            label: "Compras",
+            icon: "ri-shopping-cart-line",
+            link: "/#",
+            stateVariables: isCompras,
+            click: function (e: any) {
+                e.preventDefault();
+                setIsCompras(!isCompras);
+                setIscurrentState('Compras');
+                updateIconSidebar(e);
+            },
+            subItems: [
+                {
+                    id: "categorias",
+                    label: "Categorias",
+                    link: "/categorias-itens",
+                    parentId: "Compras",
                 },
             ],
         },
