@@ -344,6 +344,12 @@ const Navdata = () => {
                     link: "/categorias-itens",
                     parentId: "Compras",
                 },
+                {
+                    id: "itens",
+                    label: "Itens",
+                    link: "/itens",
+                    parentId: "Compras",
+                },
             ],
         },
 

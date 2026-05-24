@@ -1,0 +1,73 @@
+export interface ItensSearch {
+    id?: string | undefined | null
+    item_id?: string | undefined | null
+    id_categoria_item?: string | undefined | null
+    descricao?: string | undefined | null
+    codigo?: string | undefined | null
+    unidade_medida?: string | undefined | null
+    controla_estoque?: boolean | undefined | null
+    gera_custo?: boolean | undefined | null
+    ativo?: boolean | undefined | null
+    palavra_chave?: string | null | undefined | unknown
+}
+
+export interface ItensView {
+    id?: number | undefined
+    id_categoria_item?: number | undefined
+    categoria_descricao?: string
+    descricao?: string
+    codigo?: string
+    unidade_medida?: string
+    controla_estoque?: boolean
+    gera_custo?: boolean
+    ativo?: boolean
+}
+
+export interface ItensList {
+    id?: number | undefined
+    id_categoria_item?: number | undefined
+    categoria_descricao?: string
+    descricao?: string
+    codigo?: string
+    unidade_medida?: string
+    controla_estoque?: boolean
+    gera_custo?: boolean
+    ativo?: boolean
+}
+
+export interface ItensModel {
+    id?: string | undefined | null
+    item_id?: string | undefined | null
+    id_categoria_item: string | undefined | null
+    descricao: string | undefined | null
+    codigo: string | undefined | null
+    unidade_medida: string | undefined | null
+    controla_estoque: boolean | undefined | null
+    gera_custo: boolean | undefined | null
+    ativo: boolean | undefined | null
+}
+
+export interface LookupsItens {
+    categoriasOptions?: { value: number; label: string }[]
+}
+
+export interface ItensInterface {
+    getViewItens(params: any): Promise<ItensView | undefined>
+    listItensPaginate(params: ItensSearch): Promise<any>
+    AsyncListItens(params: ItensSearch): Promise<ItensModel[] | undefined>
+    createItens(params: ItensModel): Promise<any>
+    editItens(params: ItensModel): Promise<any>
+    deleteItens(id: number): Promise<any>
+}
+
+export const ItensDefaultValues: ItensModel = {
+    id: null,
+    item_id: null,
+    id_categoria_item: null,
+    descricao: null,
+    codigo: null,
+    unidade_medida: null,
+    controla_estoque: true,
+    gera_custo: true,
+    ativo: true,
+}

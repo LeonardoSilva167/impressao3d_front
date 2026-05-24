@@ -45,6 +45,8 @@ import FilamentosPage from "../pages/Pages/Filamentos/FilamentosPage";
 import FilamentosForm from "../pages/Pages/Filamentos/FilamentosForm/FilamentosForm";
 import CategoriasPage from "../pages/Pages/Categorias/CategoriasPage";
 import CategoriasForm from "../pages/Pages/Categorias/CategoriasForm/CategoriasForm";
+import ItensPage from "../pages/Pages/Itens/ItensPage";
+import ItensForm from "../pages/Pages/Itens/ItensForm/ItensForm";
 
 
 
@@ -118,6 +120,11 @@ const authProtectedRoutes = [
   { path: "/categorias-itens", component: <CategoriasPage /> },
   { path: "/categorias-itens/add", component: <CategoriasForm /> },
   { path: "/categorias-itens/edit/:id", component: <CategoriasForm /> },
+
+  // Itens
+  { path: "/itens", component: <ItensPage /> },
+  { path: "/itens/add", component: <ItensForm /> },
+  { path: "/itens/edit/:id", component: <ItensForm /> },
   // // // ContasBancarias
   // { path: "/linha-produto", component: <LinhasProdutos /> },
   // { path: "/linha-produto/add", component: <LinhasProdutosForm /> },

@@ -4,24 +4,24 @@ import { UnexpectedError } from "../../libs/api/exceptions/UnexpectedError"
 import { ValidationError } from "../../libs/api/exceptions/ValidationError"
 import { PaginateInterface } from "interfaces/SystemInterfaces/PaginateInterface"
 import {
-    CategoriasInterface,
-    CategoriasModel,
-    CategoriasSearch,
-    CategoriasView,
-    CategoriasList,
-} from "interfaces/Categorias/CategoriasInterface"
+    ItensInterface,
+    ItensModel,
+    ItensSearch,
+    ItensView,
+    ItensList,
+} from "interfaces/Itens/ItensInterface"
 
-export class CategoriasService implements CategoriasInterface {
+export class ItensService implements ItensInterface {
     private readonly url: string
     private readonly httpClient: AxiosHttpClient
 
     constructor() {
-        this.url = 'categorias-itens'
+        this.url = 'itens'
         this.httpClient = new AxiosHttpClient()
     }
 
-    async getViewCategorias(params: any): Promise<CategoriasView | undefined> {
-        const response = await this.httpClient.get<CategoriasView>({
+    async getViewItens(params: any): Promise<ItensView | undefined> {
+        const response = await this.httpClient.get<ItensView>({
             url: `${this.url}/listar/${params.id}`
         })
         switch (response.statusCode) {
@@ -31,9 +31,9 @@ export class CategoriasService implements CategoriasInterface {
         }
     }
 
-    async listCategoriasPaginate(params: CategoriasSearch): Promise<PaginateInterface<CategoriasList> | undefined> {
+    async listItensPaginate(params: ItensSearch): Promise<PaginateInterface<ItensList> | undefined> {
         try {
-            const response = await this.httpClient.get<PaginateInterface<CategoriasList>>({
+            const response = await this.httpClient.get<PaginateInterface<ItensList>>({
                 url: this.url + '/listar',
                 body: params
             })
@@ -44,14 +44,14 @@ export class CategoriasService implements CategoriasInterface {
                 default: throw new UnexpectedError()
             }
         } catch (error) {
-            console.error(`Erro ao buscar categorias:`, error)
+            console.error(`Erro ao buscar itens:`, error)
             throw error
         }
     }
 
-    async AsyncListCategorias(params: CategoriasSearch): Promise<CategoriasModel[] | undefined> {
+    async AsyncListItens(params: ItensSearch): Promise<ItensModel[] | undefined> {
         const response = await this.httpClient.get<any>({
-            url: this.url + '/categorias-itens-list',
+            url: this.url + '/itens-list',
             body: params
         })
         switch (response.statusCode) {
@@ -61,7 +61,7 @@ export class CategoriasService implements CategoriasInterface {
         }
     }
 
-    async createCategorias(params: CategoriasModel) {
+    async createItens(params: ItensModel) {
         const response = await this.httpClient.post({
             url: this.url + '/cadastrar', body: params
         })
@@ -74,7 +74,7 @@ export class CategoriasService implements CategoriasInterface {
         }
     }
 
-    async editCategorias(params: CategoriasModel) {
+    async editItens(params: ItensModel) {
         const response = await this.httpClient.put({
             url: this.url + '/editar', body: params
         })
@@ -87,7 +87,7 @@ export class CategoriasService implements CategoriasInterface {
         }
     }
 
-    async deleteCategorias(id: number) {
+    async deleteItens(id: number) {
         const response = await this.httpClient.delete({
             url: this.url + '/excluir/' + id
         })
