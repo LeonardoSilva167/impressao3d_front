@@ -9,6 +9,7 @@ import { PaginateInterface, PaginateSearch, PerPageProps } from "interfaces/Syst
 import CustomModal from "Components/ComponentController/Modal/CustomModal"
 import { ItensList, ItensSearch } from "interfaces/Itens/ItensInterface"
 import { ItensService } from "services/Itens/ItensService"
+import { formatarParaMoedaSemSimbolo } from "helpers/functions_helpers"
 
 export interface ItensTableProps {
     data: PaginateInterface<ItensList> | undefined
@@ -21,6 +22,16 @@ export interface ItensTableProps {
 }
 
 const formatBoolean = (value: boolean | undefined | null) => value ? 'Sim' : 'Não'
+
+const formatEstoque = (value: number | null | undefined) => {
+    if (value == null) return '—'
+    return value.toLocaleString('pt-BR')
+}
+
+const formatPrecoMedio = (value: number | null | undefined) => {
+    if (value == null) return '—'
+    return formatarParaMoedaSemSimbolo(value)
+}
 
 export const ItensTable = ({ data, getData, setPerPage, perPage }: ItensTableProps) => {
     const [optPerPage] = useState<PerPageProps[]>([
@@ -113,9 +124,11 @@ export const ItensTable = ({ data, getData, setPerPage, perPage }: ItensTablePro
                                                             <tr>
                                                                 <th scope="col" className="text-start">Código</th>
                                                                 <th scope="col" className="text-start">Descrição</th>
+                                                                <th scope="col">Estoque Atual</th>
+                                                                <th scope="col">Preço Médio Atual</th>
                                                                 <th scope="col" className="text-start">Categoria</th>
                                                                 <th scope="col">Unidade</th>
-                                                                <th scope="col">Estoque</th>
+                                                                <th scope="col">Ctrl. Estoque</th>
                                                                 <th scope="col">Custo</th>
                                                                 <th scope="col">Ativo</th>
                                                                 <th scope="col" style={{ width: "150px" }}>Ação</th>
@@ -126,6 +139,8 @@ export const ItensTable = ({ data, getData, setPerPage, perPage }: ItensTablePro
                                                                 <tr key={row.id || index}>
                                                                     <td className="text-start">{row.codigo}</td>
                                                                     <td className="text-start">{row.descricao}</td>
+                                                                    <td>{formatEstoque(row.estoque_atual)}</td>
+                                                                    <td>{formatPrecoMedio(row.preco_medio_atual)}</td>
                                                                     <td className="text-start">{row.categoria_descricao}</td>
                                                                     <td>{row.unidade_medida}</td>
                                                                     <td>{formatBoolean(row.controla_estoque)}</td>

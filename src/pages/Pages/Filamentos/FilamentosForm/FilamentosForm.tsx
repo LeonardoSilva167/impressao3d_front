@@ -110,6 +110,15 @@ const FilamentosForm = () => {
     }, [])
 
     useEffect(() => {
+        if (record.estoque_atual == null && record.qtd != null) {
+            setValue('estoque_atual', String(record.qtd))
+        }
+        if (record.preco_medio_atual == null && record.preco_medio_grama != null) {
+            setValue('preco_medio_atual', String(record.preco_medio_grama))
+        }
+    }, [record, setValue])
+
+    useEffect(() => {
         setActiveMenu('/filamentos')
     }, [])
 
@@ -224,23 +233,23 @@ const FilamentosForm = () => {
                                             <Row>
                                                 <Col md={3}>
                                                     <div className="mb-3">
-                                                        <Label htmlFor="qtd" className="form-label">Quantidade</Label>
+                                                        <Label htmlFor="estoque_atual" className="form-label">Estoque Atual</Label>
                                                         <InputTextControlled<FilamentosModel>
-                                                            field={"qtd"}
+                                                            field={"estoque_atual"}
                                                             type="number"
                                                             control={control}
-                                                            disabled={true} 
+                                                            disabled={true}
                                                         />
                                                     </div>
                                                 </Col>
                                                 <Col md={3}>
                                                     <div className="mb-3">
-                                                        <Label htmlFor="preco_medio_grama" className="form-label">Preço Médio por Grama</Label>
+                                                        <Label htmlFor="preco_medio_atual" className="form-label">Preço Médio Atual</Label>
                                                         <InputTextControlled<FilamentosModel>
-                                                            field={"preco_medio_grama"}
+                                                            field={"preco_medio_atual"}
                                                             type="number"
                                                             control={control}
-                                                            disabled={true} 
+                                                            disabled={true}
                                                         />
                                                     </div>
                                                 </Col>

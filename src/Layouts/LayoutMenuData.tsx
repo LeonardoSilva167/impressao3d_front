@@ -362,6 +362,18 @@ const Navdata = () => {
                     link: "/itens",
                     parentId: "Compras",
                 },
+                {
+                    id: "lotes",
+                    label: "Lotes",
+                    link: "/lotes",
+                    parentId: "Compras",
+                },
+                {
+                    id: "movimentacoes-estoque",
+                    label: "Movimentações de Estoque",
+                    link: "/movimentacoes-estoque",
+                    parentId: "Compras",
+                },
             ],
         },
 

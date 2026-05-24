@@ -21,6 +21,8 @@ export interface ItensView {
     controla_estoque?: boolean
     gera_custo?: boolean
     ativo?: boolean
+    estoque_atual?: number | null
+    preco_medio_atual?: number | null
 }
 
 export interface ItensList {
@@ -33,6 +35,8 @@ export interface ItensList {
     controla_estoque?: boolean
     gera_custo?: boolean
     ativo?: boolean
+    estoque_atual?: number | null
+    preco_medio_atual?: number | null
 }
 
 export interface ItensModel {

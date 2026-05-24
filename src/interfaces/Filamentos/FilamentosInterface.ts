@@ -9,6 +9,8 @@ export interface FilamentosView {
     resumo?: string
     qtd?: number
     preco_medio_grama?: number
+    estoque_atual?: number | null
+    preco_medio_atual?: number | null
 }
 
 export interface FilamentosList {
@@ -17,6 +19,8 @@ export interface FilamentosList {
     resumo?: string
     qtd?: number
     preco_medio_grama?: number
+    estoque_atual?: number | null
+    preco_medio_atual?: number | null
 }
 
 export interface FilamentosModel {
@@ -29,6 +33,8 @@ export interface FilamentosModel {
     resumo: string | undefined | null
     qtd: string | undefined | null
     preco_medio_grama: string | undefined | null
+    estoque_atual: string | undefined | null
+    preco_medio_atual: string | undefined | null
 }
 
 export interface FilamentosInterface {
@@ -50,4 +56,6 @@ export const FilamentosDefaultValues: FilamentosModel = {
     resumo: null,
     qtd: null,
     preco_medio_grama: null,
+    estoque_atual: null,
+    preco_medio_atual: null,
 }

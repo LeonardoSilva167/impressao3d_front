@@ -10,6 +10,7 @@ import CustomModal from "Components/ComponentController/Modal/CustomModal"
 import { useNavegacao } from "helpers/functions_helpers"
 import { FilamentosList, FilamentosSearch } from "interfaces/Filamentos/FilamentosInterface"
 import { FilamentosService } from "services/Filamentos/FilamentosService"
+import { formatarParaMoedaSemSimbolo } from "helpers/functions_helpers"
 
 export interface FilamentosTableProps {
     data: PaginateInterface<FilamentosList> | undefined
@@ -19,6 +20,18 @@ export interface FilamentosTableProps {
     page: number
     perPage: number
     filters: any
+}
+
+const formatEstoque = (row: FilamentosList) => {
+    const value = row.estoque_atual != null ? row.estoque_atual : row.qtd
+    if (value == null) return '—'
+    return `${value.toLocaleString('pt-BR')}g`
+}
+
+const formatPrecoMedio = (row: FilamentosList) => {
+    const value = row.preco_medio_atual != null ? row.preco_medio_atual : row.preco_medio_grama
+    if (value == null) return '—'
+    return formatarParaMoedaSemSimbolo(value)
 }
 
 export const FilamentosTable = ({ data, getData, setPerPage, setPage, perPage, filters }: FilamentosTableProps) => {
@@ -110,8 +123,8 @@ export const FilamentosTable = ({ data, getData, setPerPage, setPage, perPage, f
                                                                 <th scope="col" className="text-start">Código</th>
                                                                 <th scope="col" className="text-start">Resumo</th>
                                                                 <th scope="col" className="text-end">Cor</th>
-                                                                <th scope="col" className="text-end">Quantidade</th>
-                                                                <th scope="col" className="text-end">Preço Méd. Grama</th>
+                                                                <th scope="col" className="text-end">Estoque Atual</th>
+                                                                <th scope="col" className="text-end">Preço Médio Atual</th>
                                                                 <th scope="col" style={{ width: "150px" }}>Ação</th>
                                                             </tr>
                                                         </thead>
@@ -143,8 +156,8 @@ export const FilamentosTable = ({ data, getData, setPerPage, setPage, perPage, f
                                                                             )}
                                                                         </div>
                                                                     </td>
-                                                                    <td className="text-start">{row.qtd}</td>
-                                                                    <td className="text-start">{row.preco_medio_grama}</td>
+                                                                    <td className="text-end">{formatEstoque(row)}</td>
+                                                                    <td className="text-end">{formatPrecoMedio(row)}</td>
                                                                     <td>
                                                                         <ButtonGroup>
                                                                             <UncontrolledDropdown direction="down">

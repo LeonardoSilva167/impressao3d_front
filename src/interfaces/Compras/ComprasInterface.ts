@@ -16,6 +16,8 @@ export interface CompraItens {
     gramatura?: number | null
     qtd_compra: number
     qtd_interna: number
+    qtd_original?: number | null
+    qtd_atual?: number | null
     valor_unitario_compra: number | string | null
     valor_total: number | string | null
     valor_unitario_real: number | string | null

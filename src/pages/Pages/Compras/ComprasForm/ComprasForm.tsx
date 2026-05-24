@@ -43,7 +43,7 @@ const obterValorNumerico = (valor: number | string | null | undefined): number =
         const parsed = parseFloat(valor.replace(',', '.'))
         return isNaN(parsed) ? 0 : parsed
     }
-    const num = Number(valor ?? 0)
+    const num = Number(valor != null ? valor : 0)
     return isNaN(num) ? 0 : num
 }
 
@@ -77,6 +77,14 @@ const aplicarValorUnitarioRealItens = (
             valor_unitario_real: valorUnitarioReal,
         }
     })
+}
+
+const formatarQuantidadeLote = (item: CompraItens, quantidade: number | null | undefined): string => {
+    if (quantidade == null) return '—'
+    if (item.tipo_item === TIPO_ITEM_FILAMENTO) {
+        return `${quantidade}g`
+    }
+    return String(quantidade)
 }
 
 const ComprasForm = () => {
@@ -214,6 +222,8 @@ const ComprasForm = () => {
                         ...item,
                         tipo_item,
                         gramatura,
+                        qtd_original: item.qtd_original != null ? item.qtd_original : qtdInterna,
+                        qtd_atual: item.qtd_atual != null ? item.qtd_atual : qtdInterna,
                         valor_unitario_compra: item.valor_unitario_compra != null ? item.valor_unitario_compra : 0,
                         valor_total: item.valor_total != null ? item.valor_total : 0,
                         valor_unitario_real: item.valor_unitario_real != null ? item.valor_unitario_real : 0,
@@ -295,6 +305,8 @@ const ComprasForm = () => {
             gramatura: isFilamento ? gramatura : null,
             qtd_compra: qtdCompra,
             qtd_interna: totalInterno,
+            qtd_original: totalInterno,
+            qtd_atual: totalInterno,
             valor_unitario_compra: valorUnitarioCompra,
             valor_total: valorTotal,
             valor_unitario_real: 0,
@@ -328,6 +340,8 @@ const ComprasForm = () => {
                 id_item: item.id_item,
                 qtd_compra: item.qtd_compra,
                 qtd_interna: item.qtd_interna,
+                qtd_original: item.qtd_original != null ? item.qtd_original : item.qtd_interna,
+                qtd_atual: item.qtd_atual != null ? item.qtd_atual : item.qtd_interna,
                 valor_unitario_compra: typeof item.valor_unitario_compra === 'string'
                     ? ajustaMoedaBanco(item.valor_unitario_compra)
                     : item.valor_unitario_compra,
@@ -617,6 +631,8 @@ const ComprasForm = () => {
                                                                 <th scope="col">Qtd Compra</th>
                                                                 <th scope="col">Gramatura</th>
                                                                 <th scope="col">Qtd Interna</th>
+                                                                <th scope="col">Qtd Original</th>
+                                                                <th scope="col">Qtd Atual</th>
                                                                 <th scope="col" className="text-end">Valor Unitário Compra</th>
                                                                 <th scope="col" className="text-end">Valor Unitário Real</th>
                                                                 <th scope="col" className="text-end">Valor Total</th>
@@ -637,8 +653,10 @@ const ComprasForm = () => {
                                                                     <td>
                                                                         {item.tipo_item === TIPO_ITEM_FILAMENTO && item.qtd_interna
                                                                             ? `${item.qtd_interna}g`
-                                                                            : '-'}
+                                                                            : (item.qtd_interna != null ? item.qtd_interna : '-')}
                                                                     </td>
+                                                                    <td>{formatarQuantidadeLote(item, item.qtd_original != null ? item.qtd_original : item.qtd_interna)}</td>
+                                                                    <td>{formatarQuantidadeLote(item, item.qtd_atual != null ? item.qtd_atual : item.qtd_interna)}</td>
                                                                     <td className="text-end">
                                                                         R$ {formatarParaMoedaSemSimbolo(item.valor_unitario_compra)}
                                                                     </td>
