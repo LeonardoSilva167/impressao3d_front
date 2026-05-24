@@ -1,0 +1,528 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { setActiveMenu } from 'helpers/system_helpers'
+import { ajustaMoedaBanco, formatarParaMoedaSemSimbolo, useNavegacao } from 'helpers/functions_helpers'
+import { Breadcrumb, BreadcrumbItem, Button, Card, CardBody, Col, Container, Label, Row, Table } from 'reactstrap'
+import { SubmitHandler, useForm } from 'react-hook-form'
+import { required } from 'Components/ComponentController/ValidatorForm/ValidatorForm'
+import { InputTextControlled } from 'Components/ComponentController/Inputs/Text/InputTextControlled'
+import { InputTextArea } from 'Components/ComponentController/Inputs/Text/InputTextArea'
+import { InputDate } from 'Components/ComponentController/Inputs/Date/InputDate'
+import { InputNumber } from 'Components/ComponentController/Inputs/Number/InputNumber'
+import { SelectListControlled } from 'Components/ComponentController/Selects/Select/SelectListControlled'
+import { SelectOptions } from 'interfaces/SystemInterfaces/SelectInterface'
+import { CompraItens, ComprasDefaultValues, ComprasModel } from 'interfaces/Compras/ComprasInterface'
+import { ComprasService } from 'services/Compras/ComprasService'
+import { PlataformasCompraService } from 'services/PlataformasCompra/PlataformasCompraService'
+import { ItensService } from 'services/Itens/ItensService'
+import { ItensModel } from 'interfaces/Itens/ItensInterface'
+
+const formatarValorUnitarioReal = (valor: number): string => {
+    return valor.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+    })
+}
+
+const ComprasForm = () => {
+    const { state } = useLocation()
+    const [record] = useState<ComprasModel>(state ? state.source : ComprasDefaultValues)
+    const { register, handleSubmit, control, setValue, getValues, watch, reset, formState: { errors } } = useForm<ComprasModel>({
+        defaultValues: {
+            ...ComprasDefaultValues,
+            ...record,
+            valor_frete: record.valor_frete != null ? formatarParaMoedaSemSimbolo(record.valor_frete) : "0,00",
+            desconto: record.desconto != null ? formatarParaMoedaSemSimbolo(record.desconto) : "0,00",
+            valor_taxa: record.valor_taxa != null ? formatarParaMoedaSemSimbolo(record.valor_taxa) : "0,00",
+            valor_imposto: record.valor_imposto != null ? formatarParaMoedaSemSimbolo(record.valor_imposto) : "0,00",
+        }
+    })
+    const { voltarParaRotaAnterior } = useNavegacao()
+    const navigate = useNavigate()
+    const comprasService = new ComprasService()
+    const plataformasCompraService = new PlataformasCompraService()
+    const itensService = new ItensService()
+
+    const [plataformas, setPlataformas] = useState<SelectOptions[]>([])
+    const [optItens, setOptItens] = useState<SelectOptions[]>([])
+    const [compraItens, setCompraItens] = useState<CompraItens[]>([])
+    const [remoteErrors, setRemoteErrors] = useState<string>("")
+    const [subtotalItens, setSubtotalItens] = useState(0)
+    const [totalFinal, setTotalFinal] = useState(0)
+
+    const freteWatch = watch('valor_frete')
+    const descontoWatch = watch('desconto')
+    const taxaWatch = watch('valor_taxa')
+    const impostoWatch = watch('valor_imposto')
+    const itemWatch = watch('id_item')
+
+    const itemSelecionado = useMemo(() => {
+        if (!itemWatch || !optItens.length) return undefined
+        return optItens.find(item => item.value === itemWatch)
+    }, [optItens, itemWatch])
+
+    const getLookups = async (): Promise<void> => {
+        try {
+            const [plataformasRes, itensRes] = await Promise.all([
+                plataformasCompraService.AsyncListPlataformasCompra({}),
+                itensService.AsyncListItens({ ativo: true }),
+            ])
+
+            if (plataformasRes) {
+                setPlataformas(plataformasRes.map((el: any) => ({ value: el.id, label: el.descricao })))
+            }
+
+            if (itensRes) {
+                setOptItens(itensRes.map((item: ItensModel) => ({
+                    value: item.id,
+                    label: item.descricao || item.codigo || `Item ${item.id}`,
+                })))
+            }
+        } catch (error) {
+            console.error("Erro ao carregar lookups:", error)
+        }
+    }
+
+    const loadRecord = async (): Promise<void> => {
+        if (!record.id) return
+
+        try {
+            const view = await comprasService.getViewCompras({ id: record.id })
+            if (!view) return
+
+            reset({
+                id: view.id != null ? view.id.toString() : null,
+                id_plataforma_compra: view.id_plataforma_compra != null ? view.id_plataforma_compra.toString() : null,
+                data_compra: view.data_compra || null,
+                numero_pedido: view.numero_pedido || null,
+                valor_frete: formatarParaMoedaSemSimbolo(view.valor_frete),
+                desconto: formatarParaMoedaSemSimbolo(view.desconto),
+                valor_taxa: formatarParaMoedaSemSimbolo(view.valor_taxa),
+                valor_imposto: formatarParaMoedaSemSimbolo(view.valor_imposto),
+                observacao: view.observacao || null,
+            })
+
+            if (view.compra_itens?.length) {
+                setCompraItens(view.compra_itens.map((item) => ({
+                    ...item,
+                    valor_unitario_compra: item.valor_unitario_compra ?? 0,
+                    valor_total: item.valor_total ?? 0,
+                    valor_unitario_real: item.valor_unitario_real ?? 0,
+                })))
+            }
+        } catch (error) {
+            console.error("Erro ao carregar compra:", error)
+        }
+    }
+
+    const calcularTotais = (): void => {
+        const subtotal = compraItens.reduce((acc, item) => {
+            const valor = typeof item.valor_total === 'string'
+                ? parseFloat(item.valor_total.replace(',', '.'))
+                : Number(item.valor_total ?? 0)
+            return acc + (isNaN(valor) ? 0 : valor)
+        }, 0)
+
+        const frete = ajustaMoedaBanco(freteWatch || "0,00")
+        const desconto = ajustaMoedaBanco(descontoWatch || "0,00")
+        const taxa = ajustaMoedaBanco(taxaWatch || "0,00")
+        const imposto = ajustaMoedaBanco(impostoWatch || "0,00")
+        const total = subtotal + frete + taxa + imposto - desconto
+
+        setSubtotalItens(subtotal)
+        setTotalFinal(total)
+    }
+
+    const resetItemForm = (): void => {
+        setValue("id_item", null)
+        setValue("qtd_compra", null)
+        setValue("qtd_interna", null)
+        setValue("valor_unitario_compra", "0,00")
+    }
+
+    const adicionarItem = (): void => {
+        setRemoteErrors("")
+
+        const qtdCompra = Number(getValues("qtd_compra"))
+        const qtdInterna = Number(getValues("qtd_interna"))
+        const valorUnitarioCompra = ajustaMoedaBanco(getValues("valor_unitario_compra") || "0,00")
+
+        if (!itemSelecionado) {
+            setRemoteErrors("Selecione um item.")
+            return
+        }
+        if (!qtdCompra || qtdCompra <= 0) {
+            setRemoteErrors("Quantidade de compra deve ser maior que zero.")
+            return
+        }
+        if (!qtdInterna || qtdInterna <= 0) {
+            setRemoteErrors("Quantidade interna deve ser maior que zero.")
+            return
+        }
+        if (!valorUnitarioCompra || valorUnitarioCompra <= 0) {
+            setRemoteErrors("Valor unitário de compra deve ser maior que zero.")
+            return
+        }
+
+        const valorTotal = qtdCompra * valorUnitarioCompra
+        const valorUnitarioReal = valorTotal / qtdInterna
+
+        const novoItem: CompraItens = {
+            id_item: Number(itemSelecionado.value),
+            nome_item: itemSelecionado.label,
+            qtd_compra: qtdCompra,
+            qtd_interna: qtdInterna,
+            valor_unitario_compra: valorUnitarioCompra,
+            valor_total: valorTotal,
+            valor_unitario_real: valorUnitarioReal,
+        }
+
+        setCompraItens((prev) => [...prev, novoItem])
+        resetItemForm()
+    }
+
+    const removerItem = (index: number): void => {
+        setCompraItens((prev) => prev.filter((_, i) => i !== index))
+    }
+
+    const onSubmit: SubmitHandler<ComprasModel> = async (data: any) => {
+        try {
+            setRemoteErrors("")
+
+            if (compraItens.length === 0) {
+                setRemoteErrors("Adicione ao menos um item à compra.")
+                return
+            }
+
+            data.valor_frete = ajustaMoedaBanco(data.valor_frete || "0,00")
+            data.desconto = ajustaMoedaBanco(data.desconto || "0,00")
+            data.valor_taxa = ajustaMoedaBanco(data.valor_taxa || "0,00")
+            data.valor_imposto = ajustaMoedaBanco(data.valor_imposto || "0,00")
+            data.valor_total = totalFinal
+            data.compra_itens = compraItens.map((item) => ({
+                id: item.id ?? null,
+                id_compra_item: item.id_compra_item ?? null,
+                id_item: item.id_item,
+                qtd_compra: item.qtd_compra,
+                qtd_interna: item.qtd_interna,
+                valor_unitario_compra: typeof item.valor_unitario_compra === 'string'
+                    ? ajustaMoedaBanco(item.valor_unitario_compra)
+                    : item.valor_unitario_compra,
+                valor_total: typeof item.valor_total === 'string'
+                    ? ajustaMoedaBanco(item.valor_total)
+                    : item.valor_total,
+                valor_unitario_real: typeof item.valor_unitario_real === 'string'
+                    ? parseFloat(item.valor_unitario_real.replace(',', '.'))
+                    : item.valor_unitario_real,
+            }))
+
+            if (record.id) {
+                await comprasService.editCompras(data)
+            } else {
+                const id = await comprasService.createCompras(data)
+                setValue('id', id)
+            }
+            navigate(`/compras`)
+        } catch (error: any) {
+            throw error
+        }
+    }
+
+    useEffect(() => {
+        getLookups()
+        loadRecord()
+    }, [])
+
+    useEffect(() => {
+        setActiveMenu('/compras')
+    }, [])
+
+    useEffect(() => {
+        calcularTotais()
+    }, [compraItens, freteWatch, descontoWatch, taxaWatch, impostoWatch])
+
+    return (
+        <React.Fragment>
+            <div className="page-content">
+                <Container fluid>
+                    <Row>
+                        <Col xs={12}>
+                            <div className="page-title-box d-sm-flex align-items-center justify-content-between">
+                                <div className="d-sm-flex align-items-center justify-content-between">
+                                    <Link to="/compras"><i className="bx bx-arrow-back bx-sm"></i></Link>
+                                    <h4 className="mb-sm-0 ms-3">
+                                        {record.id ? 'Editar' : 'Adicionar'} Compra
+                                    </h4>
+                                </div>
+                                <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
+                                    <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
+                                    <BreadcrumbItem><Link to="/compras">Compras</Link></BreadcrumbItem>
+                                    <BreadcrumbItem active>
+                                        {record.id ? 'Editar' : 'Adicionar'} Compra
+                                    </BreadcrumbItem>
+                                </Breadcrumb>
+                            </div>
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col xxl={12}>
+                            <Card>
+                                <CardBody>
+                                    <form onSubmit={handleSubmit(onSubmit)}>
+                                        <h5 className="mb-3">Dados da Compra</h5>
+                                        <Row>
+                                            <Col md={6}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Plataforma de Compra</Label>
+                                                    <SelectListControlled<ComprasModel>
+                                                        control={control}
+                                                        field="id_plataforma_compra"
+                                                        options={plataformas}
+                                                        errors={errors.id_plataforma_compra}
+                                                        required={required}
+                                                        placeholder="Selecione..."
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Número do Pedido</Label>
+                                                    <InputTextControlled<ComprasModel>
+                                                        field={"numero_pedido"}
+                                                        control={control}
+                                                        maxLength={{ value: 100, message: "Máximo 100 caracteres" }}
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Data da Compra</Label>
+                                                    <InputDate<ComprasModel>
+                                                        field={"data_compra"}
+                                                        required={required}
+                                                        register={register}
+                                                        errors={errors.data_compra}
+                                                    />
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                        <Row>
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Valor Frete</Label>
+                                                    <InputTextControlled<ComprasModel>
+                                                        field={"valor_frete"}
+                                                        control={control}
+                                                        mask="real"
+                                                        type="tel"
+                                                        placeholder="0,00"
+                                                        onlyPositive={true}
+                                                        required={required}
+                                                        errors={errors.valor_frete}
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Valor Desconto</Label>
+                                                    <InputTextControlled<ComprasModel>
+                                                        field={"desconto"}
+                                                        control={control}
+                                                        mask="real"
+                                                        type="tel"
+                                                        placeholder="0,00"
+                                                        onlyPositive={true}
+                                                        required={required}
+                                                        errors={errors.desconto}
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Valor Taxa</Label>
+                                                    <InputTextControlled<ComprasModel>
+                                                        field={"valor_taxa"}
+                                                        control={control}
+                                                        mask="real"
+                                                        type="tel"
+                                                        placeholder="0,00"
+                                                        onlyPositive={true}
+                                                        required={required}
+                                                        errors={errors.valor_taxa}
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Valor Imposto</Label>
+                                                    <InputTextControlled<ComprasModel>
+                                                        field={"valor_imposto"}
+                                                        control={control}
+                                                        mask="real"
+                                                        type="tel"
+                                                        placeholder="0,00"
+                                                        onlyPositive={true}
+                                                        required={required}
+                                                        errors={errors.valor_imposto}
+                                                    />
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                        <Row>
+                                            <Col md={12}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Observação</Label>
+                                                    <InputTextArea<ComprasModel>
+                                                        field={"observacao"}
+                                                        register={register}
+                                                        rows={3}
+                                                    />
+                                                </div>
+                                            </Col>
+                                        </Row>
+
+                                        <hr />
+                                        <h5 className="mb-3 mt-4">Itens da Compra</h5>
+                                        <Row>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Item</Label>
+                                                    <SelectListControlled<ComprasModel>
+                                                        control={control}
+                                                        field="id_item"
+                                                        options={optItens}
+                                                        placeholder="Selecione..."
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={2}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Quantidade Compra</Label>
+                                                    <InputNumber<ComprasModel>
+                                                        field="qtd_compra"
+                                                        register={register}
+                                                        onlyPositive={true}
+                                                        errors={errors.qtd_compra}
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={2}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Quantidade Interna</Label>
+                                                    <InputNumber<ComprasModel>
+                                                        field="qtd_interna"
+                                                        register={register}
+                                                        onlyPositive={true}
+                                                        errors={errors.qtd_interna}
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={3}>
+                                                <div className="mb-3">
+                                                    <Label className="form-label">Valor Unitário Compra</Label>
+                                                    <InputTextControlled<ComprasModel>
+                                                        field={"valor_unitario_compra"}
+                                                        control={control}
+                                                        mask="real"
+                                                        type="tel"
+                                                        placeholder="0,00"
+                                                        onlyPositive={true}
+                                                        errors={errors.valor_unitario_compra}
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={1} className="d-flex align-items-center">
+                                                <Button type="button" className="btn btn-primary mt-2" onClick={adicionarItem}>
+                                                    <i className="ri-add-circle-line align-middle me-1"></i>
+                                                </Button>
+                                            </Col>
+                                        </Row>
+
+                                        <Row className="mt-3">
+                                            <Col md={12}>
+                                                <div className="table-responsive">
+                                                    <Table className="table-borderless text-center table-nowrap align-middle mb-0">
+                                                        <thead>
+                                                            <tr className="table-active">
+                                                                <th scope="col" style={{ width: "50px" }}>#</th>
+                                                                <th scope="col" className="text-start">Item</th>
+                                                                <th scope="col">Qtd Compra</th>
+                                                                <th scope="col">Qtd Interna</th>
+                                                                <th scope="col" className="text-end">Valor Unitário Compra</th>
+                                                                <th scope="col" className="text-end">Valor Unitário Real</th>
+                                                                <th scope="col" className="text-end">Valor Total</th>
+                                                                <th scope="col"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {compraItens.map((item, index) => (
+                                                                <tr key={index}>
+                                                                    <th scope="row">{index + 1}</th>
+                                                                    <td className="text-start">{item.nome_item}</td>
+                                                                    <td>{item.qtd_compra}</td>
+                                                                    <td>{item.qtd_interna}</td>
+                                                                    <td className="text-end">
+                                                                        R$ {formatarParaMoedaSemSimbolo(item.valor_unitario_compra)}
+                                                                    </td>
+                                                                    <td className="text-end">
+                                                                        R$ {formatarValorUnitarioReal(Number(item.valor_unitario_real))}
+                                                                    </td>
+                                                                    <td className="text-end">
+                                                                        R$ {formatarParaMoedaSemSimbolo(item.valor_total)}
+                                                                    </td>
+                                                                    <td className="text-end">
+                                                                        <button type="button" className="btn btn-sm btn-danger" onClick={() => removerItem(index)}>
+                                                                            <i className="las la-trash-alt"></i>
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </Table>
+                                                </div>
+                                            </Col>
+                                        </Row>
+
+                                        {remoteErrors && (
+                                            <Row className="mt-3">
+                                                <Col md={12}>
+                                                    <div className="text-danger fw-bold">{remoteErrors}</div>
+                                                </Col>
+                                            </Row>
+                                        )}
+
+                                        <hr />
+                                        <Row className="mt-4">
+                                            <Col md={12}>
+                                                <div className="d-flex flex-column align-items-end gap-2">
+                                                    <div><strong>Subtotal Itens:</strong> R$ {formatarParaMoedaSemSimbolo(subtotalItens)}</div>
+                                                    <div><strong>Frete:</strong> R$ {formatarParaMoedaSemSimbolo(ajustaMoedaBanco(freteWatch || "0,00"))}</div>
+                                                    <div><strong>Desconto:</strong> R$ {formatarParaMoedaSemSimbolo(ajustaMoedaBanco(descontoWatch || "0,00"))}</div>
+                                                    <div><strong>Taxa:</strong> R$ {formatarParaMoedaSemSimbolo(ajustaMoedaBanco(taxaWatch || "0,00"))}</div>
+                                                    <div><strong>Imposto:</strong> R$ {formatarParaMoedaSemSimbolo(ajustaMoedaBanco(impostoWatch || "0,00"))}</div>
+                                                    <div className="fs-5"><strong>Total Final:</strong> R$ {formatarParaMoedaSemSimbolo(totalFinal)}</div>
+                                                </div>
+                                            </Col>
+                                        </Row>
+
+                                        <hr />
+                                        <Row className="mt-5">
+                                            <Col md={12}>
+                                                <div className="hstack gap-2 justify-content-end">
+                                                    <button type="submit" className="btn btn-primary">Salvar</button>
+                                                    <button type="button" className="btn btn-soft-success" onClick={voltarParaRotaAnterior}>Voltar</button>
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                    </form>
+                                </CardBody>
+                            </Card>
+                        </Col>
+                    </Row>
+                </Container>
+            </div>
+        </React.Fragment>
+    )
+}
+
+export default ComprasForm

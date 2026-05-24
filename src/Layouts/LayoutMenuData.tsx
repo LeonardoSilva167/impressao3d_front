@@ -339,6 +339,12 @@ const Navdata = () => {
             },
             subItems: [
                 {
+                    id: "compras-lista",
+                    label: "Compras",
+                    link: "/compras",
+                    parentId: "Compras",
+                },
+                {
                     id: "plataformas-compra",
                     label: "Plataformas de Compra",
                     link: "/plataformas-compra",
