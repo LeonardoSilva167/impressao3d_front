@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { ajustaMoedaBanco, formatarParaMoedaSemSimbolo, useNavegacao } from 'helpers/functions_helpers'
@@ -16,7 +16,7 @@ import { CompraItens, ComprasDefaultValues, ComprasModel } from 'interfaces/Comp
 import { ComprasService } from 'services/Compras/ComprasService'
 import { PlataformasCompraService } from 'services/PlataformasCompra/PlataformasCompraService'
 import { ItensService } from 'services/Itens/ItensService'
-import { ItensLookup } from 'interfaces/Itens/ItensInterface'
+import { ItensLookup, ItensModel } from 'interfaces/Itens/ItensInterface'
 
 type ItemLookupOption = SelectOptions & {
     tipo_item?: string
@@ -26,6 +26,7 @@ type ItemLookupOption = SelectOptions & {
 const GRAMATURA_OPTIONS: SelectOptions[] = [
     { value: '500', label: '500g' },
     { value: '1000', label: '1000g' },
+    { value: '2000', label: '2000g' },
 ]
 
 const TIPO_ITEM_FILAMENTO = 'FILAMENTO'
@@ -34,6 +35,47 @@ const formatarValorUnitarioReal = (valor: number): string => {
     return valor.toLocaleString('pt-BR', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 4,
+    })
+}
+
+const obterValorNumerico = (valor: number | string | null | undefined): number => {
+    if (typeof valor === 'string') {
+        const parsed = parseFloat(valor.replace(',', '.'))
+        return isNaN(parsed) ? 0 : parsed
+    }
+    const num = Number(valor ?? 0)
+    return isNaN(num) ? 0 : num
+}
+
+const calcularSubtotalItens = (itens: CompraItens[]): number => {
+    return itens.reduce((acc, item) => acc + obterValorNumerico(item.valor_total), 0)
+}
+
+const aplicarValorUnitarioRealItens = (
+    itens: CompraItens[],
+    frete: number,
+    desconto: number,
+    taxa: number,
+    imposto: number
+): CompraItens[] => {
+    const subtotal = calcularSubtotalItens(itens)
+    const custosAdicionais = frete + taxa + imposto - desconto
+
+    if (subtotal <= 0) {
+        return itens
+    }
+
+    return itens.map((item) => {
+        const valorTotal = obterValorNumerico(item.valor_total)
+        const qtdInterna = Number(item.qtd_interna || 0)
+        const proporcao = valorTotal / subtotal
+        const valorRealTotal = valorTotal + proporcao * custosAdicionais
+        const valorUnitarioReal = qtdInterna > 0 ? valorRealTotal / qtdInterna : 0
+
+        return {
+            ...item,
+            valor_unitario_real: valorUnitarioReal,
+        }
     })
 }
 
@@ -63,6 +105,7 @@ const ComprasForm = () => {
     const [remoteErrors, setRemoteErrors] = useState<string>("")
     const [subtotalItens, setSubtotalItens] = useState(0)
     const [totalFinal, setTotalFinal] = useState(0)
+    const [itemSelectKey, setItemSelectKey] = useState(0)
 
     const freteWatch = watch('valor_frete')
     const descontoWatch = watch('desconto')
@@ -74,11 +117,24 @@ const ComprasForm = () => {
 
     const isFilamento = itemSelecionadoLookup && itemSelecionadoLookup.tipo_item === TIPO_ITEM_FILAMENTO
 
+    const compraItensComValorReal = useMemo(() => {
+        const frete = ajustaMoedaBanco(freteWatch || "0,00")
+        const desconto = ajustaMoedaBanco(descontoWatch || "0,00")
+        const taxa = ajustaMoedaBanco(taxaWatch || "0,00")
+        const imposto = ajustaMoedaBanco(impostoWatch || "0,00")
+
+        return aplicarValorUnitarioRealItens(compraItens, frete, desconto, taxa, imposto)
+    }, [compraItens, freteWatch, descontoWatch, taxaWatch, impostoWatch])
+
     const formatarLabelItem = (item: ItensLookup): string => {
+        let texto = item.descricao || item.codigo || `Item ${item.id}`
         if (item.codigo && item.descricao) {
-            return `${item.descricao} (${item.codigo})`
+            texto = `${item.descricao} (${item.codigo})`
         }
-        return item.descricao || item.codigo || `Item ${item.id}`
+        if (item.tipo_item) {
+            return `${item.tipo_item} - ${texto}`
+        }
+        return texto
     }
 
     const mapItemToOption = (item: ItensLookup): ItemLookupOption => ({
@@ -117,6 +173,7 @@ const ComprasForm = () => {
         })
 
         return options
+
     }
 
     const loadRecord = async (): Promise<void> => {
@@ -169,12 +226,7 @@ const ComprasForm = () => {
     }
 
     const calcularTotais = (): void => {
-        const subtotal = compraItens.reduce((acc, item) => {
-            const valor = typeof item.valor_total === 'string'
-                ? parseFloat(item.valor_total.replace(',', '.'))
-                : Number(item.valor_total != null ? item.valor_total : 0)
-            return acc + (isNaN(valor) ? 0 : valor)
-        }, 0)
+        const subtotal = calcularSubtotalItens(compraItens)
 
         const frete = ajustaMoedaBanco(freteWatch || "0,00")
         const desconto = ajustaMoedaBanco(descontoWatch || "0,00")
@@ -193,6 +245,7 @@ const ComprasForm = () => {
         setValue("gramatura", null)
         setValue("valor_unitario_compra", "0,00")
         setItemSelecionadoLookup(undefined)
+        setItemSelectKey((prev) => prev + 1)
     }
 
     const adicionarItem = (): void => {
@@ -211,20 +264,21 @@ const ComprasForm = () => {
             return
         }
 
-        let qtdInterna: number
+        let totalInterno: number
 
         if (isFilamento) {
             if (!gramatura || gramatura <= 0) {
                 setRemoteErrors("Gramatura é obrigatória para filamentos.")
                 return
             }
-            qtdInterna = qtdCompra * gramatura
+            totalInterno = qtdCompra * gramatura
         } else {
-            qtdInterna = Number(getValues("qtd_interna"))
-            if (!qtdInterna || qtdInterna <= 0) {
+            const qtdInternaInput = Number(getValues("qtd_interna"))
+            if (!qtdInternaInput || qtdInternaInput <= 0) {
                 setRemoteErrors("Quantidade interna deve ser maior que zero.")
                 return
             }
+            totalInterno = qtdCompra * qtdInternaInput
         }
 
         if (!valorUnitarioCompra || valorUnitarioCompra <= 0) {
@@ -233,7 +287,6 @@ const ComprasForm = () => {
         }
 
         const valorTotal = qtdCompra * valorUnitarioCompra
-        const valorUnitarioReal = valorTotal / qtdInterna
 
         const novoItem: CompraItens = {
             id_item: Number(itemSelecionadoLookup.value),
@@ -241,10 +294,10 @@ const ComprasForm = () => {
             tipo_item: itemSelecionadoLookup.tipo_item || null,
             gramatura: isFilamento ? gramatura : null,
             qtd_compra: qtdCompra,
-            qtd_interna: qtdInterna,
+            qtd_interna: totalInterno,
             valor_unitario_compra: valorUnitarioCompra,
             valor_total: valorTotal,
-            valor_unitario_real: valorUnitarioReal,
+            valor_unitario_real: 0,
         }
 
         setCompraItens((prev) => [...prev, novoItem])
@@ -269,7 +322,7 @@ const ComprasForm = () => {
             data.valor_taxa = ajustaMoedaBanco(data.valor_taxa || "0,00")
             data.valor_imposto = ajustaMoedaBanco(data.valor_imposto || "0,00")
             data.valor_total = totalFinal
-            data.compra_itens = compraItens.map((item) => ({
+            data.compra_itens = compraItensComValorReal.map((item) => ({
                 id: item.id != null ? item.id : null,
                 id_compra_item: item.id_compra_item != null ? item.id_compra_item : null,
                 id_item: item.id_item,
@@ -488,7 +541,7 @@ const ComprasForm = () => {
                                                 <div className="mb-3">
                                                     <Label className="form-label">Item</Label>
                                                     <AsyncSelectListControlled<ComprasModel>
-                                                        key={`item-${itemWatch || 'empty'}`}
+                                                        key={`item-select-${itemSelectKey}`}
                                                         callback={getListItens}
                                                         field="id_item"
                                                         control={control}
@@ -510,7 +563,7 @@ const ComprasForm = () => {
                                             {isFilamento ? (
                                                 <Col md={2}>
                                                     <div className="mb-3">
-                                                        <Label className="form-label">Gramatura</Label>
+                                                        <Label className="form-label">Quantidade Interna</Label>
                                                         <SelectListControlled<ComprasModel>
                                                             control={control}
                                                             field="gramatura"
@@ -571,7 +624,7 @@ const ComprasForm = () => {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {compraItens.map((item, index) => (
+                                                            {compraItensComValorReal.map((item, index) => (
                                                                 <tr key={index}>
                                                                     <th scope="row">{index + 1}</th>
                                                                     <td className="text-start">{item.nome_item}</td>
@@ -581,7 +634,11 @@ const ComprasForm = () => {
                                                                             ? `${item.gramatura}g`
                                                                             : '-'}
                                                                     </td>
-                                                                    <td>{item.qtd_interna}</td>
+                                                                    <td>
+                                                                        {item.tipo_item === TIPO_ITEM_FILAMENTO && item.qtd_interna
+                                                                            ? `${item.qtd_interna}g`
+                                                                            : '-'}
+                                                                    </td>
                                                                     <td className="text-end">
                                                                         R$ {formatarParaMoedaSemSimbolo(item.valor_unitario_compra)}
                                                                     </td>
