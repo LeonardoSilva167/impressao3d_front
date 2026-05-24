@@ -51,10 +51,22 @@ export interface LookupsItens {
     categoriasOptions?: { value: number; label: string }[]
 }
 
+export interface ItensLookupSearch {
+    search?: string | undefined | null
+}
+
+export interface ItensLookup {
+    id: number
+    descricao: string
+    codigo: string
+    tipo_item: string
+}
+
 export interface ItensInterface {
     getViewItens(params: any): Promise<ItensView | undefined>
     listItensPaginate(params: ItensSearch): Promise<any>
     AsyncListItens(params: ItensSearch): Promise<ItensModel[] | undefined>
+    lookupItens(params: ItensLookupSearch): Promise<ItensLookup[] | undefined>
     createItens(params: ItensModel): Promise<any>
     editItens(params: ItensModel): Promise<any>
     deleteItens(id: number): Promise<any>

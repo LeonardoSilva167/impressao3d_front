@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { ajustaMoedaBanco, formatarParaMoedaSemSimbolo, useNavegacao } from 'helpers/functions_helpers'
@@ -10,12 +10,25 @@ import { InputTextArea } from 'Components/ComponentController/Inputs/Text/InputT
 import { InputDate } from 'Components/ComponentController/Inputs/Date/InputDate'
 import { InputNumber } from 'Components/ComponentController/Inputs/Number/InputNumber'
 import { SelectListControlled } from 'Components/ComponentController/Selects/Select/SelectListControlled'
+import { AsyncSelectListControlled } from 'Components/ComponentController/Selects/AsyncSelect/AsyncSelectListControlled'
 import { SelectOptions } from 'interfaces/SystemInterfaces/SelectInterface'
 import { CompraItens, ComprasDefaultValues, ComprasModel } from 'interfaces/Compras/ComprasInterface'
 import { ComprasService } from 'services/Compras/ComprasService'
 import { PlataformasCompraService } from 'services/PlataformasCompra/PlataformasCompraService'
 import { ItensService } from 'services/Itens/ItensService'
-import { ItensModel } from 'interfaces/Itens/ItensInterface'
+import { ItensLookup } from 'interfaces/Itens/ItensInterface'
+
+type ItemLookupOption = SelectOptions & {
+    tipo_item?: string
+    codigo?: string
+}
+
+const GRAMATURA_OPTIONS: SelectOptions[] = [
+    { value: '500', label: '500g' },
+    { value: '1000', label: '1000g' },
+]
+
+const TIPO_ITEM_FILAMENTO = 'FILAMENTO'
 
 const formatarValorUnitarioReal = (valor: number): string => {
     return valor.toLocaleString('pt-BR', {
@@ -44,7 +57,8 @@ const ComprasForm = () => {
     const itensService = new ItensService()
 
     const [plataformas, setPlataformas] = useState<SelectOptions[]>([])
-    const [optItens, setOptItens] = useState<SelectOptions[]>([])
+    const [itemLookupOptions, setItemLookupOptions] = useState<ItemLookupOption[]>([])
+    const [itemSelecionadoLookup, setItemSelecionadoLookup] = useState<ItemLookupOption | undefined>()
     const [compraItens, setCompraItens] = useState<CompraItens[]>([])
     const [remoteErrors, setRemoteErrors] = useState<string>("")
     const [subtotalItens, setSubtotalItens] = useState(0)
@@ -55,32 +69,54 @@ const ComprasForm = () => {
     const taxaWatch = watch('valor_taxa')
     const impostoWatch = watch('valor_imposto')
     const itemWatch = watch('id_item')
+    const qtdCompraWatch = watch('qtd_compra')
+    const gramaturaWatch = watch('gramatura')
 
-    const itemSelecionado = useMemo(() => {
-        if (!itemWatch || !optItens.length) return undefined
-        return optItens.find(item => item.value === itemWatch)
-    }, [optItens, itemWatch])
+    const isFilamento = itemSelecionadoLookup && itemSelecionadoLookup.tipo_item === TIPO_ITEM_FILAMENTO
+
+    const formatarLabelItem = (item: ItensLookup): string => {
+        if (item.codigo && item.descricao) {
+            return `${item.descricao} (${item.codigo})`
+        }
+        return item.descricao || item.codigo || `Item ${item.id}`
+    }
+
+    const mapItemToOption = (item: ItensLookup): ItemLookupOption => ({
+        value: item.id,
+        label: formatarLabelItem(item),
+        tipo_item: item.tipo_item,
+        codigo: item.codigo,
+    })
 
     const getLookups = async (): Promise<void> => {
         try {
-            const [plataformasRes, itensRes] = await Promise.all([
-                plataformasCompraService.AsyncListPlataformasCompra({}),
-                itensService.AsyncListItens({ ativo: true }),
-            ])
+            const plataformasRes = await plataformasCompraService.AsyncListPlataformasCompra({})
 
             if (plataformasRes) {
                 setPlataformas(plataformasRes.map((el: any) => ({ value: el.id, label: el.descricao })))
             }
-
-            if (itensRes) {
-                setOptItens(itensRes.map((item: ItensModel) => ({
-                    value: item.id,
-                    label: item.descricao || item.codigo || `Item ${item.id}`,
-                })))
-            }
         } catch (error) {
             console.error("Erro ao carregar lookups:", error)
         }
+    }
+
+    const getListItens = async (inputValue: string): Promise<SelectOptions[]> => {
+        const itens = await itensService.lookupItens({ search: inputValue })
+        if (!itens || !itens.length) return []
+
+        const options = itens.map(mapItemToOption)
+
+        setItemLookupOptions((prev) => {
+            const merged = [...prev]
+            options.forEach((option) => {
+                if (!merged.find((item) => String(item.value) === String(option.value))) {
+                    merged.push(option)
+                }
+            })
+            return merged
+        })
+
+        return options
     }
 
     const loadRecord = async (): Promise<void> => {
@@ -102,13 +138,30 @@ const ComprasForm = () => {
                 observacao: view.observacao || null,
             })
 
-            if (view.compra_itens?.length) {
-                setCompraItens(view.compra_itens.map((item) => ({
-                    ...item,
-                    valor_unitario_compra: item.valor_unitario_compra ?? 0,
-                    valor_total: item.valor_total ?? 0,
-                    valor_unitario_real: item.valor_unitario_real ?? 0,
-                })))
+            if (view.compra_itens && view.compra_itens.length) {
+                setCompraItens(view.compra_itens.map((item) => {
+                    const qtdCompra = Number(item.qtd_compra || 0)
+                    const qtdInterna = Number(item.qtd_interna || 0)
+                    let tipo_item = item.tipo_item || null
+                    let gramatura = item.gramatura != null ? item.gramatura : null
+
+                    if (!tipo_item && qtdCompra > 0 && qtdInterna % qtdCompra === 0) {
+                        const ratio = qtdInterna / qtdCompra
+                        if (ratio === 500 || ratio === 1000) {
+                            tipo_item = TIPO_ITEM_FILAMENTO
+                            gramatura = ratio
+                        }
+                    }
+
+                    return {
+                        ...item,
+                        tipo_item,
+                        gramatura,
+                        valor_unitario_compra: item.valor_unitario_compra != null ? item.valor_unitario_compra : 0,
+                        valor_total: item.valor_total != null ? item.valor_total : 0,
+                        valor_unitario_real: item.valor_unitario_real != null ? item.valor_unitario_real : 0,
+                    }
+                }))
             }
         } catch (error) {
             console.error("Erro ao carregar compra:", error)
@@ -119,7 +172,7 @@ const ComprasForm = () => {
         const subtotal = compraItens.reduce((acc, item) => {
             const valor = typeof item.valor_total === 'string'
                 ? parseFloat(item.valor_total.replace(',', '.'))
-                : Number(item.valor_total ?? 0)
+                : Number(item.valor_total != null ? item.valor_total : 0)
             return acc + (isNaN(valor) ? 0 : valor)
         }, 0)
 
@@ -137,17 +190,19 @@ const ComprasForm = () => {
         setValue("id_item", null)
         setValue("qtd_compra", null)
         setValue("qtd_interna", null)
+        setValue("gramatura", null)
         setValue("valor_unitario_compra", "0,00")
+        setItemSelecionadoLookup(undefined)
     }
 
     const adicionarItem = (): void => {
         setRemoteErrors("")
 
         const qtdCompra = Number(getValues("qtd_compra"))
-        const qtdInterna = Number(getValues("qtd_interna"))
         const valorUnitarioCompra = ajustaMoedaBanco(getValues("valor_unitario_compra") || "0,00")
+        const gramatura = Number(getValues("gramatura"))
 
-        if (!itemSelecionado) {
+        if (!itemSelecionadoLookup) {
             setRemoteErrors("Selecione um item.")
             return
         }
@@ -155,10 +210,23 @@ const ComprasForm = () => {
             setRemoteErrors("Quantidade de compra deve ser maior que zero.")
             return
         }
-        if (!qtdInterna || qtdInterna <= 0) {
-            setRemoteErrors("Quantidade interna deve ser maior que zero.")
-            return
+
+        let qtdInterna: number
+
+        if (isFilamento) {
+            if (!gramatura || gramatura <= 0) {
+                setRemoteErrors("Gramatura é obrigatória para filamentos.")
+                return
+            }
+            qtdInterna = qtdCompra * gramatura
+        } else {
+            qtdInterna = Number(getValues("qtd_interna"))
+            if (!qtdInterna || qtdInterna <= 0) {
+                setRemoteErrors("Quantidade interna deve ser maior que zero.")
+                return
+            }
         }
+
         if (!valorUnitarioCompra || valorUnitarioCompra <= 0) {
             setRemoteErrors("Valor unitário de compra deve ser maior que zero.")
             return
@@ -168,8 +236,10 @@ const ComprasForm = () => {
         const valorUnitarioReal = valorTotal / qtdInterna
 
         const novoItem: CompraItens = {
-            id_item: Number(itemSelecionado.value),
-            nome_item: itemSelecionado.label,
+            id_item: Number(itemSelecionadoLookup.value),
+            nome_item: itemSelecionadoLookup.label,
+            tipo_item: itemSelecionadoLookup.tipo_item || null,
+            gramatura: isFilamento ? gramatura : null,
             qtd_compra: qtdCompra,
             qtd_interna: qtdInterna,
             valor_unitario_compra: valorUnitarioCompra,
@@ -200,8 +270,8 @@ const ComprasForm = () => {
             data.valor_imposto = ajustaMoedaBanco(data.valor_imposto || "0,00")
             data.valor_total = totalFinal
             data.compra_itens = compraItens.map((item) => ({
-                id: item.id ?? null,
-                id_compra_item: item.id_compra_item ?? null,
+                id: item.id != null ? item.id : null,
+                id_compra_item: item.id_compra_item != null ? item.id_compra_item : null,
                 id_item: item.id_item,
                 qtd_compra: item.qtd_compra,
                 qtd_interna: item.qtd_interna,
@@ -240,6 +310,36 @@ const ComprasForm = () => {
     useEffect(() => {
         calcularTotais()
     }, [compraItens, freteWatch, descontoWatch, taxaWatch, impostoWatch])
+
+    useEffect(() => {
+        if (!itemWatch) {
+            setItemSelecionadoLookup(undefined)
+            setValue("gramatura", null)
+            setValue("qtd_interna", null)
+            return
+        }
+
+        const found = itemLookupOptions.find((item) => String(item.value) === String(itemWatch))
+        if (found) {
+            setItemSelecionadoLookup(found)
+        }
+    }, [itemWatch, itemLookupOptions, setValue])
+
+    useEffect(() => {
+        if (!isFilamento) {
+            setValue("gramatura", null)
+            return
+        }
+
+        setValue("qtd_interna", null)
+
+        const qtdCompra = Number(qtdCompraWatch)
+        const gramatura = Number(gramaturaWatch)
+
+        if (qtdCompra > 0 && gramatura > 0) {
+            setValue("qtd_interna", String(qtdCompra * gramatura))
+        }
+    }, [isFilamento, qtdCompraWatch, gramaturaWatch, setValue])
 
     return (
         <React.Fragment>
@@ -387,11 +487,12 @@ const ComprasForm = () => {
                                             <Col md={4}>
                                                 <div className="mb-3">
                                                     <Label className="form-label">Item</Label>
-                                                    <SelectListControlled<ComprasModel>
-                                                        control={control}
+                                                    <AsyncSelectListControlled<ComprasModel>
+                                                        key={`item-${itemWatch || 'empty'}`}
+                                                        callback={getListItens}
                                                         field="id_item"
-                                                        options={optItens}
-                                                        placeholder="Selecione..."
+                                                        control={control}
+                                                        placeholder="Digite para buscar..."
                                                     />
                                                 </div>
                                             </Col>
@@ -406,17 +507,31 @@ const ComprasForm = () => {
                                                     />
                                                 </div>
                                             </Col>
-                                            <Col md={2}>
-                                                <div className="mb-3">
-                                                    <Label className="form-label">Quantidade Interna</Label>
-                                                    <InputNumber<ComprasModel>
-                                                        field="qtd_interna"
-                                                        register={register}
-                                                        onlyPositive={true}
-                                                        errors={errors.qtd_interna}
-                                                    />
-                                                </div>
-                                            </Col>
+                                            {isFilamento ? (
+                                                <Col md={2}>
+                                                    <div className="mb-3">
+                                                        <Label className="form-label">Gramatura</Label>
+                                                        <SelectListControlled<ComprasModel>
+                                                            control={control}
+                                                            field="gramatura"
+                                                            options={GRAMATURA_OPTIONS}
+                                                            placeholder="Selecione..."
+                                                        />
+                                                    </div>
+                                                </Col>
+                                            ) : (
+                                                <Col md={2}>
+                                                    <div className="mb-3">
+                                                        <Label className="form-label">Quantidade Interna</Label>
+                                                        <InputNumber<ComprasModel>
+                                                            field="qtd_interna"
+                                                            register={register}
+                                                            onlyPositive={true}
+                                                            errors={errors.qtd_interna}
+                                                        />
+                                                    </div>
+                                                </Col>
+                                            )}
                                             <Col md={3}>
                                                 <div className="mb-3">
                                                     <Label className="form-label">Valor Unitário Compra</Label>
@@ -447,6 +562,7 @@ const ComprasForm = () => {
                                                                 <th scope="col" style={{ width: "50px" }}>#</th>
                                                                 <th scope="col" className="text-start">Item</th>
                                                                 <th scope="col">Qtd Compra</th>
+                                                                <th scope="col">Gramatura</th>
                                                                 <th scope="col">Qtd Interna</th>
                                                                 <th scope="col" className="text-end">Valor Unitário Compra</th>
                                                                 <th scope="col" className="text-end">Valor Unitário Real</th>
@@ -460,6 +576,11 @@ const ComprasForm = () => {
                                                                     <th scope="row">{index + 1}</th>
                                                                     <td className="text-start">{item.nome_item}</td>
                                                                     <td>{item.qtd_compra}</td>
+                                                                    <td>
+                                                                        {item.tipo_item === TIPO_ITEM_FILAMENTO && item.gramatura
+                                                                            ? `${item.gramatura}g`
+                                                                            : '-'}
+                                                                    </td>
                                                                     <td>{item.qtd_interna}</td>
                                                                     <td className="text-end">
                                                                         R$ {formatarParaMoedaSemSimbolo(item.valor_unitario_compra)}

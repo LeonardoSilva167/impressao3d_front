@@ -12,6 +12,8 @@ export interface CompraItens {
     id_compra_item?: number | null
     id_item: number | null
     nome_item?: string | null
+    tipo_item?: string | null
+    gramatura?: number | null
     qtd_compra: number
     qtd_interna: number
     valor_unitario_compra: number | string | null
@@ -63,6 +65,7 @@ export interface ComprasModel {
     id_item?: string | undefined | null
     qtd_compra?: string | undefined | null
     qtd_interna?: string | undefined | null
+    gramatura?: string | undefined | null
     valor_unitario_compra?: string | undefined | null
     compraItens?: CompraItens[]
 }
@@ -94,6 +97,7 @@ export const ComprasDefaultValues: ComprasModel = {
     id_item: null,
     qtd_compra: null,
     qtd_interna: null,
+    gramatura: null,
     valor_unitario_compra: "0,00",
     compraItens: [],
 }

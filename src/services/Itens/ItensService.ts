@@ -5,6 +5,8 @@ import { ValidationError } from "../../libs/api/exceptions/ValidationError"
 import { PaginateInterface } from "interfaces/SystemInterfaces/PaginateInterface"
 import {
     ItensInterface,
+    ItensLookup,
+    ItensLookupSearch,
     ItensModel,
     ItensSearch,
     ItensView,
@@ -52,6 +54,18 @@ export class ItensService implements ItensInterface {
     async AsyncListItens(params: ItensSearch): Promise<ItensModel[] | undefined> {
         const response = await this.httpClient.get<any>({
             url: this.url + '/itens-list',
+            body: params
+        })
+        switch (response.statusCode) {
+            case HttpStatusCode.ok: return response.body
+            case HttpStatusCode.unauthorized: throw new AccessDeniedError()
+            default: throw new UnexpectedError()
+        }
+    }
+
+    async lookupItens(params: ItensLookupSearch): Promise<ItensLookup[] | undefined> {
+        const response = await this.httpClient.get<ItensLookup[]>({
+            url: this.url + '/lookups',
             body: params
         })
         switch (response.statusCode) {
