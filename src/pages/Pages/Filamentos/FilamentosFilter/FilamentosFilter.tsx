@@ -10,13 +10,11 @@ import { FilamentosSearch } from "interfaces/Filamentos/FilamentosInterface"
 
 export interface FilamentosFilterProps {
     getRemoteFilamentosList: (data: any) => void
-    onFinalizarCarretel: () => void
     onRegistrarConsumo: () => void
 }
 
 const FilamentosFilter = ({
     getRemoteFilamentosList,
-    onFinalizarCarretel,
     onRegistrarConsumo,
 }: FilamentosFilterProps) => {
     const { handleSubmit, control, register } = useForm<FilamentosSearch>({ defaultValues: {} })
@@ -46,9 +44,6 @@ const FilamentosFilter = ({
             <Row>
                 <Col xs={12}>
                     <div className="d-flex flex-row justify-content-end align-items-center gap-2 mb-4">
-                        <Button color="warning" onClick={onFinalizarCarretel}>
-                            <i className="ri-inbox-archive-line align-middle me-1"></i> Finalizar Carretel
-                        </Button>
                         <Button color="info" onClick={onRegistrarConsumo}>
                             <i className="ri-scales-3-line align-middle me-1"></i> Registrar Consumo
                         </Button>

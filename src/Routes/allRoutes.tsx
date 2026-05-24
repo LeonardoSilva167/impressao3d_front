@@ -53,6 +53,8 @@ import ComprasPage from "../pages/Pages/Compras/ComprasPage";
 import ComprasForm from "../pages/Pages/Compras/ComprasForm/ComprasForm";
 import LotesPage from "../pages/Pages/Lotes/LotesPage";
 import MovimentacoesEstoquePage from "../pages/Pages/MovimentacoesEstoque/MovimentacoesEstoquePage";
+import CarreteisFinalizadosPage from "../pages/Pages/CarreteisFinalizados/CarreteisFinalizadosPage";
+import CarreteisFinalizadosForm from "../pages/Pages/CarreteisFinalizados/CarreteisFinalizadosForm/CarreteisFinalizadosForm";
 
 
 
@@ -121,6 +123,11 @@ const authProtectedRoutes = [
   { path: "/filamentos", component: <FilamentosPage /> },
   { path: "/filamentos/add", component: <FilamentosForm /> },
   { path: "/filamentos/edit/:id", component: <FilamentosForm /> },
+
+  // Carretéis Finalizados
+  { path: "/carreteis-finalizados", component: <CarreteisFinalizadosPage /> },
+  { path: "/carreteis-finalizados/add", component: <CarreteisFinalizadosForm /> },
+  { path: "/carreteis-finalizados/edit/:id", component: <CarreteisFinalizadosForm /> },
 
   // Categorias
   { path: "/categorias-itens", component: <CategoriasPage /> },

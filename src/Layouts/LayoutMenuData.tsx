@@ -323,6 +323,12 @@ const Navdata = () => {
                     link: "/tipo-material",
                     parentId: "Filamentos",
                 },
+                {
+                    id: "carreteis-finalizados",
+                    label: "Carretéis Finalizados",
+                    link: "/carreteis-finalizados",
+                    parentId: "Filamentos",
+                },
             ],
         },
         {
