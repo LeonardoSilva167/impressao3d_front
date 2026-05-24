@@ -1,10 +1,14 @@
 import UiContent from "Components/Common/UiContent"
 import React, { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { Card, CardBody, Col, Label, Row } from "reactstrap"
+import {
+    Badge, ButtonGroup, Card, CardBody, Col, DropdownItem,
+    DropdownMenu, DropdownToggle, Label, Row, UncontrolledDropdown
+} from "reactstrap"
 import { PaginateInterface, PaginateSearch, PerPageProps } from "interfaces/SystemInterfaces/PaginateInterface"
 import { formatarParaMoedaSemSimbolo } from "helpers/functions_helpers"
-import { LotesList, LotesSearch } from "interfaces/Lotes/LotesInterface"
+import { LotesList, LotesSearch } from "interfaces/Estoque/EstoqueInterface"
+import LotesViewModal from "../LotesViewModal/LotesViewModal"
 
 export interface LotesTableProps {
     data: PaginateInterface<LotesList> | undefined
@@ -21,6 +25,22 @@ const formatQuantidade = (value: number | null | undefined) => {
     return `${value.toLocaleString('pt-BR')}g`
 }
 
+const formatPercentual = (value: number | null | undefined) => {
+    if (value == null) return '—'
+    return `${value}%`
+}
+
+const renderStatus = (status: string | undefined) => {
+    if (!status) return '—'
+    if (status === 'ATIVO') {
+        return <Badge color="success">ATIVO</Badge>
+    }
+    if (status === 'ZERADO') {
+        return <Badge color="secondary">ZERADO</Badge>
+    }
+    return status
+}
+
 export const LotesTable = ({ data, getData, setPerPage, perPage }: LotesTableProps) => {
     const [optPerPage] = useState<PerPageProps[]>([
         { value: 5, label: "5" },
@@ -29,6 +49,15 @@ export const LotesTable = ({ data, getData, setPerPage, perPage }: LotesTablePro
         { value: 50, label: "50" },
         { value: 100, label: "100" },
     ])
+    const [viewModalOpen, setViewModalOpen] = useState(false)
+    const [selectedLoteId, setSelectedLoteId] = useState<number | null>(null)
+
+    const toggleViewModal = () => setViewModalOpen(!viewModalOpen)
+
+    const handleView = (id: number) => {
+        setSelectedLoteId(id)
+        setViewModalOpen(true)
+    }
 
     const handleThisRoute = async (url: string) => {
         try {
@@ -36,7 +65,10 @@ export const LotesTable = ({ data, getData, setPerPage, perPage }: LotesTablePro
             await getData({
                 page: Number(new_url.searchParams.get('page')),
                 palavra_chave: new_url.searchParams.get('palavra_chave'),
-                status: new_url.searchParams.get('status') || 'ativo',
+                id_item: new_url.searchParams.get('id_item'),
+                id_filamento: new_url.searchParams.get('id_filamento'),
+                data_compra: new_url.searchParams.get('data_compra'),
+                status: new_url.searchParams.get('status'),
             })
         } catch (error) {
             console.error(error)
@@ -93,26 +125,51 @@ export const LotesTable = ({ data, getData, setPerPage, perPage }: LotesTablePro
                                                         <thead className="table-light">
                                                             <tr>
                                                                 <th scope="col" className="text-start">Item</th>
-                                                                <th scope="col">Qtd Original</th>
-                                                                <th scope="col">Saldo Restante</th>
-                                                                <th scope="col">Custo do Lote</th>
+                                                                <th scope="col">Compra</th>
                                                                 <th scope="col">Data Compra</th>
-                                                                <th scope="col">Nº Pedido</th>
+                                                                <th scope="col">Qtd Original</th>
+                                                                <th scope="col">Qtd Atual</th>
+                                                                <th scope="col">% Utilizado</th>
+                                                                <th scope="col">Valor Unitário</th>
+                                                                <th scope="col">Valor Total</th>
+                                                                <th scope="col">Status</th>
+                                                                <th scope="col" style={{ width: "80px" }}>Ação</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {data.data.map((row: any, index: number) => (
                                                                 <tr key={row.id != null ? row.id : index}>
                                                                     <td className="text-start">{row.item_descricao}</td>
+                                                                    <td>{row.compra_descricao != null ? row.compra_descricao : '—'}</td>
+                                                                    <td>{row.data_compra != null ? row.data_compra : '—'}</td>
                                                                     <td>{formatQuantidade(row.qtd_original)}</td>
                                                                     <td>{formatQuantidade(row.qtd_atual)}</td>
+                                                                    <td>{formatPercentual(row.percentual_utilizado)}</td>
                                                                     <td>
-                                                                        {row.custo_lote != null
-                                                                            ? formatarParaMoedaSemSimbolo(row.custo_lote)
+                                                                        {row.valor_unitario != null
+                                                                            ? formatarParaMoedaSemSimbolo(row.valor_unitario)
                                                                             : '—'}
                                                                     </td>
-                                                                    <td>{row.data_compra != null ? row.data_compra : '—'}</td>
-                                                                    <td>{row.numero_pedido != null ? row.numero_pedido : '—'}</td>
+                                                                    <td>
+                                                                        {row.valor_total != null
+                                                                            ? formatarParaMoedaSemSimbolo(row.valor_total)
+                                                                            : '—'}
+                                                                    </td>
+                                                                    <td>{renderStatus(row.status)}</td>
+                                                                    <td>
+                                                                        <ButtonGroup>
+                                                                            <UncontrolledDropdown direction="down">
+                                                                                <DropdownToggle tag="button" className="btn">
+                                                                                    <i className="ri-more-2-fill"></i>
+                                                                                </DropdownToggle>
+                                                                                <DropdownMenu style={{ zIndex: '999' }}>
+                                                                                    <DropdownItem onClick={() => handleView(row.id)}>
+                                                                                        Visualizar
+                                                                                    </DropdownItem>
+                                                                                </DropdownMenu>
+                                                                            </UncontrolledDropdown>
+                                                                        </ButtonGroup>
+                                                                    </td>
                                                                 </tr>
                                                             ))}
                                                         </tbody>
@@ -165,6 +222,12 @@ export const LotesTable = ({ data, getData, setPerPage, perPage }: LotesTablePro
                     </div>
                 </Col>
             </Row>
+
+            <LotesViewModal
+                isOpen={viewModalOpen}
+                toggle={toggleViewModal}
+                loteId={selectedLoteId}
+            />
         </React.Fragment>
     )
 }

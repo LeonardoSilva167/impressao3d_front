@@ -2,8 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from "react"
 import { Container, Spinner } from 'reactstrap'
 import { SubmitHandler } from 'react-hook-form'
 import { PaginateInterface, PaginateSearch } from 'interfaces/SystemInterfaces/PaginateInterface'
-import { LotesList, LotesSearch } from 'interfaces/Lotes/LotesInterface'
-import { LotesService } from 'services/Lotes/LotesService'
+import { LotesList, LotesSearch } from 'interfaces/Estoque/EstoqueInterface'
+import { EstoqueService } from 'services/Estoque/EstoqueService'
 import LotesFilter from './LotesFilter/LotesFilter'
 import LotesTable from './LotesTable/LotesTable'
 
@@ -17,13 +17,15 @@ const LotesPage = () => {
     const [display, setDisplay] = useState<boolean>(false)
     const lotesContext = useContext(LotesFilterContext)
     const [lotesList, setLotesList] = useState<PaginateInterface<LotesList>>()
-    const lotesService = new LotesService()
+    const estoqueService = new EstoqueService()
 
     const LotesFilterContextValue: LotesFilterContextType = {
         id: null,
         lote_id: null,
         id_item: null,
-        status: 'ativo',
+        id_filamento: null,
+        data_compra: null,
+        status: null,
         palavra_chave: null,
         page: 1,
         perPage: 5,
@@ -39,17 +41,12 @@ const LotesPage = () => {
             if (!data[k]) delete data[k]
         })
         data.perPage = perPage
-
-        let list
-        if (data.status === 'zerado') {
-            list = await lotesService.listLotesZeradosPaginate({ ...data, perPage })
-        } else if (data.status === 'ativo') {
-            list = await lotesService.listLotesAtivosPaginate({ ...data, perPage })
-        } else {
-            list = await lotesService.listLotesPaginate({ ...data, perPage })
-        }
+        const list = await estoqueService.listLotesPaginate({ ...data, perPage })
 
         lotesContext.palavra_chave = data.palavra_chave
+        lotesContext.id_item = data.id_item
+        lotesContext.id_filamento = data.id_filamento
+        lotesContext.data_compra = data.data_compra
         lotesContext.status = data.status
         lotesContext.page = data.page
         lotesContext.firstEntry = true

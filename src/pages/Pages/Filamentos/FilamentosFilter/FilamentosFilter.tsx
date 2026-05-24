@@ -10,9 +10,15 @@ import { FilamentosSearch } from "interfaces/Filamentos/FilamentosInterface"
 
 export interface FilamentosFilterProps {
     getRemoteFilamentosList: (data: any) => void
+    onFinalizarCarretel: () => void
+    onRegistrarConsumo: () => void
 }
 
-const FilamentosFilter = ({ getRemoteFilamentosList }: FilamentosFilterProps) => {
+const FilamentosFilter = ({
+    getRemoteFilamentosList,
+    onFinalizarCarretel,
+    onRegistrarConsumo,
+}: FilamentosFilterProps) => {
     const { handleSubmit, control, register } = useForm<FilamentosSearch>({ defaultValues: {} })
     const [showFilter, setShowFilter] = useState<boolean>(false)
 
@@ -39,7 +45,13 @@ const FilamentosFilter = ({ getRemoteFilamentosList }: FilamentosFilterProps) =>
 
             <Row>
                 <Col xs={12}>
-                    <div className="d-flex flex-row justify-content-end align-items-center mb-4">
+                    <div className="d-flex flex-row justify-content-end align-items-center gap-2 mb-4">
+                        <Button color="warning" onClick={onFinalizarCarretel}>
+                            <i className="ri-inbox-archive-line align-middle me-1"></i> Finalizar Carretel
+                        </Button>
+                        <Button color="info" onClick={onRegistrarConsumo}>
+                            <i className="ri-scales-3-line align-middle me-1"></i> Registrar Consumo
+                        </Button>
                         <Link to="add" className="btn btn-primary">
                             <i className="ri-add-circle-line align-middle me-1"></i> Add
                         </Link>
@@ -83,9 +95,7 @@ const FilamentosFilter = ({ getRemoteFilamentosList }: FilamentosFilterProps) =>
                                             id="form-search"
                                             onSubmit={handleSubmit(getRemoteFilamentosList)}
                                         >
-                                            <Row>
-                                            </Row>
-                                            <Row className="mt-5">
+                                            <Row className="mt-3">
                                                 <div className="d-flex flex-row justify-content-end align-items-center">
                                                     <Col md={6}>
                                                         <InputTextControlled<FilamentosSearch>

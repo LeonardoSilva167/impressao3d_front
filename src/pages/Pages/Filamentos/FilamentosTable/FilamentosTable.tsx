@@ -20,6 +20,7 @@ export interface FilamentosTableProps {
     page: number
     perPage: number
     filters: any
+    onFinalizarCarretel?: (idFilamento: number) => void
 }
 
 const formatEstoque = (row: FilamentosList) => {
@@ -34,7 +35,7 @@ const formatPrecoMedio = (row: FilamentosList) => {
     return formatarParaMoedaSemSimbolo(value)
 }
 
-export const FilamentosTable = ({ data, getData, setPerPage, setPage, perPage, filters }: FilamentosTableProps) => {
+export const FilamentosTable = ({ data, getData, setPerPage, setPage, perPage, filters, onFinalizarCarretel }: FilamentosTableProps) => {
     const [optPerPage] = useState<PerPageProps[]>([
         { value: 5, label: "5" },
         { value: 10, label: "10" },
@@ -171,6 +172,11 @@ export const FilamentosTable = ({ data, getData, setPerPage, setPage, perPage, f
                                                                                     <Link to={`/filamentos/edit/${row.id}`} state={{ source: row }}>
                                                                                         <DropdownItem>Editar</DropdownItem>
                                                                                     </Link>
+                                                                                    {onFinalizarCarretel && (
+                                                                                        <DropdownItem onClick={() => onFinalizarCarretel(row.id)}>
+                                                                                            Finalizar Carretel
+                                                                                        </DropdownItem>
+                                                                                    )}
                                                                                     <DropdownItem
                                                                                         onClick={() => {
                                                                                             setSelectedId(row.id)

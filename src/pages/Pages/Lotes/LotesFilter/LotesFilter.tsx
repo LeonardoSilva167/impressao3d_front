@@ -6,25 +6,50 @@ import {
     Breadcrumb, BreadcrumbItem, Button, Card, CardHeader, Col, Collapse, Label, Row
 } from "reactstrap"
 import { InputTextControlled } from "Components/ComponentController/Inputs/Text/InputTextControlled"
+import { InputDate } from "Components/ComponentController/Inputs/Date/InputDate"
 import { SelectListControlled } from "Components/ComponentController/Selects/Select/SelectListControlled"
-import { LotesSearch } from "interfaces/Lotes/LotesInterface"
+import { AsyncSelectListControlled } from "Components/ComponentController/Selects/AsyncSelect/AsyncSelectListControlled"
+import { LOTE_STATUS_OPTIONS, LotesSearch } from "interfaces/Estoque/EstoqueInterface"
 import { SelectOptions } from "interfaces/SystemInterfaces/SelectInterface"
+import { ItensService } from "services/Itens/ItensService"
+import { FilamentosService } from "services/Filamentos/FilamentosService"
+import { ItensLookup } from "interfaces/Itens/ItensInterface"
 
 export interface LotesFilterProps {
     getRemoteLotesList: (data: any) => void
 }
 
-const STATUS_OPTIONS: SelectOptions[] = [
-    { value: 'ativo', label: 'Lotes Ativos' },
-    { value: 'zerado', label: 'Lotes Zerados' },
-    { value: '', label: 'Todos' },
-]
-
 const LotesFilter = ({ getRemoteLotesList }: LotesFilterProps) => {
-    const { handleSubmit, control, register } = useForm<LotesSearch>({
-        defaultValues: { status: 'ativo' }
-    })
+    const { handleSubmit, control, register } = useForm<LotesSearch>({ defaultValues: {} })
     const [showFilter, setShowFilter] = useState<boolean>(false)
+    const itensService = new ItensService()
+    const filamentosService = new FilamentosService()
+
+    const formatarLabelItem = (item: ItensLookup): string => {
+        let texto = item.descricao || item.codigo || `Item ${item.id}`
+        if (item.codigo && item.descricao) {
+            texto = `${item.descricao} (${item.codigo})`
+        }
+        return texto
+    }
+
+    const getListItens = async (inputValue: string): Promise<SelectOptions[]> => {
+        const itens = await itensService.lookupItens({ search: inputValue })
+        if (!itens || !itens.length) return []
+        return itens.map((item) => ({
+            value: item.id,
+            label: formatarLabelItem(item),
+        }))
+    }
+
+    const getListFilamentos = async (inputValue: string): Promise<SelectOptions[]> => {
+        const list = await filamentosService.AsyncListFilamentos({ palavra_chave: inputValue })
+        if (!list || !list.length) return []
+        return list.map((item: any) => ({
+            value: item.id,
+            label: item.resumo || item.codigo || `Filamento ${item.id}`,
+        }))
+    }
 
     return (
         <React.Fragment>
@@ -37,7 +62,7 @@ const LotesFilter = ({ getRemoteLotesList }: LotesFilterProps) => {
                             <Link to="/dashboard" className="me-2">
                                 <i className="bx bx-arrow-back bx-sm"></i>
                             </Link>
-                            <h4 className="mb-0">Lotes</h4>
+                            <h4 className="mb-0">Lotes de Estoque</h4>
                         </div>
                         <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                             <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
@@ -87,19 +112,50 @@ const LotesFilter = ({ getRemoteLotesList }: LotesFilterProps) => {
                                             onSubmit={handleSubmit(getRemoteLotesList)}
                                         >
                                             <Row>
-                                                <Col md={4}>
+                                                <Col md={3}>
                                                     <div className="mb-3">
-                                                        <Label className="form-label">Status do Lote</Label>
+                                                        <Label className="form-label">Item</Label>
+                                                        <AsyncSelectListControlled<LotesSearch>
+                                                            callback={getListItens}
+                                                            field="id_item"
+                                                            control={control}
+                                                            placeholder="Digite para buscar..."
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={3}>
+                                                    <div className="mb-3">
+                                                        <Label className="form-label">Filamento</Label>
+                                                        <AsyncSelectListControlled<LotesSearch>
+                                                            callback={getListFilamentos}
+                                                            field="id_filamento"
+                                                            control={control}
+                                                            placeholder="Digite para buscar..."
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={3}>
+                                                    <div className="mb-3">
+                                                        <Label className="form-label">Data Compra</Label>
+                                                        <InputDate<LotesSearch>
+                                                            field="data_compra"
+                                                            register={register}
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={3}>
+                                                    <div className="mb-3">
+                                                        <Label className="form-label">Status</Label>
                                                         <SelectListControlled<LotesSearch>
                                                             control={control}
                                                             field="status"
-                                                            options={STATUS_OPTIONS}
+                                                            options={LOTE_STATUS_OPTIONS}
                                                             placeholder="Selecione..."
                                                         />
                                                     </div>
                                                 </Col>
                                             </Row>
-                                            <Row className="mt-5">
+                                            <Row className="mt-3">
                                                 <div className="d-flex flex-row justify-content-end align-items-center">
                                                     <Col md={6}>
                                                         <InputTextControlled<LotesSearch>

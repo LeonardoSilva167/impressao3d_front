@@ -6,6 +6,8 @@ import { FilamentosList, FilamentosSearch } from 'interfaces/Filamentos/Filament
 import { FilamentosService } from 'services/Filamentos/FilamentosService'
 import FilamentosFilter from './FilamentosFilter/FilamentosFilter'
 import FilamentosTable from './FilamentosTable/FilamentosTable'
+import FinalizarCarretelModal from './FilamentosModals/FinalizarCarretelModal'
+import RegistrarConsumoModal from './FilamentosModals/RegistrarConsumoModal'
 
 type FilamentosFilterContextType = {
     firstEntry: boolean
@@ -18,6 +20,10 @@ const FilamentosPage = () => {
     const filamentosContext = useContext(FilamentosFilterContext)
     const [filamentosList, setFilamentosList] = useState<PaginateInterface<FilamentosList>>()
     const filamentosService = new FilamentosService()
+
+    const [finalizarCarretelOpen, setFinalizarCarretelOpen] = useState(false)
+    const [registrarConsumoOpen, setRegistrarConsumoOpen] = useState(false)
+    const [filamentoPreSelecionado, setFilamentoPreSelecionado] = useState<number | null>(null)
 
     const FilamentosFilterContextValue: FilamentosFilterContextType = {
         id: null,
@@ -41,6 +47,15 @@ const FilamentosPage = () => {
         if (list) setFilamentosList(list as any)
     }
 
+    const handleOpenFinalizarCarretel = (idFilamento?: number | null) => {
+        setFilamentoPreSelecionado(idFilamento != null ? idFilamento : null)
+        setFinalizarCarretelOpen(true)
+    }
+
+    const handleRefresh = () => {
+        getRemoteFilamentosList(filamentosContext)
+    }
+
     useEffect(() => {
         setTimeout(() => setDisplay(true), 300)
     }, [])
@@ -54,7 +69,11 @@ const FilamentosPage = () => {
             <FilamentosFilterContext.Provider value={FilamentosFilterContextValue}>
                 <div className="page-content">
                     <Container fluid>
-                        <FilamentosFilter getRemoteFilamentosList={getRemoteFilamentosList} />
+                        <FilamentosFilter
+                            getRemoteFilamentosList={getRemoteFilamentosList}
+                            onFinalizarCarretel={() => handleOpenFinalizarCarretel(null)}
+                            onRegistrarConsumo={() => setRegistrarConsumoOpen(true)}
+                        />
                         {display ? (
                             <FilamentosTable
                                 filters={filamentosContext}
@@ -64,6 +83,7 @@ const FilamentosPage = () => {
                                 perPage={perPage}
                                 setPage={setPage}
                                 page={page}
+                                onFinalizarCarretel={handleOpenFinalizarCarretel}
                             />
                         ) : (
                             <div className="text-center">
@@ -72,6 +92,18 @@ const FilamentosPage = () => {
                         )}
                     </Container>
                 </div>
+
+                <FinalizarCarretelModal
+                    isOpen={finalizarCarretelOpen}
+                    toggle={() => setFinalizarCarretelOpen(false)}
+                    idFilamentoPreSelecionado={filamentoPreSelecionado}
+                    onSuccess={handleRefresh}
+                />
+                <RegistrarConsumoModal
+                    isOpen={registrarConsumoOpen}
+                    toggle={() => setRegistrarConsumoOpen(false)}
+                    onSuccess={handleRefresh}
+                />
             </FilamentosFilterContext.Provider>
         </React.Fragment>
     )
