@@ -87,6 +87,18 @@ export class ComprasService implements ComprasInterface {
         }
     }
 
+    async cancelCompras(id: number) {
+        const response = await this.httpClient.post({
+            url: `${this.url}/${id}/cancelar`,
+        })
+        switch (response.statusCode) {
+            case HttpStatusCode.ok: return response.body
+            case HttpStatusCode.unauthorized: throw new AccessDeniedError()
+            case HttpStatusCode.invalidForm: throw new UnexpectedError(response.body?.message || response.message)
+            default: throw new UnexpectedError(response.body?.message || response.message)
+        }
+    }
+
     async deleteCompras(id: number) {
         const response = await this.httpClient.delete({
             url: this.url + '/excluir/' + id

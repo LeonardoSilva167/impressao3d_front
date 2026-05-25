@@ -10,8 +10,11 @@ import {
     CarreteisFinalizadosModel,
     CarreteisFinalizadosSearch,
     CarreteisFinalizadosView,
-    LoteMaisAntigoInfo,
-    LoteMaisAntigoResponse,
+    LoteConsumoApi,
+    LoteConsumoInfo,
+    LotesConsumoResponse,
+    LotesConsumoResult,
+    LotesConsumoSearch,
 } from "interfaces/CarreteisFinalizados/CarreteisFinalizadosInterface"
 
 export class CarreteisFinalizadosService implements CarreteisFinalizadosInterface {
@@ -101,36 +104,132 @@ export class CarreteisFinalizadosService implements CarreteisFinalizadosInterfac
         return usuario.nome ?? usuario.descricao ?? usuario.name
     }
 
-    async getLoteMaisAntigo(idItem: number): Promise<LoteMaisAntigoInfo | undefined> {
-        const response = await this.httpClient.get<{ data?: LoteMaisAntigoResponse; error?: boolean; message?: string } | LoteMaisAntigoResponse>({
-            url: `${this.url}/lote-mais-antigo/${idItem}`
+    async getLotesConsumo(params: LotesConsumoSearch): Promise<LotesConsumoResult> {
+        const query = new URLSearchParams({
+            id_item: String(params.id_item),
+            gramatura: String(params.gramatura),
+            quantidade: String(params.quantidade),
+        }).toString()
+
+        const response = await this.httpClient.get<{
+            data?: LotesConsumoResponse | LoteConsumoApi[]
+            estoque_insuficiente?: boolean
+        } | LotesConsumoResponse | LoteConsumoApi[]>({
+            url: `${this.url}/lotes-consumo?${query}`,
         })
+
         switch (response.statusCode) {
-            case HttpStatusCode.ok: return this.mapLoteMaisAntigo(response.body)
-            case HttpStatusCode.invalidForm: return undefined
-            case HttpStatusCode.unauthorized: throw new AccessDeniedError()
-            default: throw new UnexpectedError()
+            case HttpStatusCode.ok:
+                return this.mapLotesConsumo(response.body)
+            case HttpStatusCode.invalidForm:
+                return { lotes: [], estoqueInsuficiente: true }
+            case HttpStatusCode.unauthorized:
+                throw new AccessDeniedError()
+            default:
+                throw new UnexpectedError(response.message)
         }
     }
 
-    private mapLoteMaisAntigo(body: { data?: LoteMaisAntigoResponse } | LoteMaisAntigoResponse | undefined): LoteMaisAntigoInfo | undefined {
-        if (!body) return undefined
+    private mapLotesConsumo(body: unknown): LotesConsumoResult {
+        if (!body) {
+            return { lotes: [], estoqueInsuficiente: false }
+        }
 
-        const payload = 'data' in body && body.data ? body.data : body as LoteMaisAntigoResponse
-        if (!payload?.lote) return undefined
+        if (!Array.isArray(body) && typeof body === 'object' && (body as { estoque_insuficiente?: boolean }).estoque_insuficiente === true) {
+            return { lotes: [], estoqueInsuficiente: true }
+        }
 
-        const { lote, compra } = payload
+        const lotesApi = this.extractLotesApi(body)
+
+        if (!Array.isArray(body) && typeof body === 'object') {
+            const envelope = body as { data?: unknown; estoque_insuficiente?: boolean }
+            const payload = envelope.data && typeof envelope.data === 'object' && !Array.isArray(envelope.data)
+                ? envelope.data as LotesConsumoResponse
+                : null
+
+            if (payload?.estoque_insuficiente === true) {
+                return { lotes: [], estoqueInsuficiente: true }
+            }
+        }
 
         return {
-            id: lote.id,
-            id_compra: compra?.id,
-            compra_descricao: compra?.id ? `Compra #${compra.id}` : undefined,
-            numero_pedido: compra?.numero_pedido,
-            plataforma_descricao: compra?.plataforma?.descricao,
-            data_compra: compra?.data_compra,
-            qtd_original: lote.qtd_original != null ? Number(lote.qtd_original) : undefined,
-            qtd_atual: lote.qtd_atual != null ? Number(lote.qtd_atual) : undefined,
-            valor_unitario: lote.valor_unitario_real != null ? Number(lote.valor_unitario_real) : undefined,
+            lotes: lotesApi.map((item) => this.mapLoteConsumo(item)),
+            estoqueInsuficiente: false,
+        }
+    }
+
+    private extractLotesApi(body: unknown): LoteConsumoApi[] {
+        if (Array.isArray(body)) {
+            return body as LoteConsumoApi[]
+        }
+
+        if (!body || typeof body !== 'object') {
+            return []
+        }
+
+        const envelope = body as {
+            data?: LoteConsumoApi[] | LotesConsumoResponse | Record<string, LoteConsumoApi>
+            lotes?: LoteConsumoApi[]
+            compra?: unknown
+            saldo_atual?: unknown
+        }
+
+        if (Array.isArray(envelope.data)) {
+            return envelope.data
+        }
+
+        if (envelope.data && typeof envelope.data === 'object') {
+            const data = envelope.data as LotesConsumoResponse & Record<string, LoteConsumoApi>
+            if (Array.isArray(data.lotes)) {
+                return data.lotes
+            }
+            return Object.values(data).filter(
+                (item): item is LoteConsumoApi => Boolean(item && typeof item === 'object' && ('compra' in item || 'saldo_atual' in item))
+            )
+        }
+
+        if (Array.isArray(envelope.lotes)) {
+            return envelope.lotes
+        }
+
+        if ('compra' in envelope || 'saldo_atual' in envelope) {
+            return [envelope as LoteConsumoApi]
+        }
+
+        return []
+    }
+
+    private mapLoteConsumo(item: LoteConsumoApi): LoteConsumoInfo {
+        const { lote } = item
+        const compraRaw = item.compra
+        const compraObj = compraRaw != null && typeof compraRaw === 'object' ? compraRaw : undefined
+        const compraId = compraObj?.id
+            ?? (compraRaw != null && compraRaw !== '' ? Number(compraRaw) : undefined)
+
+        const saldoAtual = item.saldo_atual ?? lote?.qtd_atual
+        const quantidadeConsumida = item.quantidade_consumida ?? item.qtd_consumida ?? item.qtd_consumir
+        const saldoRestante = item.saldo_restante ?? item.saldo_apos_consumo ?? item.saldo_final
+        const valorUnitario = item.valor_unitario ?? item.valor_unitario_real ?? lote?.valor_unitario_real
+
+        const plataformaDescricao = typeof item.plataforma === 'string'
+            ? item.plataforma
+            : compraObj?.plataforma?.descricao
+
+        const dataCompra = item.data_compra ?? compraObj?.data_compra
+
+        return {
+            id_compra_item: item.id_compra_item,
+            id_compra: Number.isFinite(compraId) ? compraId : undefined,
+            compra_descricao: compraId != null && !Number.isNaN(Number(compraId))
+                ? `Compra #${compraId}`
+                : undefined,
+            numero_pedido: compraObj?.numero_pedido,
+            plataforma_descricao: plataformaDescricao,
+            data_compra: dataCompra,
+            saldo_atual: saldoAtual != null ? Number(saldoAtual) : undefined,
+            quantidade_consumida: quantidadeConsumida != null ? Number(quantidadeConsumida) : undefined,
+            saldo_restante: saldoRestante != null ? Number(saldoRestante) : undefined,
+            valor_unitario: valorUnitario != null ? Number(valorUnitario) : undefined,
         }
     }
 

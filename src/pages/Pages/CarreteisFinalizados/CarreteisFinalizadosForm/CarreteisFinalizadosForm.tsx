@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
-import { formatarParaMoedaSemSimbolo, formatDateSQLForBR, useNavegacao } from 'helpers/functions_helpers'
+import { useNavegacao } from 'helpers/functions_helpers'
 import { Breadcrumb, BreadcrumbItem, Card, CardBody, Col, Container, Label, Row, Spinner } from 'reactstrap'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { required } from 'Components/ComponentController/ValidatorForm/ValidatorForm'
@@ -14,14 +14,14 @@ import {
     CarreteisFinalizadosDefaultValues,
     CarreteisFinalizadosModel,
     GRAMATURA_CARRETEIS_OPTIONS,
-    LoteMaisAntigoInfo,
     TIPO_ITEM_FILAMENTO,
 } from 'interfaces/CarreteisFinalizados/CarreteisFinalizadosInterface'
 import { SelectOptions } from 'interfaces/SystemInterfaces/SelectInterface'
 import { ItensLookup } from 'interfaces/Itens/ItensInterface'
 import { ItensService } from 'services/Itens/ItensService'
 import { CarreteisFinalizadosService } from 'services/CarreteisFinalizados/CarreteisFinalizadosService'
-import { calcularTotalConsumido, useLoteMaisAntigo, viewToLoteInfo } from '../hooks/useCarreteisFinalizados'
+import { calcularTotalConsumido, useLotesConsumo } from '../hooks/useCarreteisFinalizados'
+import LotesConsumoTable from '../LotesConsumoTable/LotesConsumoTable'
 
 const formatarLabelFilamento = (item: ItensLookup): string => {
     let texto = item.descricao || item.codigo || `Item ${item.id}`
@@ -29,11 +29,6 @@ const formatarLabelFilamento = (item: ItensLookup): string => {
         texto = `${item.descricao} (${item.codigo})`
     }
     return texto
-}
-
-const formatQuantidadeGramas = (value: number | null | undefined) => {
-    if (value == null) return '—'
-    return `${value.toLocaleString('pt-BR')}g`
 }
 
 const CarreteisFinalizadosForm = () => {
@@ -53,19 +48,22 @@ const CarreteisFinalizadosForm = () => {
     const [loadingRecord, setLoadingRecord] = useState(isEditing)
     const [filamentoDefaultOption, setFilamentoDefaultOption] = useState<SelectOptions | undefined>()
     const [filamentoSelectKey, setFilamentoSelectKey] = useState(0)
-    const [loteRegistro, setLoteRegistro] = useState<LoteMaisAntigoInfo>()
-    const [loteRegistroItemId, setLoteRegistroItemId] = useState<string | null>(null)
 
     const idItemWatch = watch('id_item')
     const gramaturaWatch = watch('gramatura')
     const quantidadeWatch = watch('quantidade')
 
-    const { loteInfo, loading: loadingLote, error: loteError } = useLoteMaisAntigo(idItemWatch)
-    const loteExibido = loteInfo ?? (
-        isEditing && idItemWatch && idItemWatch === loteRegistroItemId ? loteRegistro : undefined
-    )
-    const exibirErroLote = loteError && !loteExibido
+    const {
+        lotes,
+        loading: loadingLotes,
+        estoqueInsuficiente,
+        estoqueInsuficienteMsg,
+        error: lotesError,
+        podeConsultar,
+    } = useLotesConsumo(idItemWatch, gramaturaWatch, quantidadeWatch)
+
     const totalConsumido = calcularTotalConsumido(quantidadeWatch, gramaturaWatch)
+    const bloquearSalvar = podeConsultar && (estoqueInsuficiente || loadingLotes)
 
     const getListFilamentos = async (inputValue: string): Promise<SelectOptions[]> => {
         const itens = await itensService.lookupItens({ search: inputValue })
@@ -99,9 +97,6 @@ const CarreteisFinalizadosForm = () => {
                 setFilamentoDefaultOption({ value: view.id_item, label: view.item_descricao })
                 setFilamentoSelectKey((prev) => prev + 1)
             }
-
-            setLoteRegistro(viewToLoteInfo(view))
-            setLoteRegistroItemId(view.id_item != null ? view.id_item.toString() : null)
         } catch (error) {
             console.error('Erro ao carregar carretéis finalizados:', error)
             toast.error('Erro ao carregar registro para edição')
@@ -122,6 +117,10 @@ const CarreteisFinalizadosForm = () => {
         }
         if (!data.id_item) {
             toast.error('Selecione o filamento.')
+            return
+        }
+        if (estoqueInsuficiente) {
+            toast.error(estoqueInsuficienteMsg)
             return
         }
 
@@ -256,63 +255,26 @@ const CarreteisFinalizadosForm = () => {
                                                 </Row>
                                             )}
 
-                                            {idItemWatch && (
+                                            {podeConsultar && (
                                                 <Row>
                                                     <Col md={12}>
                                                         <Card className="border shadow-none mb-3">
                                                             <CardBody className="bg-light">
                                                                 <h6 className="mb-3 text-muted">
-                                                                    {isEditing && !loteInfo && loteRegistro
-                                                                        ? 'Informações do lote utilizado no registro'
-                                                                        : 'Informações do lote mais antigo (FIFO)'}
+                                                                    Lotes que serão consumidos (FIFO por data de compra)
                                                                 </h6>
-                                                                {loadingLote ? (
+                                                                {loadingLotes ? (
                                                                     <div className="text-center py-3">
                                                                         <Spinner size="sm" animation="border" variant="primary" />
                                                                     </div>
-                                                                ) : exibirErroLote ? (
-                                                                    <div className="text-danger">{loteError}</div>
-                                                                ) : loteExibido ? (
-                                                                    <Row>
-                                                                        <Col md={6} className="mb-2">
-                                                                            <Label className="form-label fw-semibold mb-1">Compra</Label>
-                                                                            <div>{loteExibido.compra_descricao || '—'}</div>
-                                                                        </Col>
-                                                                        <Col md={6} className="mb-2">
-                                                                            <Label className="form-label fw-semibold mb-1">Número Pedido</Label>
-                                                                            <div>{loteExibido.numero_pedido || '—'}</div>
-                                                                        </Col>
-                                                                        <Col md={6} className="mb-2">
-                                                                            <Label className="form-label fw-semibold mb-1">Plataforma</Label>
-                                                                            <div>{loteExibido.plataforma_descricao || '—'}</div>
-                                                                        </Col>
-                                                                        <Col md={6} className="mb-2">
-                                                                            <Label className="form-label fw-semibold mb-1">Data Compra</Label>
-                                                                            <div>
-                                                                                {loteExibido.data_compra
-                                                                                    ? formatDateSQLForBR(loteExibido.data_compra.split('T')[0])
-                                                                                    : '—'}
-                                                                            </div>
-                                                                        </Col>
-                                                                        <Col md={4} className="mb-2">
-                                                                            <Label className="form-label fw-semibold mb-1">Quantidade Original</Label>
-                                                                            <div>{formatQuantidadeGramas(loteExibido.qtd_original)}</div>
-                                                                        </Col>
-                                                                        <Col md={4} className="mb-2">
-                                                                            <Label className="form-label fw-semibold mb-1">Quantidade Atual</Label>
-                                                                            <div>{formatQuantidadeGramas(loteExibido.qtd_atual)}</div>
-                                                                        </Col>
-                                                                        <Col md={4} className="mb-2">
-                                                                            <Label className="form-label fw-semibold mb-1">Valor Unitário</Label>
-                                                                            <div>
-                                                                                {loteExibido.valor_unitario != null
-                                                                                    ? formatarParaMoedaSemSimbolo(loteExibido.valor_unitario)
-                                                                                    : '—'}
-                                                                            </div>
-                                                                        </Col>
-                                                                    </Row>
+                                                                ) : estoqueInsuficiente ? (
+                                                                    <div className="alert alert-warning mb-0">
+                                                                        {estoqueInsuficienteMsg}
+                                                                    </div>
+                                                                ) : lotesError ? (
+                                                                    <div className="text-danger">{lotesError}</div>
                                                                 ) : (
-                                                                    <div className="text-muted">Nenhum lote disponível para este filamento.</div>
+                                                                    <LotesConsumoTable lotes={lotes} />
                                                                 )}
                                                             </CardBody>
                                                         </Card>
@@ -324,7 +286,13 @@ const CarreteisFinalizadosForm = () => {
                                             <Row className="mt-3">
                                                 <Col md={12}>
                                                     <div className="hstack gap-2 justify-content-end">
-                                                        <button type="submit" className="btn btn-primary">Salvar</button>
+                                                        <button
+                                                            type="submit"
+                                                            className="btn btn-primary"
+                                                            disabled={bloquearSalvar}
+                                                        >
+                                                            Salvar
+                                                        </button>
                                                         <button type="button" className="btn btn-soft-success" onClick={voltarParaRotaAnterior}>Voltar</button>
                                                     </div>
                                                 </Col>

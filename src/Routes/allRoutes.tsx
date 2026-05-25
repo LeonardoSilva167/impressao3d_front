@@ -51,6 +51,7 @@ import PlataformasCompraPage from "../pages/Pages/PlataformasCompra/PlataformasC
 import PlataformasCompraForm from "../pages/Pages/PlataformasCompra/PlataformasCompraForm/PlataformasCompraForm";
 import ComprasPage from "../pages/Pages/Compras/ComprasPage";
 import ComprasForm from "../pages/Pages/Compras/ComprasForm/ComprasForm";
+import ComprasViewPage from "../pages/Pages/Compras/ComprasView/ComprasView";
 import LotesPage from "../pages/Pages/Lotes/LotesPage";
 import MovimentacoesEstoquePage from "../pages/Pages/MovimentacoesEstoque/MovimentacoesEstoquePage";
 import CarreteisFinalizadosPage from "../pages/Pages/CarreteisFinalizados/CarreteisFinalizadosPage";
@@ -148,6 +149,7 @@ const authProtectedRoutes = [
   { path: "/compras", component: <ComprasPage /> },
   { path: "/compras/add", component: <ComprasForm /> },
   { path: "/compras/edit/:id", component: <ComprasForm /> },
+  { path: "/compras/view/:id", component: <ComprasViewPage /> },
 
   // Estoque
   { path: "/lotes", component: <LotesPage /> },

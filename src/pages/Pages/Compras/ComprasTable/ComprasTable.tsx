@@ -8,8 +8,10 @@ import {
 import { PaginateInterface, PaginateSearch, PerPageProps } from "interfaces/SystemInterfaces/PaginateInterface"
 import CustomModal from "Components/ComponentController/Modal/CustomModal"
 import { formatarParaMoedaSemSimbolo, formatDateSQLForBR } from "helpers/functions_helpers"
-import { ComprasList, ComprasSearch } from "interfaces/Compras/ComprasInterface"
+import { ComprasList, ComprasSearch, isCompraAtiva } from "interfaces/Compras/ComprasInterface"
 import { ComprasService } from "services/Compras/ComprasService"
+import ComprasStatusBadge from "../ComprasStatusBadge/ComprasStatusBadge"
+import ComprasCancelModal from "../ComprasCancelModal/ComprasCancelModal"
 
 export interface ComprasTableProps {
     data: PaginateInterface<ComprasList> | undefined
@@ -30,18 +32,26 @@ export const ComprasTable = ({ data, getData, setPerPage, perPage }: ComprasTabl
         { value: 100, label: "100" },
     ])
     const comprasService = new ComprasService()
-    const [modalIsOpen, setModalIsOpen] = useState(false)
+    const [deleteModalIsOpen, setDeleteModalIsOpen] = useState(false)
+    const [cancelModalIsOpen, setCancelModalIsOpen] = useState(false)
     const [selectedId, setSelectedId] = useState<number | null>(null)
 
-    const toggleModal = () => setModalIsOpen(!modalIsOpen)
+    const toggleDeleteModal = () => setDeleteModalIsOpen(!deleteModalIsOpen)
+    const toggleCancelModal = () => setCancelModalIsOpen(!cancelModalIsOpen)
 
     const handleRemoteDelete = async (id: number) => {
         try {
             await comprasService.deleteCompras(id)
             if (data) await handleThisRoute(data.first_page_url)
-            toggleModal()
+            toggleDeleteModal()
         } catch (error) {
             console.error('Erro ao excluir:', error)
+        }
+    }
+
+    const handleCancelSuccess = async () => {
+        if (data?.first_page_url) {
+            await handleThisRoute(data.first_page_url)
         }
     }
 
@@ -54,6 +64,7 @@ export const ComprasTable = ({ data, getData, setPerPage, perPage }: ComprasTabl
                 id_plataforma_compra: new_url.searchParams.get('id_plataforma_compra'),
                 data_compra: new_url.searchParams.get('data_compra'),
                 numero_pedido: new_url.searchParams.get('numero_pedido'),
+                status: new_url.searchParams.get('status'),
             })
         } catch (error) {
             console.error(error)
@@ -112,6 +123,7 @@ export const ComprasTable = ({ data, getData, setPerPage, perPage }: ComprasTabl
                                                                 <th scope="col" className="text-start">Plataforma</th>
                                                                 <th scope="col">Data</th>
                                                                 <th scope="col" className="text-start">Nº Pedido</th>
+                                                                <th scope="col">Status</th>
                                                                 <th scope="col" className="text-end">Frete</th>
                                                                 <th scope="col" className="text-end">Desconto</th>
                                                                 <th scope="col" className="text-end">Total</th>
@@ -119,49 +131,60 @@ export const ComprasTable = ({ data, getData, setPerPage, perPage }: ComprasTabl
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {data.data.map((row: ComprasList, index: number) => (
-                                                                <tr key={row.id || index}>
-                                                                    <td className="text-start">{row.plataforma_descricao || '-'}</td>
-                                                                    <td>{row.data_compra ? formatDateSQLForBR(row.data_compra) : '-'}</td>
-                                                                    <td className="text-start">{row.numero_pedido || '-'}</td>
-                                                                    <td className="text-end">R$ {formatarParaMoedaSemSimbolo(row.valor_frete)}</td>
-                                                                    <td className="text-end">R$ {formatarParaMoedaSemSimbolo(row.desconto)}</td>
-                                                                    <td className="text-end">R$ {formatarParaMoedaSemSimbolo(row.valor_total)}</td>
-                                                                    <td>
-                                                                        <ButtonGroup>
-                                                                            <UncontrolledDropdown direction="down">
-                                                                                <DropdownToggle tag="button" className="btn">
-                                                                                    <i className="ri-more-2-fill"></i>
-                                                                                </DropdownToggle>
-                                                                                <DropdownMenu style={{ zIndex: '999' }}>
-                                                                                    <Link to={`/compras/view/${row.id}`} state={{ source: row }}>
-                                                                                        <DropdownItem>Visualizar</DropdownItem>
-                                                                                    </Link>
-                                                                                    <Link to={`/compras/edit/${row.id}`} state={{ source: row }}>
-                                                                                        <DropdownItem>Editar</DropdownItem>
-                                                                                    </Link>
-                                                                                    <DropdownItem
-                                                                                        onClick={() => {
-                                                                                            setSelectedId(row.id!)
-                                                                                            toggleModal()
-                                                                                        }}
-                                                                                    >
-                                                                                        Excluir
-                                                                                    </DropdownItem>
-                                                                                    <CustomModal
-                                                                                        isOpen={modalIsOpen}
-                                                                                        toggle={toggleModal}
-                                                                                        title="Confirmação de Exclusão"
-                                                                                        delete={true}
-                                                                                        body=""
-                                                                                        onConfirmDelete={() => handleRemoteDelete(selectedId!)}
-                                                                                    />
-                                                                                </DropdownMenu>
-                                                                            </UncontrolledDropdown>
-                                                                        </ButtonGroup>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
+                                                            {data.data.map((row: ComprasList, index: number) => {
+                                                                const compraAtiva = isCompraAtiva(row.status ?? row.badge_status)
+
+                                                                return (
+                                                                    <tr key={row.id || index}>
+                                                                        <td className="text-start">{row.plataforma_compra_descricao || row.plataforma_descricao || '-'}</td>
+                                                                        <td>{row.data_compra ? formatDateSQLForBR(row.data_compra) : '-'}</td>
+                                                                        <td className="text-start">{row.numero_pedido || '-'}</td>
+                                                                        <td>
+                                                                            <ComprasStatusBadge status={row.status ?? row.badge_status} />
+                                                                        </td>
+                                                                        <td className="text-end">R$ {formatarParaMoedaSemSimbolo(row.valor_frete)}</td>
+                                                                        <td className="text-end">R$ {formatarParaMoedaSemSimbolo(row.valor_desconto ?? row.desconto)}</td>
+                                                                        <td className="text-end">R$ {formatarParaMoedaSemSimbolo(row.valor_total)}</td>
+                                                                        <td>
+                                                                            <ButtonGroup>
+                                                                                <UncontrolledDropdown direction="down">
+                                                                                    <DropdownToggle tag="button" className="btn">
+                                                                                        <i className="ri-more-2-fill"></i>
+                                                                                    </DropdownToggle>
+                                                                                    <DropdownMenu style={{ zIndex: '999' }}>
+                                                                                        <Link to={`/compras/view/${row.id}`} state={{ source: row }}>
+                                                                                            <DropdownItem>Visualizar</DropdownItem>
+                                                                                        </Link>
+                                                                                        {compraAtiva && (
+                                                                                            <>
+                                                                                                <Link to={`/compras/edit/${row.id}`} state={{ source: row }}>
+                                                                                                    <DropdownItem>Editar</DropdownItem>
+                                                                                                </Link>
+                                                                                                <DropdownItem
+                                                                                                    onClick={() => {
+                                                                                                        setSelectedId(row.id!)
+                                                                                                        toggleCancelModal()
+                                                                                                    }}
+                                                                                                >
+                                                                                                    Cancelar Compra
+                                                                                                </DropdownItem>
+                                                                                                <DropdownItem
+                                                                                                    onClick={() => {
+                                                                                                        setSelectedId(row.id!)
+                                                                                                        toggleDeleteModal()
+                                                                                                    }}
+                                                                                                >
+                                                                                                    Excluir
+                                                                                                </DropdownItem>
+                                                                                            </>
+                                                                                        )}
+                                                                                    </DropdownMenu>
+                                                                                </UncontrolledDropdown>
+                                                                            </ButtonGroup>
+                                                                        </td>
+                                                                    </tr>
+                                                                )
+                                                            })}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -234,6 +257,22 @@ export const ComprasTable = ({ data, getData, setPerPage, perPage }: ComprasTabl
                     </div>
                 </Col>
             </Row>
+
+            <CustomModal
+                isOpen={deleteModalIsOpen}
+                toggle={toggleDeleteModal}
+                title="Confirmação de Exclusão"
+                delete={true}
+                body=""
+                onConfirmDelete={() => handleRemoteDelete(selectedId!)}
+            />
+
+            <ComprasCancelModal
+                isOpen={cancelModalIsOpen}
+                toggle={toggleCancelModal}
+                compraId={selectedId}
+                onSuccess={handleCancelSuccess}
+            />
         </React.Fragment>
     )
 }

@@ -73,41 +73,73 @@ export interface CarreteisFinalizadosModel {
     observacao?: string | undefined | null
 }
 
-export interface LoteMaisAntigoResponse {
-    lote?: {
+export interface LotesConsumoSearch {
+    id_item: number
+    gramatura: number | string
+    quantidade: number | string
+}
+
+export interface LoteConsumoCompraApi {
+    id?: number
+    numero_pedido?: string
+    data_compra?: string
+    plataforma?: {
         id?: number
-        qtd_original?: number | string
-        qtd_atual?: number | string
-        valor_unitario_real?: number | string
-        gramatura_filamento?: number | string | null
-    }
-    compra?: {
-        id?: number
-        numero_pedido?: string
-        data_compra?: string
-        plataforma?: {
-            id?: number
-            descricao?: string
-        }
+        descricao?: string
     }
 }
 
-export interface LoteMaisAntigoInfo {
-    id?: number
+export interface LoteConsumoApi {
+    id_compra_item?: number
+    compra?: LoteConsumoCompraApi | string | number
+    plataforma?: string
+    data_compra?: string
+    lote?: {
+        id?: number
+        qtd_atual?: number | string
+        valor_unitario_real?: number | string
+    }
+    saldo_atual?: number | string
+    quantidade_consumida?: number | string
+    qtd_consumida?: number | string
+    qtd_consumir?: number | string
+    saldo_restante?: number | string
+    saldo_apos_consumo?: number | string
+    saldo_final?: number | string
+    valor_unitario?: number | string
+    valor_unitario_real?: number | string
+}
+
+export interface LoteConsumoInfo {
+    id_compra_item?: number
     id_compra?: number
     compra_descricao?: string
     numero_pedido?: string
     plataforma_descricao?: string
     data_compra?: string
-    qtd_original?: number
-    qtd_atual?: number
+    saldo_atual?: number
+    quantidade_consumida?: number
+    saldo_restante?: number
     valor_unitario?: number
 }
+
+export interface LotesConsumoResponse {
+    lotes?: LoteConsumoApi[]
+    estoque_insuficiente?: boolean
+    message?: string
+}
+
+export interface LotesConsumoResult {
+    lotes: LoteConsumoInfo[]
+    estoqueInsuficiente: boolean
+}
+
+export const ESTOQUE_INSUFICIENTE_MSG = 'Não há estoque suficiente para finalizar esta quantidade.'
 
 export interface CarreteisFinalizadosInterface {
     getViewCarreteisFinalizados(params: { id: number }): Promise<CarreteisFinalizadosView | undefined>
     listCarreteisFinalizadosPaginate(params: CarreteisFinalizadosSearch): Promise<any>
-    getLoteMaisAntigo(idItem: number): Promise<LoteMaisAntigoInfo | undefined>
+    getLotesConsumo(params: LotesConsumoSearch): Promise<LotesConsumoResult>
     createCarreteisFinalizados(params: CarreteisFinalizadosModel): Promise<any>
     editCarreteisFinalizados(params: CarreteisFinalizadosModel): Promise<any>
     deleteCarreteisFinalizados(id: number): Promise<any>

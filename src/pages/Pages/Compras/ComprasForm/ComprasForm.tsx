@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { ajustaMoedaBanco, formatarParaMoedaSemSimbolo, useNavegacao } from 'helpers/functions_helpers'
 import { Breadcrumb, BreadcrumbItem, Button, Card, CardBody, Col, Container, Label, Row, Table } from 'reactstrap'
@@ -12,7 +13,7 @@ import { InputNumber } from 'Components/ComponentController/Inputs/Number/InputN
 import { SelectListControlled } from 'Components/ComponentController/Selects/Select/SelectListControlled'
 import { AsyncSelectListControlled } from 'Components/ComponentController/Selects/AsyncSelect/AsyncSelectListControlled'
 import { SelectOptions } from 'interfaces/SystemInterfaces/SelectInterface'
-import { CompraItens, ComprasDefaultValues, ComprasModel } from 'interfaces/Compras/ComprasInterface'
+import { CompraItens, ComprasDefaultValues, ComprasModel, isCompraAtiva } from 'interfaces/Compras/ComprasInterface'
 import { ComprasService } from 'services/Compras/ComprasService'
 import { PlataformasCompraService } from 'services/PlataformasCompra/PlataformasCompraService'
 import { ItensService } from 'services/Itens/ItensService'
@@ -114,6 +115,7 @@ const ComprasForm = () => {
     const [subtotalItens, setSubtotalItens] = useState(0)
     const [totalFinal, setTotalFinal] = useState(0)
     const [itemSelectKey, setItemSelectKey] = useState(0)
+    const [compraCancelada, setCompraCancelada] = useState(false)
 
     const freteWatch = watch('valor_frete')
     const descontoWatch = watch('desconto')
@@ -191,6 +193,13 @@ const ComprasForm = () => {
             const view = await comprasService.getViewCompras({ id: record.id })
             if (!view) return
 
+            if (!isCompraAtiva(view.status ?? view.badge_status)) {
+                setCompraCancelada(true)
+                toast.warning('Esta compra está cancelada e não pode ser editada.')
+                navigate(`/compras/view/${record.id}`)
+                return
+            }
+
             reset({
                 id: view.id != null ? view.id.toString() : null,
                 id_plataforma_compra: view.id_plataforma_compra != null ? view.id_plataforma_compra.toString() : null,
@@ -220,6 +229,7 @@ const ComprasForm = () => {
 
                     return {
                         ...item,
+                        nome_item: item.nome_item || item.item_descricao || null,
                         tipo_item,
                         gramatura,
                         qtd_original: item.qtd_original != null ? item.qtd_original : qtdInterna,
@@ -242,7 +252,7 @@ const ComprasForm = () => {
         const desconto = ajustaMoedaBanco(descontoWatch || "0,00")
         const taxa = ajustaMoedaBanco(taxaWatch || "0,00")
         const imposto = ajustaMoedaBanco(impostoWatch || "0,00")
-        const total = subtotal + frete + taxa + imposto - desconto
+        const total = (subtotal + frete + taxa + imposto) - desconto
 
         setSubtotalItens(subtotal)
         setTotalFinal(total)
@@ -323,6 +333,11 @@ const ComprasForm = () => {
     const onSubmit: SubmitHandler<ComprasModel> = async (data: any) => {
         try {
             setRemoteErrors("")
+
+            if (compraCancelada) {
+                setRemoteErrors("Compras canceladas não podem ser editadas.")
+                return
+            }
 
             if (compraItens.length === 0) {
                 setRemoteErrors("Adicione ao menos um item à compra.")

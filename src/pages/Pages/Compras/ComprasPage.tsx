@@ -25,6 +25,7 @@ const ComprasPage = () => {
         id_plataforma_compra: null,
         data_compra: null,
         numero_pedido: null,
+        status: '',
         palavra_chave: null,
         page: 1,
         perPage: 5,
@@ -42,6 +43,10 @@ const ComprasPage = () => {
         data.perPage = perPage
         const list = await comprasService.listComprasPaginate({ ...data, perPage })
         comprasContext.palavra_chave = data.palavra_chave
+        comprasContext.id_plataforma_compra = data.id_plataforma_compra
+        comprasContext.data_compra = data.data_compra
+        comprasContext.numero_pedido = data.numero_pedido
+        comprasContext.status = data.status
         comprasContext.page = data.page
         comprasContext.firstEntry = true
         if (list) setComprasList(list)

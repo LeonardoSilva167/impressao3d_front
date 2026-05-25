@@ -3,13 +3,13 @@ import React, { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import {
-    Breadcrumb, BreadcrumbItem, Button, Card, CardHeader, Col, Collapse, Label, Row
+    Breadcrumb, BreadcrumbItem, Button, ButtonGroup, Card, CardHeader, Col, Collapse, Label, Row
 } from "reactstrap"
 import { InputTextControlled } from "Components/ComponentController/Inputs/Text/InputTextControlled"
 import { InputDate } from "Components/ComponentController/Inputs/Date/InputDate"
 import { SelectListControlled } from "Components/ComponentController/Selects/Select/SelectListControlled"
 import { SelectOptions } from "interfaces/SystemInterfaces/SelectInterface"
-import { ComprasSearch } from "interfaces/Compras/ComprasInterface"
+import { COMPRA_STATUS_FILTER_OPTIONS, ComprasSearch } from "interfaces/Compras/ComprasInterface"
 import { PlataformasCompraService } from "services/PlataformasCompra/PlataformasCompraService"
 
 export interface ComprasFilterProps {
@@ -17,10 +17,13 @@ export interface ComprasFilterProps {
 }
 
 const ComprasFilter = ({ getRemoteComprasList }: ComprasFilterProps) => {
-    const { handleSubmit, control, register } = useForm<ComprasSearch>({ defaultValues: {} })
+    const { handleSubmit, control, register, setValue, watch, getValues } = useForm<ComprasSearch>({
+        defaultValues: { status: '' },
+    })
     const [showFilter, setShowFilter] = useState<boolean>(false)
     const [plataformas, setPlataformas] = useState<SelectOptions[]>([])
     const plataformasCompraService = new PlataformasCompraService()
+    const statusWatch = watch('status')
 
     const getLookups = async (): Promise<void> => {
         try {
@@ -36,6 +39,11 @@ const ComprasFilter = ({ getRemoteComprasList }: ComprasFilterProps) => {
     useEffect(() => {
         getLookups()
     }, [])
+
+    const handleStatusFilter = (status: string) => {
+        setValue('status', status)
+        getRemoteComprasList({ ...getValues(), status, page: 1 })
+    }
 
     return (
         <React.Fragment>
@@ -70,14 +78,27 @@ const ComprasFilter = ({ getRemoteComprasList }: ComprasFilterProps) => {
                     <Card>
                         <CardHeader>
                             <div className="gap-2 flex-wrap">
-                                <Row>
+                                <Row className="align-items-center">
                                     <Col md={4}>
                                         <Button onClick={() => setShowFilter(!showFilter)} color="primary" className="mb-1">
                                             Filtros
                                         </Button>
                                     </Col>
+                                    <Col md={8} className="d-flex justify-content-md-end mb-2">
+                                        <ButtonGroup>
+                                            {COMPRA_STATUS_FILTER_OPTIONS.map((option) => (
+                                                <Button
+                                                    key={option.label}
+                                                    color={statusWatch === option.value ? 'primary' : 'light'}
+                                                    onClick={() => handleStatusFilter(option.value)}
+                                                >
+                                                    {option.label}
+                                                </Button>
+                                            ))}
+                                        </ButtonGroup>
+                                    </Col>
                                     {!showFilter && (
-                                        <Col md={8}>
+                                        <Col md={12}>
                                             <form onSubmit={handleSubmit(getRemoteComprasList)}>
                                                 <div className="input-group">
                                                     <input
@@ -105,7 +126,18 @@ const ComprasFilter = ({ getRemoteComprasList }: ComprasFilterProps) => {
                                             onSubmit={handleSubmit(getRemoteComprasList)}
                                         >
                                             <Row>
-                                                <Col md={4}>
+                                                <Col md={3}>
+                                                    <div className="mb-3">
+                                                        <Label className="form-label">Status</Label>
+                                                        <SelectListControlled<ComprasSearch>
+                                                            control={control}
+                                                            field="status"
+                                                            options={COMPRA_STATUS_FILTER_OPTIONS}
+                                                            placeholder="Selecione..."
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={3}>
                                                     <div className="mb-3">
                                                         <Label className="form-label">Plataforma de Compra</Label>
                                                         <SelectListControlled<ComprasSearch>
@@ -116,13 +148,13 @@ const ComprasFilter = ({ getRemoteComprasList }: ComprasFilterProps) => {
                                                         />
                                                     </div>
                                                 </Col>
-                                                <Col md={4}>
+                                                <Col md={3}>
                                                     <div className="mb-3">
                                                         <Label className="form-label">Data da Compra</Label>
                                                         <InputDate<ComprasSearch> field={"data_compra"} register={register} />
                                                     </div>
                                                 </Col>
-                                                <Col md={4}>
+                                                <Col md={3}>
                                                     <div className="mb-3">
                                                         <Label className="form-label">Número do Pedido</Label>
                                                         <InputTextControlled<ComprasSearch>
