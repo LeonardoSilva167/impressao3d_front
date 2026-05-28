@@ -58,6 +58,7 @@ import CarreteisFinalizadosPage from "../pages/Pages/CarreteisFinalizados/Carret
 import CarreteisFinalizadosForm from "../pages/Pages/CarreteisFinalizados/CarreteisFinalizadosForm/CarreteisFinalizadosForm";
 import ProjetosImpressaoPage from "../pages/Pages/ProjetosImpressao/ProjetosImpressaoPage";
 import ProjetosImpressaoForm from "../pages/Pages/ProjetosImpressao/ProjetosImpressaoForm/ProjetosImpressaoForm";
+import ProjetosImpressaoViewPage from "../pages/Pages/ProjetosImpressao/ProjetosImpressaoView/ProjetosImpressaoView";
 
 
 
@@ -136,6 +137,7 @@ const authProtectedRoutes = [
   { path: "/projetos-impressao", component: <ProjetosImpressaoPage /> },
   { path: "/projetos-impressao/add", component: <ProjetosImpressaoForm /> },
   { path: "/projetos-impressao/edit/:id", component: <ProjetosImpressaoForm /> },
+  { path: "/projetos-impressao/view/:id", component: <ProjetosImpressaoViewPage /> },
 
   // Categorias
   { path: "/categorias-itens", component: <CategoriasPage /> },

@@ -10,9 +10,10 @@ export interface PartesProjetoTableProps {
     partes: ParteProjetoImpressaoModel[]
     onChange: (partes: ParteProjetoImpressaoModel[]) => void
     bicoPadrao: string | null | undefined
+    modoView?: boolean
 }
 
-const PartesProjetoTable = ({ partes, onChange, bicoPadrao }: PartesProjetoTableProps) => {
+const PartesProjetoTable = ({ partes, onChange, bicoPadrao, modoView = false }: PartesProjetoTableProps) => {
     const [modalOpen, setModalOpen] = useState(false)
     const [parteEmEdicao, setParteEmEdicao] = useState<ParteProjetoImpressaoModel | null>(null)
     const [parteIndexEdicao, setParteIndexEdicao] = useState<number | null>(null)
@@ -63,13 +64,15 @@ const PartesProjetoTable = ({ partes, onChange, bicoPadrao }: PartesProjetoTable
 
     return (
         <React.Fragment>
-            <Row className="mt-4">
-                <Col md={12}>
-                    <Alert color="info" className="py-2">
-                        Etapa 2 — Após salvar o projeto, adicione quantas partes desejar.
-                    </Alert>
-                </Col>
-            </Row>
+            {!modoView && (
+                <Row className="mt-4">
+                    <Col md={12}>
+                        <Alert color="info" className="py-2">
+                            Etapa 2 — Após salvar o projeto, adicione quantas partes desejar.
+                        </Alert>
+                    </Col>
+                </Row>
+            )}
 
             <Row>
                 <Col md={12}>

@@ -9,6 +9,7 @@ import { PaginateInterface, PaginateSearch, PerPageProps } from 'interfaces/Syst
 import CustomModal from 'Components/ComponentController/Modal/CustomModal'
 import { ProjetosImpressaoList, ProjetosImpressaoSearch } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
+import { formatarParaMoedaSemSimbolo } from 'helpers/functions_helpers'
 import { formatarNumeroDecimal, obterValorNumerico } from '../hooks/useProjetosImpressao'
 
 export interface ProjetosImpressaoTableProps {
@@ -114,13 +115,12 @@ export const ProjetosImpressaoTable = ({
                                                     <table className="table align-middle table-nowrap table-striped-columns mb-0 text-center">
                                                         <thead className="table-light">
                                                             <tr>
-                                                                <th scope="col" className="text-start">Código</th>
-                                                                <th scope="col" className="text-start">Nome Original</th>
-                                                                <th scope="col" className="text-start">Apelido</th>
-                                                                <th scope="col">Bico Padrão</th>
-                                                                <th scope="col">Tempo Total</th>
+                                                                <th scope="col" className="text-start">Código Projeto</th>
+                                                                <th scope="col" className="text-start">Nome Projeto</th>
                                                                 <th scope="col">Peso Total</th>
-                                                                <th scope="col">Partes</th>
+                                                                <th scope="col">Tempo Total</th>
+                                                                <th scope="col">Custo Estimado</th>
+                                                                <th scope="col">Quantidade Partes</th>
                                                                 <th scope="col" style={{ width: '150px' }}>Ação</th>
                                                             </tr>
                                                         </thead>
@@ -129,12 +129,15 @@ export const ProjetosImpressaoTable = ({
                                                                 <tr key={row.id != null ? row.id : index}>
                                                                     <td className="text-start">{row.codigo_projeto}</td>
                                                                     <td className="text-start">{row.nome_original_projeto}</td>
-                                                                    <td className="text-start">{row.descricao_projeto || '—'}</td>
-                                                                    <td>{row.bico_padrao || '—'}</td>
-                                                                    <td>{row.tempo_total_projeto || '—'}</td>
                                                                     <td>
                                                                         {row.peso_total_projeto != null
                                                                             ? `${formatarNumeroDecimal(obterValorNumerico(row.peso_total_projeto))}g`
+                                                                            : '—'}
+                                                                    </td>
+                                                                    <td>{row.tempo_total_projeto || '—'}</td>
+                                                                    <td>
+                                                                        {row.custo_estimado != null
+                                                                            ? `R$ ${formatarParaMoedaSemSimbolo(row.custo_estimado)}`
                                                                             : '—'}
                                                                     </td>
                                                                     <td>{row.quantidade_partes != null ? row.quantidade_partes : 0}</td>
@@ -145,6 +148,9 @@ export const ProjetosImpressaoTable = ({
                                                                                     <i className="ri-more-2-fill"></i>
                                                                                 </DropdownToggle>
                                                                                 <DropdownMenu style={{ zIndex: '999' }}>
+                                                                                    <Link to={`/projetos-impressao/view/${row.id}`} state={{ source: row }}>
+                                                                                        <DropdownItem>Visualizar</DropdownItem>
+                                                                                    </Link>
                                                                                     <Link to={`/projetos-impressao/edit/${row.id}`} state={{ source: row }}>
                                                                                         <DropdownItem>Editar</DropdownItem>
                                                                                     </Link>

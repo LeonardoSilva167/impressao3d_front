@@ -1,5 +1,6 @@
 export interface FilamentosSearch {
     id?: string | undefined | null
+    id_cor?: string | number | undefined | null
     palavra_chave?: string | null | undefined | unknown
 }
 

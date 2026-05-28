@@ -19,6 +19,7 @@ export interface ProjetosImpressaoView {
     bico_padrao?: string
     tempo_total_projeto?: string
     peso_total_projeto?: number | string
+    custo_estimado?: number | string
     quantidade_partes?: number
     cores?: CorProjetoModel[]
     partes?: ParteProjetoImpressaoModel[]
@@ -32,6 +33,7 @@ export interface ProjetosImpressaoList {
     bico_padrao?: string
     tempo_total_projeto?: string
     peso_total_projeto?: number | string
+    custo_estimado?: number | string
     quantidade_partes?: number
 }
 

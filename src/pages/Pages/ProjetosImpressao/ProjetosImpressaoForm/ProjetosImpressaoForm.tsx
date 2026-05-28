@@ -19,8 +19,7 @@ import {
 } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
 import { validarSomaCoresIgualPesoTotal, normalizarCoresProjeto } from '../hooks/useProjetosImpressao'
-import CoresProjetoTable from '../CoresProjetoTable/CoresProjetoTable'
-import PartesProjetoTable from '../PartesProjetoTable/PartesProjetoTable'
+import FilamentosProjetoTable from '../FilamentosProjetoTable/FilamentosProjetoTable'
 
 const ProjetosImpressaoForm = () => {
     const { state } = useLocation()
@@ -28,7 +27,7 @@ const ProjetosImpressaoForm = () => {
     const recordId = state && state.source && state.source.id ? state.source.id : (id ? Number(id) : null)
     const isEditing = recordId != null
 
-    const { handleSubmit, control, register, setValue, watch, reset } = useForm<ProjetosImpressaoModel>({
+    const { handleSubmit, control, register, reset, watch } = useForm<ProjetosImpressaoModel>({
         defaultValues: ProjetosImpressaoDefaultValues,
     })
     const { voltarParaRotaAnterior } = useNavegacao()
@@ -36,11 +35,9 @@ const ProjetosImpressaoForm = () => {
     const projetosImpressaoService = new ProjetosImpressaoService()
 
     const [loadingRecord, setLoadingRecord] = useState(isEditing)
-    const [cores, setCores] = useState<CorProjetoModel[]>([])
-    const [partes, setPartes] = useState<ParteProjetoImpressaoModel[]>([])
-    const [projetoSalvo, setProjetoSalvo] = useState(isEditing)
+    const [filamentos, setFilamentos] = useState<CorProjetoModel[]>([])
+    const [partesExistentes, setPartesExistentes] = useState<ParteProjetoImpressaoModel[]>([])
 
-    const bicoPadraoWatch = watch('bico_padrao')
     const pesoTotalWatch = watch('peso_total_projeto')
 
     const loadRecord = async (): Promise<void> => {
@@ -60,9 +57,8 @@ const ProjetosImpressaoForm = () => {
                     tempo_total_projeto: view.tempo_total_projeto,
                     peso_total_projeto: view.peso_total_projeto,
                 })
-                setCores(normalizarCoresProjeto(view.cores ? view.cores : []))
-                setPartes(view.partes ? view.partes : [])
-                setProjetoSalvo(true)
+                setFilamentos(normalizarCoresProjeto(view.cores ? view.cores : []))
+                setPartesExistentes(view.partes ? view.partes : [])
             }
         } catch (error) {
             console.error('Erro ao carregar projeto:', error)
@@ -72,36 +68,42 @@ const ProjetosImpressaoForm = () => {
         }
     }
 
-    const validarCores = (): boolean => {
-        if (cores.length === 0) {
-            toast.error('Adicione ao menos uma cor ao projeto.')
+    const validarFilamentos = (): boolean => {
+        if (filamentos.length === 0) {
+            toast.error('Adicione ao menos um filamento ao projeto.')
             return false
         }
-        if (!validarSomaCoresIgualPesoTotal(cores, pesoTotalWatch)) {
-            toast.error('O somatório das cores deve ser igual ao peso total do projeto.')
+        if (!validarSomaCoresIgualPesoTotal(filamentos, pesoTotalWatch)) {
+            toast.error('O somatório dos filamentos deve ser igual ao peso total do projeto.')
             return false
         }
         return true
     }
 
+    const montarPayloadCores = () => filamentos.map(({ id_cor, id_filamento, peso_gramas }) => ({
+        id_cor,
+        id_filamento,
+        peso_gramas,
+    }))
+
     const onSubmit: SubmitHandler<ProjetosImpressaoModel> = async (data) => {
-        if (!validarCores()) return
+        if (!validarFilamentos()) return
 
         try {
             const payload: ProjetosImpressaoModel = {
                 ...data,
-                cores: cores.map(({ id_cor, peso_gramas }) => ({ id_cor, peso_gramas })),
-                partes: projetoSalvo ? partes : [],
+                cores: montarPayloadCores(),
+                partes: isEditing ? partesExistentes : [],
             }
 
             if (isEditing) {
                 await projetosImpressaoService.editProjetosImpressao(payload)
                 toast.success('Projeto de impressão atualizado com sucesso.')
-                navigate('/projetos-impressao')
+                navigate(`/projetos-impressao/view/${recordId}`)
             } else {
                 const newId = await projetosImpressaoService.createProjetosImpressao(payload)
-                toast.success('Projeto salvo. Agora você pode adicionar as partes.')
-                navigate(`/projetos-impressao/edit/${newId}`)
+                toast.success('Projeto cadastrado com sucesso.')
+                navigate(`/projetos-impressao/view/${newId}`)
             }
         } catch (error: any) {
             console.error('Erro ao salvar projeto:', error)
@@ -117,8 +119,7 @@ const ProjetosImpressaoForm = () => {
                 ...ProjetosImpressaoDefaultValues,
                 ...state.source,
             })
-            setCores(normalizarCoresProjeto(state.source.cores ? state.source.cores : []))
-            setPartes(state.source.partes ? state.source.partes : [])
+            setFilamentos(normalizarCoresProjeto(state.source.cores ? state.source.cores : []))
         }
     }, [recordId])
 
@@ -162,7 +163,7 @@ const ProjetosImpressaoForm = () => {
                                         <form onSubmit={handleSubmit(onSubmit)}>
                                             <Row>
                                                 <Col md={12}>
-                                                    <h5 className="mb-3">Etapa 1 — Dados do Projeto</h5>
+                                                    <h5 className="mb-3">Dados do Projeto</h5>
                                                 </Col>
                                             </Row>
 
@@ -247,26 +248,18 @@ const ProjetosImpressaoForm = () => {
                                                 </Col>
                                             </Row>
 
-                                            <CoresProjetoTable
-                                                cores={cores}
-                                                onChange={setCores}
+                                            <FilamentosProjetoTable
+                                                filamentos={filamentos}
+                                                onChange={setFilamentos}
                                                 pesoTotalProjeto={pesoTotalWatch}
                                             />
-
-                                            {projetoSalvo && (
-                                                <PartesProjetoTable
-                                                    partes={partes}
-                                                    onChange={setPartes}
-                                                    bicoPadrao={bicoPadraoWatch}
-                                                />
-                                            )}
 
                                             <hr />
                                             <Row className="mt-5">
                                                 <Col md={12}>
                                                     <div className="hstack gap-2 justify-content-end">
                                                         <button type="submit" className="btn btn-primary">
-                                                            {projetoSalvo ? 'Salvar Projeto e Partes' : 'Salvar Projeto'}
+                                                            Salvar Projeto
                                                         </button>
                                                         <button type="button" className="btn btn-soft-success" onClick={voltarParaRotaAnterior}>
                                                             Voltar
