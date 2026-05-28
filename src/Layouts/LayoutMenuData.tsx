@@ -13,6 +13,7 @@ const Navdata = () => {
     // const [isProdutos, setIsProdutos] = useState<boolean>(false);
     const [isFilamentos, setIsFilamentos] = useState<boolean>(false);
     const [isCompras, setIsCompras] = useState<boolean>(false);
+    const [isProducao, setIsProducao] = useState<boolean>(false);
 
     // Multi Level
     const [isLevel1, setIsLevel1] = useState<boolean>(false);
@@ -88,6 +89,9 @@ const Navdata = () => {
         }
         if (iscurrentState !== 'Compras') {
             setIsCompras(false);
+        }
+        if (iscurrentState !== 'Producao') {
+            setIsProducao(false);
         }
         // if (iscurrentState === 'Filamentos') {
         //     history("/cores"); // Redirecionar ao clicar na raiz ou apenas expandir, o comum no template é history e layout
@@ -379,6 +383,27 @@ const Navdata = () => {
                     label: "Movimentações de Estoque",
                     link: "/movimentacoes-estoque",
                     parentId: "Compras",
+                },
+            ],
+        },
+        {
+            id: "Producao",
+            label: "Produção",
+            icon: "ri-printer-line",
+            link: "/#",
+            stateVariables: isProducao,
+            click: function (e: any) {
+                e.preventDefault();
+                setIsProducao(!isProducao);
+                setIscurrentState('Producao');
+                updateIconSidebar(e);
+            },
+            subItems: [
+                {
+                    id: "projetos-impressao",
+                    label: "Projetos de Impressão",
+                    link: "/projetos-impressao",
+                    parentId: "Producao",
                 },
             ],
         },

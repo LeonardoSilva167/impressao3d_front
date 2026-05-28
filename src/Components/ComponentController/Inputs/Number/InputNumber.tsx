@@ -14,9 +14,10 @@ interface InputNumberProps<T extends FieldValues> {
     maxLength?: ValidatorForm
     mask?: void
     onlyPositive?: boolean
+    step?: string | number
 }
 
-export const InputNumber = <T extends FieldValues>({ field, label, value, onlyPositive, disabled, required, minLength, maxLength, errors, register, mask }: InputNumberProps<T>) => {
+export const InputNumber = <T extends FieldValues>({ field, label, value, onlyPositive, disabled, required, minLength, maxLength, errors, register, mask, step }: InputNumberProps<T>) => {
     return (
         
             <input
@@ -25,6 +26,7 @@ export const InputNumber = <T extends FieldValues>({ field, label, value, onlyPo
                 type='number'
                 className={`form-control ${errors ? 'is-invalid' : ''}`}                
                 {...onlyPositive ? { min: 0 } : {}}
+                {...(step != null ? { step } : {})}
                 {...register(field, { required: !disabled ? required : undefined, minLength, maxLength })}
                 defaultValue={!value ? undefined : value}
             />

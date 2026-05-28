@@ -1,0 +1,289 @@
+import React, { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import { setActiveMenu } from 'helpers/system_helpers'
+import { useNavegacao } from 'helpers/functions_helpers'
+import { Breadcrumb, BreadcrumbItem, Card, CardBody, Col, Container, Label, Row, Spinner } from 'reactstrap'
+import { SubmitHandler, useForm } from 'react-hook-form'
+import { required } from 'Components/ComponentController/ValidatorForm/ValidatorForm'
+import { InputTextControlled } from 'Components/ComponentController/Inputs/Text/InputTextControlled'
+import { InputTextArea } from 'Components/ComponentController/Inputs/Text/InputTextArea'
+import { InputNumber } from 'Components/ComponentController/Inputs/Number/InputNumber'
+import { SelectListControlled } from 'Components/ComponentController/Selects/Select/SelectListControlled'
+import { BICO_OPTIONS } from 'interfaces/ConfiguracoesTecnicas/ConfiguracoesTecnicasInterface'
+import { CorProjetoModel } from 'interfaces/ProjetosImpressao/CorProjetoInterface'
+import { ParteProjetoImpressaoModel } from 'interfaces/ProjetosImpressao/ParteProjetoImpressaoInterface'
+import {
+    ProjetosImpressaoDefaultValues,
+    ProjetosImpressaoModel,
+} from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
+import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
+import { validarSomaCoresIgualPesoTotal, normalizarCoresProjeto } from '../hooks/useProjetosImpressao'
+import CoresProjetoTable from '../CoresProjetoTable/CoresProjetoTable'
+import PartesProjetoTable from '../PartesProjetoTable/PartesProjetoTable'
+
+const ProjetosImpressaoForm = () => {
+    const { state } = useLocation()
+    const { id } = useParams()
+    const recordId = state && state.source && state.source.id ? state.source.id : (id ? Number(id) : null)
+    const isEditing = recordId != null
+
+    const { handleSubmit, control, register, setValue, watch, reset } = useForm<ProjetosImpressaoModel>({
+        defaultValues: ProjetosImpressaoDefaultValues,
+    })
+    const { voltarParaRotaAnterior } = useNavegacao()
+    const navigate = useNavigate()
+    const projetosImpressaoService = new ProjetosImpressaoService()
+
+    const [loadingRecord, setLoadingRecord] = useState(isEditing)
+    const [cores, setCores] = useState<CorProjetoModel[]>([])
+    const [partes, setPartes] = useState<ParteProjetoImpressaoModel[]>([])
+    const [projetoSalvo, setProjetoSalvo] = useState(isEditing)
+
+    const bicoPadraoWatch = watch('bico_padrao')
+    const pesoTotalWatch = watch('peso_total_projeto')
+
+    const loadRecord = async (): Promise<void> => {
+        if (!recordId) return
+        try {
+            setLoadingRecord(true)
+            const view = await projetosImpressaoService.getViewProjetosImpressao({ id: recordId })
+            if (view) {
+                reset({
+                    id: view.id,
+                    projeto_impressao_id: view.id,
+                    url_projeto: view.url_projeto,
+                    nome_original_projeto: view.nome_original_projeto,
+                    codigo_projeto: view.codigo_projeto,
+                    descricao_projeto: view.descricao_projeto,
+                    bico_padrao: view.bico_padrao || '0.4',
+                    tempo_total_projeto: view.tempo_total_projeto,
+                    peso_total_projeto: view.peso_total_projeto,
+                })
+                setCores(normalizarCoresProjeto(view.cores ? view.cores : []))
+                setPartes(view.partes ? view.partes : [])
+                setProjetoSalvo(true)
+            }
+        } catch (error) {
+            console.error('Erro ao carregar projeto:', error)
+            toast.error('Erro ao carregar projeto de impressão.')
+        } finally {
+            setLoadingRecord(false)
+        }
+    }
+
+    const validarCores = (): boolean => {
+        if (cores.length === 0) {
+            toast.error('Adicione ao menos uma cor ao projeto.')
+            return false
+        }
+        if (!validarSomaCoresIgualPesoTotal(cores, pesoTotalWatch)) {
+            toast.error('O somatório das cores deve ser igual ao peso total do projeto.')
+            return false
+        }
+        return true
+    }
+
+    const onSubmit: SubmitHandler<ProjetosImpressaoModel> = async (data) => {
+        if (!validarCores()) return
+
+        try {
+            const payload: ProjetosImpressaoModel = {
+                ...data,
+                cores: cores.map(({ id_cor, peso_gramas }) => ({ id_cor, peso_gramas })),
+                partes: projetoSalvo ? partes : [],
+            }
+
+            if (isEditing) {
+                await projetosImpressaoService.editProjetosImpressao(payload)
+                toast.success('Projeto de impressão atualizado com sucesso.')
+                navigate('/projetos-impressao')
+            } else {
+                const newId = await projetosImpressaoService.createProjetosImpressao(payload)
+                toast.success('Projeto salvo. Agora você pode adicionar as partes.')
+                navigate(`/projetos-impressao/edit/${newId}`)
+            }
+        } catch (error: any) {
+            console.error('Erro ao salvar projeto:', error)
+            toast.error('Erro ao salvar projeto de impressão.')
+        }
+    }
+
+    useEffect(() => {
+        if (isEditing) {
+            loadRecord()
+        } else if (state && state.source) {
+            reset({
+                ...ProjetosImpressaoDefaultValues,
+                ...state.source,
+            })
+            setCores(normalizarCoresProjeto(state.source.cores ? state.source.cores : []))
+            setPartes(state.source.partes ? state.source.partes : [])
+        }
+    }, [recordId])
+
+    useEffect(() => {
+        setActiveMenu('/projetos-impressao')
+    }, [])
+
+    return (
+        <React.Fragment>
+            <div className="page-content">
+                <Container fluid>
+                    <Row>
+                        <Col xs={12}>
+                            <div className="page-title-box d-sm-flex align-items-center justify-content-between">
+                                <div className="d-sm-flex align-items-center justify-content-between">
+                                    <Link to="/projetos-impressao"><i className="bx bx-arrow-back bx-sm"></i></Link>
+                                    <h4 className="mb-sm-0 ms-3">
+                                        {isEditing ? 'Editar' : 'Adicionar'} Projeto de Impressão
+                                    </h4>
+                                </div>
+                                <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
+                                    <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
+                                    <BreadcrumbItem>Produção</BreadcrumbItem>
+                                    <BreadcrumbItem><Link to="/projetos-impressao">Projetos de Impressão</Link></BreadcrumbItem>
+                                    <BreadcrumbItem active>
+                                        {isEditing ? 'Editar' : 'Adicionar'} Projeto
+                                    </BreadcrumbItem>
+                                </Breadcrumb>
+                            </div>
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col xxl={12}>
+                            <Card>
+                                <CardBody>
+                                    {loadingRecord ? (
+                                        <div className="text-center py-5">
+                                            <Spinner animation="border" variant="primary" />
+                                        </div>
+                                    ) : (
+                                        <form onSubmit={handleSubmit(onSubmit)}>
+                                            <Row>
+                                                <Col md={12}>
+                                                    <h5 className="mb-3">Etapa 1 — Dados do Projeto</h5>
+                                                </Col>
+                                            </Row>
+
+                                            <Row>
+                                                <Col md={6}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="url_projeto" className="form-label">URL Projeto</Label>
+                                                        <InputTextControlled<ProjetosImpressaoModel>
+                                                            field={'url_projeto'}
+                                                            control={control}
+                                                            placeholder="https://..."
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={6}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="nome_original_projeto" className="form-label">Nome Original Projeto</Label>
+                                                        <InputTextControlled<ProjetosImpressaoModel>
+                                                            field={'nome_original_projeto'}
+                                                            control={control}
+                                                            rules={required}
+                                                        />
+                                                    </div>
+                                                </Col>
+                                            </Row>
+
+                                            <Row>
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="codigo_projeto" className="form-label">Código Projeto</Label>
+                                                        <InputTextControlled<ProjetosImpressaoModel>
+                                                            field={'codigo_projeto'}
+                                                            control={control}
+                                                            rules={required}
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={8}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="descricao_projeto" className="form-label">Descrição/Apelido Projeto</Label>
+                                                        <InputTextArea<ProjetosImpressaoModel>
+                                                            field={'descricao_projeto'}
+                                                            register={register}
+                                                            rows={2}
+                                                        />
+                                                    </div>
+                                                </Col>
+                                            </Row>
+
+                                            <Row>
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="bico_padrao" className="form-label">Bico Padrão</Label>
+                                                        <SelectListControlled<ProjetosImpressaoModel>
+                                                            field={'bico_padrao'}
+                                                            control={control}
+                                                            options={BICO_OPTIONS}
+                                                            required={required}
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="tempo_total_projeto" className="form-label">Tempo Total Projeto</Label>
+                                                        <InputTextControlled<ProjetosImpressaoModel>
+                                                            field={'tempo_total_projeto'}
+                                                            control={control}
+                                                            rules={required}
+                                                            placeholder="Ex: 3.5h"
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <Label htmlFor="peso_total_projeto" className="form-label">Peso Total Projeto (g)</Label>
+                                                        <InputNumber<ProjetosImpressaoModel>
+                                                            field={'peso_total_projeto'}
+                                                            register={register}
+                                                            required={required}
+                                                        />
+                                                    </div>
+                                                </Col>
+                                            </Row>
+
+                                            <CoresProjetoTable
+                                                cores={cores}
+                                                onChange={setCores}
+                                                pesoTotalProjeto={pesoTotalWatch}
+                                            />
+
+                                            {projetoSalvo && (
+                                                <PartesProjetoTable
+                                                    partes={partes}
+                                                    onChange={setPartes}
+                                                    bicoPadrao={bicoPadraoWatch}
+                                                />
+                                            )}
+
+                                            <hr />
+                                            <Row className="mt-5">
+                                                <Col md={12}>
+                                                    <div className="hstack gap-2 justify-content-end">
+                                                        <button type="submit" className="btn btn-primary">
+                                                            {projetoSalvo ? 'Salvar Projeto e Partes' : 'Salvar Projeto'}
+                                                        </button>
+                                                        <button type="button" className="btn btn-soft-success" onClick={voltarParaRotaAnterior}>
+                                                            Voltar
+                                                        </button>
+                                                    </div>
+                                                </Col>
+                                            </Row>
+                                        </form>
+                                    )}
+                                </CardBody>
+                            </Card>
+                        </Col>
+                    </Row>
+                </Container>
+            </div>
+        </React.Fragment>
+    )
+}
+
+export default ProjetosImpressaoForm
