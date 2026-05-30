@@ -11,10 +11,13 @@ import {
     GradeProdutosModel,
     GradeProdutosSearch,
     GradeProdutosView,
+    GradeProdutoGeradoList,
     GradeProdutoGeradoView,
 } from 'interfaces/GradeProdutos/GradeProdutosInterface'
+import { carregarCustosProducaoConfig } from 'hooks/useCustosProducaoConfig'
 import {
     mapCarregarDadosGrade,
+    mapProdutoGeradoListApi,
     normalizarViewGradeProdutos,
 } from 'pages/Pages/GradeProdutos/hooks/useGradeProdutos'
 
@@ -68,6 +71,36 @@ export class GradeProdutosService implements GradeProdutosInterface {
             }
         } catch (error) {
             console.error('Erro ao buscar grades de produtos:', error)
+            throw error
+        }
+    }
+
+    async listProdutosGeradosPaginate(
+        params: GradeProdutosSearch
+    ): Promise<PaginateInterface<GradeProdutoGeradoList> | undefined> {
+        try {
+            const response = await this.httpClient.get<PaginateInterface<Record<string, unknown>>>({
+                url: `${this.url}/listar`,
+                body: params,
+            })
+            if (!response || !response.statusCode) throw new UnexpectedError()
+            switch (response.statusCode) {
+                case HttpStatusCode.ok: {
+                    if (!response.body) return undefined
+                    const config = await carregarCustosProducaoConfig()
+                    const body = response.body
+                    return {
+                        ...body,
+                        data: (body.data || []).map((item) =>
+                            mapProdutoGeradoListApi(item, config)
+                        ),
+                    }
+                }
+                case HttpStatusCode.unauthorized: throw new AccessDeniedError()
+                default: throw new UnexpectedError()
+            }
+        } catch (error) {
+            console.error('Erro ao buscar produtos gerados:', error)
             throw error
         }
     }

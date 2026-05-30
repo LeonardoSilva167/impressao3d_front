@@ -9,10 +9,10 @@ import { InputTextControlled } from 'Components/ComponentController/Inputs/Text/
 import { GradeProdutosSearch } from 'interfaces/GradeProdutos/GradeProdutosInterface'
 
 export interface GradeProdutosFilterProps {
-    getRemoteGradeList: (data: any) => void
+    getRemoteProdutosList: (data: any) => void
 }
 
-const GradeProdutosFilter = ({ getRemoteGradeList }: GradeProdutosFilterProps) => {
+const GradeProdutosFilter = ({ getRemoteProdutosList }: GradeProdutosFilterProps) => {
     const { handleSubmit, control, register } = useForm<GradeProdutosSearch>({ defaultValues: {} })
     const [showFilter, setShowFilter] = useState<boolean>(false)
 
@@ -58,13 +58,13 @@ const GradeProdutosFilter = ({ getRemoteGradeList }: GradeProdutosFilterProps) =
                                     </Col>
                                     {!showFilter && (
                                         <Col md={8}>
-                                            <form onSubmit={handleSubmit(getRemoteGradeList)}>
+                                            <form onSubmit={handleSubmit(getRemoteProdutosList)}>
                                                 <div className="input-group">
                                                     <input
-                                                        {...register('palavra_chave')}
+                                                        {...register('nome_produto')}
                                                         type="text"
                                                         className="form-control"
-                                                        placeholder="Buscar por descrição ou produto base..."
+                                                        placeholder="Buscar por nome do produto..."
                                                     />
                                                     <button className="btn btn-success" type="submit">
                                                         <i className="ri-search-line align-middle me-1"></i> Buscar
@@ -82,19 +82,64 @@ const GradeProdutosFilter = ({ getRemoteGradeList }: GradeProdutosFilterProps) =
                                         <form
                                             className="px-0 my-0 m-2"
                                             id="form-search"
-                                            onSubmit={handleSubmit(getRemoteGradeList)}
+                                            onSubmit={handleSubmit(getRemoteProdutosList)}
                                         >
-                                            <Row className="mt-5">
-                                                <div className="d-flex flex-row justify-content-end align-items-center">
-                                                    <Col md={6}>
+                                            <Row>
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="sku" className="form-label">SKU</label>
                                                         <InputTextControlled<GradeProdutosSearch>
-                                                            field={'palavra_chave'}
+                                                            field={'sku'}
                                                             control={control}
-                                                            placeholder="Buscar por descrição ou produto base..."
+                                                            placeholder="SKU do produto..."
                                                         />
-                                                    </Col>
+                                                    </div>
+                                                </Col>
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="nome_produto" className="form-label">Nome Produto</label>
+                                                        <InputTextControlled<GradeProdutosSearch>
+                                                            field={'nome_produto'}
+                                                            control={control}
+                                                            placeholder="Nome do produto..."
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="codigo_base" className="form-label">Código Base</label>
+                                                        <InputTextControlled<GradeProdutosSearch>
+                                                            field={'codigo_base'}
+                                                            control={control}
+                                                            placeholder="Código base..."
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="parte" className="form-label">Parte</label>
+                                                        <InputTextControlled<GradeProdutosSearch>
+                                                            field={'parte'}
+                                                            control={control}
+                                                            placeholder="Ex.: Cuba, Tampa..."
+                                                        />
+                                                    </div>
+                                                </Col>
+                                                <Col md={4}>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="status" className="form-label">Status</label>
+                                                        <InputTextControlled<GradeProdutosSearch>
+                                                            field={'status'}
+                                                            control={control}
+                                                            placeholder="Ex.: 1, 0, Ativo..."
+                                                        />
+                                                    </div>
+                                                </Col>
+                                            </Row>
+                                            <Row className="mt-2">
+                                                <div className="d-flex flex-row justify-content-end align-items-center">
                                                     <Col md={2} className="me-3">
-                                                        <button className="btn btn-success form-control ms-3" type="submit">
+                                                        <button className="btn btn-success form-control" type="submit">
                                                             Buscar
                                                         </button>
                                                     </Col>

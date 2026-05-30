@@ -6,27 +6,27 @@ import {
     DropdownMenu, DropdownToggle, Label, Row, UncontrolledDropdown
 } from 'reactstrap'
 import { PaginateInterface, PaginateSearch, PerPageProps } from 'interfaces/SystemInterfaces/PaginateInterface'
-import CustomModal from 'Components/ComponentController/Modal/CustomModal'
-import { GradeProdutosList, GradeProdutosSearch } from 'interfaces/GradeProdutos/GradeProdutosInterface'
-import { GradeProdutosService } from 'services/GradeProdutos/GradeProdutosService'
+import { GradeProdutoGeradoList, GradeProdutosSearch } from 'interfaces/GradeProdutos/GradeProdutosInterface'
 import {
-    obterClasseBadgeStatusGrade,
-    obterLabelStatusGrade,
-    obterNomeProdutoBase,
-    obterQuantidadeProdutosGerados,
+    formatarCustoGrade,
+    formatarPesoGrade,
+    formatarTempoGrade,
+    obterClasseBadgeStatusProdutoGerado,
+    obterLabelStatusProdutoGerado,
+    obterPartesProdutoGerado,
 } from '../hooks/useGradeProdutos'
 
 export interface GradeProdutosTableProps {
-    data: PaginateInterface<GradeProdutosList> | undefined
+    data: PaginateInterface<GradeProdutoGeradoList> | undefined
     getData: (data: PaginateSearch & GradeProdutosSearch) => void
     setPerPage: (perPage: number) => void
     setPage: (page: number) => void
     page: number
     perPage: number
-    filters: any
+    filters: GradeProdutosSearch
 }
 
-export const GradeProdutosTable = ({ data, getData, setPerPage, perPage }: GradeProdutosTableProps) => {
+export const GradeProdutosTable = ({ data, getData, setPerPage, perPage, filters }: GradeProdutosTableProps) => {
     const [optPerPage] = useState<PerPageProps[]>([
         { value: 5, label: '5' },
         { value: 10, label: '10' },
@@ -34,28 +34,17 @@ export const GradeProdutosTable = ({ data, getData, setPerPage, perPage }: Grade
         { value: 50, label: '50' },
         { value: 100, label: '100' },
     ])
-    const gradeService = new GradeProdutosService()
-    const [modalIsOpen, setModalIsOpen] = useState(false)
-    const [selectedId, setSelectedId] = useState<number | null>(null)
-
-    const toggleModal = () => setModalIsOpen(!modalIsOpen)
-
-    const handleRemoteDelete = async (id: number) => {
-        try {
-            await gradeService.deleteGradeProdutos(id)
-            if (data) await handleThisRoute(data.first_page_url)
-            toggleModal()
-        } catch (error) {
-            console.error('Erro ao excluir grade:', error)
-        }
-    }
 
     const handleThisRoute = async (url: string) => {
         try {
             const new_url = new URL(url)
             await getData({
                 page: Number(new_url.searchParams.get('page')),
-                palavra_chave: new_url.searchParams.get('palavra_chave'),
+                sku: new_url.searchParams.get('sku') || filters.sku,
+                nome_produto: new_url.searchParams.get('nome_produto') || filters.nome_produto,
+                codigo_base: new_url.searchParams.get('codigo_base') || filters.codigo_base,
+                parte: new_url.searchParams.get('parte') || filters.parte,
+                status: new_url.searchParams.get('status') || filters.status,
             })
         } catch (error) {
             console.error(error)
@@ -111,62 +100,49 @@ export const GradeProdutosTable = ({ data, getData, setPerPage, perPage }: Grade
                                                     <table className="table align-middle table-nowrap table-striped-columns mb-0 text-center">
                                                         <thead className="table-light">
                                                             <tr>
-                                                                <th scope="col" className="text-start">Descrição</th>
-                                                                <th scope="col" className="text-start">Produto Base</th>
-                                                                <th scope="col">Produtos Gerados</th>
+                                                                <th scope="col" className="text-start">SKU</th>
+                                                                <th scope="col" className="text-start">Nome Produto</th>
+                                                                <th scope="col" className="text-start">Código Base</th>
+                                                                <th scope="col" className="text-start">Partes</th>
+                                                                <th scope="col">Peso</th>
+                                                                <th scope="col">Tempo</th>
+                                                                <th scope="col">Custo Filamento</th>
+                                                                <th scope="col">Custo Energia</th>
+                                                                <th scope="col">Custo Desgaste</th>
+                                                                <th scope="col">Custo Total</th>
                                                                 <th scope="col">Status</th>
-                                                                <th scope="col" style={{ width: '150px' }}>Ação</th>
+                                                                <th scope="col" style={{ width: '120px' }}>Ação</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {data.data.map((row: GradeProdutosList, index: number) => (
+                                                            {data.data.map((row: GradeProdutoGeradoList, index: number) => (
                                                                 <tr key={row.id != null ? row.id : index}>
-                                                                    <td className="text-start">{row.descricao || '—'}</td>
-                                                                    <td className="text-start">{obterNomeProdutoBase(row)}</td>
-                                                                    <td>{obterQuantidadeProdutosGerados(row)}</td>
+                                                                    <td className="text-start">{row.sku || '—'}</td>
+                                                                    <td className="text-start">{row.nome_produto || '—'}</td>
+                                                                    <td className="text-start">{row.codigo_base != null ? row.codigo_base : '—'}</td>
+                                                                    <td className="text-start">{obterPartesProdutoGerado(row)}</td>
+                                                                    <td>{formatarPesoGrade(row.peso_total)}</td>
+                                                                    <td>{formatarTempoGrade(row.tempo_total)}</td>
+                                                                    <td>{formatarCustoGrade(row.custo_filamento)}</td>
+                                                                    <td>{formatarCustoGrade(row.custo_energia)}</td>
+                                                                    <td>{formatarCustoGrade(row.custo_desgaste)}</td>
+                                                                    <td>{formatarCustoGrade(row.custo_total)}</td>
                                                                     <td>
-                                                                        <Badge className={obterClasseBadgeStatusGrade(row.status)}>
-                                                                            {obterLabelStatusGrade(row.status)}
+                                                                        <Badge className={obterClasseBadgeStatusProdutoGerado(row.status)}>
+                                                                            {obterLabelStatusProdutoGerado(row.status)}
                                                                         </Badge>
                                                                     </td>
                                                                     <td>
-                                                                        <ButtonGroup>
-                                                                            <UncontrolledDropdown direction="down">
-                                                                                <DropdownToggle tag="button" className="btn">
-                                                                                    <i className="ri-more-2-fill"></i>
-                                                                                </DropdownToggle>
-                                                                                <DropdownMenu style={{ zIndex: '999' }}>
-                                                                                    <Link
-                                                                                        to={`/grade-produtos/view/${row.id}`}
-                                                                                        state={{ source: row }}
-                                                                                    >
-                                                                                        <DropdownItem>Visualizar</DropdownItem>
-                                                                                    </Link>
-                                                                                    <Link
-                                                                                        to={`/grade-produtos/edit/${row.id}`}
-                                                                                        state={{ source: row }}
-                                                                                    >
-                                                                                        <DropdownItem>Editar</DropdownItem>
-                                                                                    </Link>
-                                                                                    <DropdownItem
-                                                                                        onClick={() => {
-                                                                                            setSelectedId(row.id!)
-                                                                                            toggleModal()
-                                                                                        }}
-                                                                                    >
-                                                                                        Excluir
-                                                                                    </DropdownItem>
-                                                                                    <CustomModal
-                                                                                        isOpen={modalIsOpen}
-                                                                                        toggle={toggleModal}
-                                                                                        title="Confirmação de Exclusão"
-                                                                                        delete={true}
-                                                                                        body=""
-                                                                                        onConfirmDelete={() => handleRemoteDelete(selectedId!)}
-                                                                                    />
-                                                                                </DropdownMenu>
-                                                                            </UncontrolledDropdown>
-                                                                        </ButtonGroup>
+                                                                        {row.id != null ? (
+                                                                            <Link
+                                                                                to={`/grade-produtos/produto/${row.id}`}
+                                                                                className="btn btn-sm btn-soft-primary"
+                                                                            >
+                                                                                Visualizar
+                                                                            </Link>
+                                                                        ) : (
+                                                                            '—'
+                                                                        )}
                                                                     </td>
                                                                 </tr>
                                                             ))}

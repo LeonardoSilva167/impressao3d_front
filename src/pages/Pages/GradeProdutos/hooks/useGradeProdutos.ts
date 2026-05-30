@@ -3,8 +3,10 @@ import {
     GradeCombinacaoParte,
     GradeItemDisponivel,
     GradeParteDisponivel,
+    GradeParteResumo,
     GradeProdutoGeradoList,
     GradeProdutosCarregarDados,
+    GradeProdutosList,
     GradeProdutosStatus,
     GradeProdutosView,
     GradeVariacaoDisponivel,
@@ -111,16 +113,44 @@ export const mapProdutoGeradoListApi = (
 
     return {
         id: produto.id as number | undefined,
+        id_grade_produto: produto.id_grade_produto as number | undefined,
         nome_produto: produto.nome_produto as string | undefined,
         sku: produto.sku as string | undefined,
+        codigo_base: produto.codigo_base as string | number | null | undefined,
+        partes: produto.partes as string | null | undefined,
+        partes_utilizadas: produto.partes_utilizadas as GradeParteResumo[] | undefined,
         peso_total: produto.peso_total as number | string | null | undefined,
         tempo_total: tempoTotal || null,
-        status: produto.status != null ? String(produto.status) : null,
+        status: produto.status as GradeProdutoGeradoList['status'],
         custo_filamento: custoFilamento,
         custo_energia: custoEnergia,
         custo_desgaste: custoDesgaste,
         custo_total: custoTotal,
     }
+}
+
+export const obterPartesProdutoGerado = (row: GradeProdutoGeradoList): string => {
+    if (row.partes != null && String(row.partes).trim()) {
+        return String(row.partes).trim()
+    }
+    return formatarPartesGrade(row)
+}
+
+export const obterLabelStatusProdutoGerado = (
+    status?: GradeProdutoGeradoList['status']
+): string => {
+    if (status === true || status === 1 || status === '1') return 'Ativo'
+    if (status === false || status === 0 || status === '0') return 'Inativo'
+    if (status == null || status === '') return '—'
+    return String(status)
+}
+
+export const obterClasseBadgeStatusProdutoGerado = (
+    status?: GradeProdutoGeradoList['status']
+): string => {
+    if (status === true || status === 1 || status === '1') return 'bg-success'
+    if (status === false || status === 0 || status === '0') return 'bg-secondary'
+    return 'bg-secondary'
 }
 
 export const resolverProdutosGeradosGrade = (
@@ -173,16 +203,23 @@ export const normalizarViewGradeProdutos = (
     const produtoInfo = raw.produto as {
         descricao_produto?: string
         sku_base?: string
+        codigo_base?: string | number
     } | undefined
 
     return {
         id: raw.id as number | undefined,
         descricao: raw.descricao as string | undefined,
         id_produto_base: raw.id_produto_base as number | undefined,
+        codigo_base: (raw.codigo_base as string | number | undefined)
+            || (produtoInfo && produtoInfo.codigo_base),
         produto_descricao: (raw.produto_descricao as string | undefined)
             || (produtoInfo && produtoInfo.descricao_produto),
         sku_base: (raw.sku_base as string | undefined)
             || (produtoInfo && produtoInfo.sku_base),
+        partes: raw.partes as GradeProdutosView['partes'],
+        partes_utilizadas: raw.partes_utilizadas as GradeParteResumo[] | undefined,
+        partes_descricao: raw.partes_descricao as string | undefined,
+        quantidade_combinacoes: raw.quantidade_combinacoes as number | undefined,
         quantidade_produtos: raw.quantidade_produtos as number | undefined,
         status: raw.status as GradeProdutosStatus | undefined,
         data_criacao: (raw.data_criacao as string | undefined) || (raw.created_at as string | undefined),
@@ -304,11 +341,82 @@ export const obterNomeProdutoBase = (row: {
     return row.produto_descricao || row.sku_base || '—'
 }
 
+export const obterCodigoBaseGrade = (row: {
+    codigo_base?: string | number | null
+    produto?: { codigo_base?: string | number | null }
+}): string => {
+    if (row.codigo_base != null && String(row.codigo_base).trim()) {
+        return String(row.codigo_base)
+    }
+    if (row.produto?.codigo_base != null && String(row.produto.codigo_base).trim()) {
+        return String(row.produto.codigo_base)
+    }
+    return '—'
+}
+
+const extrairNomesPartesGrade = (
+    partes?: Array<GradeParteResumo | string | GradeCombinacaoParte>
+): string[] => {
+    if (!partes?.length) return []
+
+    return partes
+        .map((parte) => {
+            if (typeof parte === 'string') return parte.trim()
+            const nome = parte.nome_parte
+            return nome != null ? String(nome).trim() : ''
+        })
+        .filter(Boolean)
+}
+
+export const formatarPartesGrade = (row: {
+    partes?: Array<GradeParteResumo | string | GradeCombinacaoParte>
+    partes_utilizadas?: GradeParteResumo[]
+    partes_descricao?: string | null
+}): string => {
+    if (row.partes_descricao?.trim()) return row.partes_descricao.trim()
+
+    const nomes = extrairNomesPartesGrade(row.partes_utilizadas || row.partes)
+    if (!nomes.length) return '—'
+
+    return nomes.join(' + ')
+}
+
+export const obterPartesUtilizadasGrade = (
+    view: GradeProdutosView | GradeProdutosList | null | undefined
+): string => {
+    if (!view) return '—'
+
+    const formatado = formatarPartesGrade(view)
+    if (formatado !== '—') return formatado
+
+    const combinacoes = view.combinacoes
+    if (!Array.isArray(combinacoes) || !combinacoes.length) return '—'
+
+    const nomes = new Set<string>()
+    combinacoes.forEach((combinacao) => {
+        const comb = combinacao as GradeCombinacao
+        extrairNomesPartesGrade(comb.partes).forEach((nome) => nomes.add(nome))
+    })
+
+    if (!nomes.size) return '—'
+    return Array.from(nomes).join(' + ')
+}
+
+export const obterQuantidadeCombinacoesGrade = (row: {
+    quantidade_combinacoes?: number | null
+    combinacoes?: unknown[] | null
+}): number => {
+    if (row.quantidade_combinacoes != null) return Number(row.quantidade_combinacoes)
+    if (Array.isArray(row.combinacoes)) return row.combinacoes.length
+    return 0
+}
+
 export const obterQuantidadeProdutosGerados = (row: {
-    produtos_gerados?: number
+    produtos_gerados?: number | GradeProdutoGeradoList[] | null
     quantidade_produtos?: number
 }): number => {
-    if (row.produtos_gerados != null) return Number(row.produtos_gerados)
+    if (typeof row.produtos_gerados === 'number') return Number(row.produtos_gerados)
+    if (Array.isArray(row.produtos_gerados)) return row.produtos_gerados.length
     if (row.quantidade_produtos != null) return Number(row.quantidade_produtos)
     return 0
 }

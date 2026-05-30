@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { Container, Spinner } from 'reactstrap'
 import { SubmitHandler } from 'react-hook-form'
 import { PaginateInterface, PaginateSearch } from 'interfaces/SystemInterfaces/PaginateInterface'
-import { GradeProdutosList, GradeProdutosSearch } from 'interfaces/GradeProdutos/GradeProdutosInterface'
+import { GradeProdutoGeradoList, GradeProdutosSearch } from 'interfaces/GradeProdutos/GradeProdutosInterface'
 import { GradeProdutosService } from 'services/GradeProdutos/GradeProdutosService'
 import GradeProdutosFilter from './GradeProdutosFilter/GradeProdutosFilter'
 import GradeProdutosTable from './GradeProdutosTable/GradeProdutosTable'
@@ -18,12 +18,17 @@ export const GradeProdutosFilterContext = createContext<GradeProdutosFilterConte
 const GradeProdutosPage = () => {
     const [display, setDisplay] = useState<boolean>(false)
     const gradeContext = useContext(GradeProdutosFilterContext)
-    const [gradeList, setGradeList] = useState<PaginateInterface<GradeProdutosList>>()
+    const [produtosList, setProdutosList] = useState<PaginateInterface<GradeProdutoGeradoList>>()
     const gradeService = new GradeProdutosService()
 
     const GradeProdutosFilterContextValue: GradeProdutosFilterContextType = {
         id: null,
         id_produto_base: null,
+        sku: null,
+        nome_produto: null,
+        codigo_base: null,
+        parte: null,
+        status: null,
         descricao: null,
         palavra_chave: null,
         page: 1,
@@ -34,17 +39,18 @@ const GradeProdutosPage = () => {
 
     const [perPage, setPerPage] = useState<number>(5)
     const [page, setPage] = useState(1)
+    const [searchParams, setSearchParams] = useState<GradeProdutosSearch>({})
 
-    const getRemoteGradeList: SubmitHandler<any> = async (data): Promise<void> => {
+    const getRemoteProdutosList: SubmitHandler<any> = async (data): Promise<void> => {
         Object.keys(data).forEach((k) => {
             if (!data[k]) delete data[k]
         })
         data.perPage = perPage
-        const list = await gradeService.listGradeProdutosPaginate({ ...data, perPage })
-        gradeContext.palavra_chave = data.palavra_chave
+        setSearchParams({ ...data })
+        const list = await gradeService.listProdutosGeradosPaginate({ ...data, perPage })
         gradeContext.page = data.page
         gradeContext.firstEntry = true
-        if (list) setGradeList(list)
+        if (list) setProdutosList(list)
     }
 
     useEffect(() => {
@@ -52,7 +58,7 @@ const GradeProdutosPage = () => {
     }, [])
 
     useEffect(() => {
-        getRemoteGradeList(gradeContext)
+        getRemoteProdutosList(gradeContext)
     }, [perPage])
 
     return (
@@ -60,12 +66,12 @@ const GradeProdutosPage = () => {
             <GradeProdutosFilterContext.Provider value={GradeProdutosFilterContextValue}>
                 <div className="page-content">
                     <Container fluid>
-                        <GradeProdutosFilter getRemoteGradeList={getRemoteGradeList} />
+                        <GradeProdutosFilter getRemoteProdutosList={getRemoteProdutosList} />
                         {display ? (
                             <GradeProdutosTable
-                                filters={gradeContext}
-                                getData={getRemoteGradeList}
-                                data={gradeList}
+                                filters={searchParams}
+                                getData={getRemoteProdutosList}
+                                data={produtosList}
                                 setPerPage={setPerPage}
                                 perPage={perPage}
                                 setPage={setPage}

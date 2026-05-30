@@ -15,9 +15,12 @@ import {
     formatarPartesCombinacao,
     formatarPesoGrade,
     formatarTempoGrade,
-    obterClasseBadgeStatusGrade,
-    obterLabelStatusGrade,
-    obterNomeProdutoBase,
+    obterClasseBadgeStatusProdutoGerado,
+    obterCodigoBaseGrade,
+    obterLabelStatusProdutoGerado,
+    obterPartesUtilizadasGrade,
+    obterQuantidadeCombinacoesGrade,
+    obterQuantidadeProdutosGerados,
     resolverProdutosGeradosGrade,
 } from '../hooks/useGradeProdutos'
 
@@ -106,25 +109,25 @@ const GradeProdutosViewPage = () => {
 
                                             <h5 className="mb-3">Dados da Grade</h5>
                                             <Row>
-                                                <Col md={3} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Produto Base</Label>
-                                                    <div>{obterNomeProdutoBase(registro)}</div>
+                                                <Col md={4} className="mb-3">
+                                                    <Label className="form-label fw-semibold">Código Base</Label>
+                                                    <div>{obterCodigoBaseGrade(registro)}</div>
                                                 </Col>
-                                                <Col md={3} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Quantidade Produtos</Label>
-                                                    <div>{registro.quantidade_produtos != null ? registro.quantidade_produtos : produtosGerados.length}</div>
+                                                <Col md={4} className="mb-3">
+                                                    <Label className="form-label fw-semibold">Descrição da Grade</Label>
+                                                    <div>{registro.descricao || '—'}</div>
                                                 </Col>
-                                                <Col md={3} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Status</Label>
-                                                    <div>
-                                                        <Badge className={obterClasseBadgeStatusGrade(registro.status)}>
-                                                            {obterLabelStatusGrade(registro.status)}
-                                                        </Badge>
-                                                    </div>
+                                                <Col md={4} className="mb-3">
+                                                    <Label className="form-label fw-semibold">Partes Utilizadas</Label>
+                                                    <div>{obterPartesUtilizadasGrade(registro)}</div>
                                                 </Col>
-                                                <Col md={3} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Data Criação</Label>
-                                                    <div>{registro.data_criacao || '—'}</div>
+                                                <Col md={4} className="mb-3">
+                                                    <Label className="form-label fw-semibold">Quantidade de Combinações</Label>
+                                                    <div>{obterQuantidadeCombinacoesGrade(registro)}</div>
+                                                </Col>
+                                                <Col md={4} className="mb-3">
+                                                    <Label className="form-label fw-semibold">Quantidade de Produtos Gerados</Label>
+                                                    <div>{obterQuantidadeProdutosGerados(registro)}</div>
                                                 </Col>
                                             </Row>
 
@@ -186,8 +189,8 @@ const GradeProdutosViewPage = () => {
                                                                     <td>{formatarCustoGrade(produto.custo_desgaste)}</td>
                                                                     <td>{formatarCustoGrade(produto.custo_total)}</td>
                                                                     <td>
-                                                                        <Badge className="bg-secondary">
-                                                                            {produto.status || '—'}
+                                                                        <Badge className={obterClasseBadgeStatusProdutoGerado(produto.status)}>
+                                                                            {obterLabelStatusProdutoGerado(produto.status)}
                                                                         </Badge>
                                                                     </td>
                                                                     <td>

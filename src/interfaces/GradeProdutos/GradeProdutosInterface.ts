@@ -3,13 +3,28 @@ export type GradeProdutosStatus = 'PENDENTE' | 'GERADA' | 'CONCLUIDA' | 'EM_ANDA
 export interface GradeProdutosSearch {
     id?: string | number | undefined | null
     id_produto_base?: string | number | undefined | null
+    sku?: string | undefined | null
+    nome_produto?: string | undefined | null
+    codigo_base?: string | undefined | null
+    parte?: string | undefined | null
+    status?: string | number | boolean | undefined | null
     descricao?: string | undefined | null
     palavra_chave?: string | null | undefined | unknown
+}
+
+export interface GradeParteResumo {
+    nome_parte?: string | null
 }
 
 export interface GradeProdutosList {
     id?: number
     descricao?: string
+    codigo_base?: string | number | null
+    partes?: Array<GradeParteResumo | string>
+    partes_utilizadas?: GradeParteResumo[]
+    partes_descricao?: string | null
+    quantidade_combinacoes?: number | null
+    combinacoes?: unknown[]
     produto_base?: string
     produto_descricao?: string
     sku_base?: string
@@ -58,24 +73,33 @@ export interface GradeProdutosCarregarDados {
 
 export interface GradeProdutoGeradoList {
     id?: number
+    id_grade_produto?: number
     nome_produto?: string
     sku?: string
+    codigo_base?: string | number | null
+    partes?: string | null
+    partes_utilizadas?: GradeParteResumo[]
     peso_total?: number | string | null
     tempo_total?: string | null
     custo_filamento?: number | string | null
     custo_energia?: number | string | null
     custo_desgaste?: number | string | null
     custo_total?: number | string | null
-    status?: string | null
+    status?: string | number | boolean | null
 }
 
 export interface GradeProdutosView {
     id?: number
     descricao?: string
     id_produto_base?: number
+    codigo_base?: string | number | null
     produto_base?: string
     produto_descricao?: string
     sku_base?: string
+    partes?: Array<GradeParteResumo | string>
+    partes_utilizadas?: GradeParteResumo[]
+    partes_descricao?: string | null
+    quantidade_combinacoes?: number | null
     quantidade_produtos?: number
     status?: GradeProdutosStatus | null
     data_criacao?: string
@@ -159,6 +183,7 @@ export interface GradeProdutosInterface {
     getViewGradeProdutos(params: { id: number }): Promise<GradeProdutosView | undefined>
     getViewProdutoGerado(params: { id: number }): Promise<GradeProdutoGeradoView | undefined>
     listGradeProdutosPaginate(params: GradeProdutosSearch): Promise<any>
+    listProdutosGeradosPaginate(params: GradeProdutosSearch): Promise<any>
     carregarDados(params: { id_produto_base: number | string }): Promise<GradeProdutosCarregarDados | undefined>
     gerarGrade(params: GerarGradePayload): Promise<number | undefined>
     editGradeProdutos(params: GradeProdutosModel): Promise<any>

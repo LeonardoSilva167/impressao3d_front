@@ -67,7 +67,7 @@ const GradeProdutoGeradoViewPage = () => {
                         <Col xs={12}>
                             <div className="page-title-box d-sm-flex align-items-center justify-content-between">
                                 <div className="d-sm-flex align-items-center justify-content-between">
-                                    <Link to={produto?.id_grade ? `/grade-produtos/view/${produto.id_grade}` : '/grade-produtos'}>
+                                    <Link to="/grade-produtos">
                                         <i className="bx bx-arrow-back bx-sm"></i>
                                     </Link>
                                     <h4 className="mb-sm-0 ms-3">Visualizar Produto Gerado</h4>
