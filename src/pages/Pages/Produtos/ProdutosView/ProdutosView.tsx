@@ -14,10 +14,9 @@ import {
     Row,
     Spinner,
 } from 'reactstrap'
-import { LookupsProdutos, ProdutosView } from 'interfaces/Produtos/ProdutosInterface'
+import { ProdutosView } from 'interfaces/Produtos/ProdutosInterface'
 import { ProdutosService } from 'services/ProdutosService/ProdutosService'
-import { normalizarLookupsProdutos, normalizarProdutoView } from '../hooks/useProdutos'
-import VariacoesProdutoTable from '../VariacoesProdutoTable/VariacoesProdutoTable'
+import { normalizarProdutoView } from '../hooks/useProdutos'
 
 const ProdutosViewPage = () => {
     const { id } = useParams()
@@ -25,7 +24,6 @@ const ProdutosViewPage = () => {
     const produtosService = new ProdutosService()
 
     const [produto, setProduto] = useState<ProdutosView>()
-    const [lookups, setLookups] = useState<LookupsProdutos>()
     const [loading, setLoading] = useState(true)
     const loadProduto = async () => {
         if (!id) return
@@ -35,16 +33,10 @@ const ProdutosViewPage = () => {
 
         setLoading(true)
         try {
-            const [view, lookupsData] = await Promise.all([
-                produtosService.getViewProdutos({ id: produtoId }),
-                produtosService.getLookupsProdutos(),
-            ])
+            const view = await produtosService.getViewProdutos({ id: produtoId })
 
             if (view) {
                 setProduto(normalizarProdutoView(view as Record<string, any>))
-            }
-            if (lookupsData) {
-                setLookups(normalizarLookupsProdutos(lookupsData as Record<string, any>))
             }
         } catch (error) {
             console.error('Erro ao carregar produto:', error)
@@ -130,23 +122,7 @@ const ProdutosViewPage = () => {
                                                     <Label className="form-label fw-semibold">SKU Base</Label>
                                                     <div>{produto.sku_base || '—'}</div>
                                                 </Col>
-                                                <Col md={4} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Quantidade de Variações</Label>
-                                                    <div>{produto.quantidade_variacoes != null ? produto.quantidade_variacoes : 0}</div>
-                                                </Col>
                                             </Row>
-
-                                            <hr />
-
-                                            {produto.id && produto.sku_base && (
-                                                <VariacoesProdutoTable
-                                                    produtoId={produto.id}
-                                                    skuBase={produto.sku_base}
-                                                    variacoes={produto.variacoes || []}
-                                                    lookups={lookups}
-                                                    onReload={loadProduto}
-                                                />
-                                            )}
 
                                             <hr />
                                             <Row className="mt-4">

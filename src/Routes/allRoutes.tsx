@@ -74,6 +74,10 @@ import LinhasProdutosViewPage from "../pages/Pages/LinhasProdutos/LinhasProdutos
 import PartesBaseProdutosPage from "../pages/Pages/PartesBaseProdutos/PartesBaseProdutosPage";
 import PartesBaseProdutosForm from "../pages/Pages/PartesBaseProdutos/PartesBaseProdutosForm/PartesBaseProdutosForm";
 import PartesBaseProdutosViewPage from "../pages/Pages/PartesBaseProdutos/PartesBaseProdutosView/PartesBaseProdutosView";
+import ComposicaoProdutosPage from "../pages/Pages/ComposicaoProdutos/ComposicaoProdutosPage";
+import ComposicaoProdutosForm from "../pages/Pages/ComposicaoProdutos/ComposicaoProdutosForm/ComposicaoProdutosForm";
+import ComposicaoProdutosViewPage from "../pages/Pages/ComposicaoProdutos/ComposicaoProdutosView/ComposicaoProdutosView";
+import ComposicaoParteConfig from "../pages/Pages/ComposicaoProdutos/ComposicaoParteConfig/ComposicaoParteConfig";
 
 
 
@@ -183,6 +187,13 @@ const authProtectedRoutes = [
   { path: "/partes-base-produtos/add", component: <PartesBaseProdutosForm /> },
   { path: "/partes-base-produtos/edit/:id", component: <PartesBaseProdutosForm /> },
   { path: "/partes-base-produtos/view/:id", component: <PartesBaseProdutosViewPage /> },
+
+  // Composição do Produto
+  { path: "/composicao-produtos", component: <ComposicaoProdutosPage /> },
+  { path: "/composicao-produtos/add", component: <ComposicaoProdutosForm /> },
+  { path: "/composicao-produtos/edit/:id", component: <ComposicaoProdutosForm /> },
+  { path: "/composicao-produtos/view/:id", component: <ComposicaoProdutosViewPage /> },
+  { path: "/composicao-produtos/:id/parte/:idParte/configurar", component: <ComposicaoParteConfig /> },
 
   // Categorias
   { path: "/categorias-itens", component: <CategoriasPage /> },

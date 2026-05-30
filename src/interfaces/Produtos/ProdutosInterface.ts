@@ -90,6 +90,7 @@ export interface ProdutosInterface {
     getLookupsProdutos(): Promise<LookupsProdutos | undefined>
     getViewProdutos(params: { id: number }): Promise<ProdutosView | undefined>
     listProdutosPaginate(params: ProdutosSearch): Promise<PaginateInterface<ProdutosList> | undefined>
+    AsyncListProdutos(params: ProdutosSearch): Promise<ProdutosList[] | undefined>
     createProdutos(params: ProdutosModel): Promise<number | undefined>
     editProdutos(params: ProdutosModel): Promise<void>
     deleteProdutos(id: number): Promise<void>

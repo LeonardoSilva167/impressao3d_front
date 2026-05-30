@@ -73,17 +73,6 @@ const ModelosProdutosForm = () => {
                                     {display && (
                                     <form onSubmit={handleSubmit(onSubmit)}>
                                         <Row>
-                                            <Col md={4}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="codigo" className="form-label">Código</Label>
-                                                    <InputTextControlled<ModelosProdutosModel>
-                                                        field={"codigo"}
-                                                        control={control}
-                                                        required={required}
-                                                        maxLength={{ value: 20, message: "Máximo 20 caracteres" }}
-                                                    />
-                                                </div>
-                                            </Col>
                                             <Col md={8}>
                                                 <div className="mb-3">
                                                     <Label htmlFor="descricao" className="form-label">Descrição</Label>
@@ -92,6 +81,17 @@ const ModelosProdutosForm = () => {
                                                         control={control}
                                                         required={required}
                                                         maxLength={{ value: 120, message: "Máximo 120 caracteres" }}
+                                                    />
+                                                </div>
+                                            </Col>
+                                            <Col md={4}>
+                                                <div className="mb-3">
+                                                    <Label htmlFor="codigo" className="form-label">Código</Label>
+                                                    <InputTextControlled<ModelosProdutosModel>
+                                                        field={"codigo"}
+                                                        control={control}
+                                                        required={required}
+                                                        maxLength={{ value: 20, message: "Máximo 20 caracteres" }}
                                                     />
                                                 </div>
                                             </Col>

@@ -4,36 +4,25 @@ import { UnexpectedError } from '../../libs/api/exceptions/UnexpectedError'
 import { ValidationError } from '../../libs/api/exceptions/ValidationError'
 import { PaginateInterface } from 'interfaces/SystemInterfaces/PaginateInterface'
 import {
-    LookupsProdutos,
-    ProdutosInterface,
-    ProdutosList,
-    ProdutosModel,
-    ProdutosSearch,
-    ProdutosView,
-} from 'interfaces/Produtos/ProdutosInterface'
+    CarregarComposicaoParams,
+    ComposicaoProdutosInterface,
+    ComposicaoProdutosList,
+    ComposicaoProdutosModel,
+    ComposicaoProdutosSearch,
+    ComposicaoProdutosView,
+} from 'interfaces/ComposicaoProdutos/ComposicaoProdutosInterface'
 
-export class ProdutosService implements ProdutosInterface {
+export class ComposicaoProdutosService implements ComposicaoProdutosInterface {
     private readonly url: string
     private readonly httpClient: AxiosHttpClient
 
     constructor() {
-        this.url = 'produtos'
+        this.url = 'composicao-produtos'
         this.httpClient = new AxiosHttpClient()
     }
 
-    async getLookupsProdutos(): Promise<LookupsProdutos | undefined> {
-        const response = await this.httpClient.get<LookupsProdutos>({
-            url: `${this.url}/lookups`,
-        })
-        switch (response.statusCode) {
-            case HttpStatusCode.ok: return response.body
-            case HttpStatusCode.unauthorized: throw new AccessDeniedError()
-            default: throw new UnexpectedError()
-        }
-    }
-
-    async getViewProdutos(params: { id: number }): Promise<ProdutosView | undefined> {
-        const response = await this.httpClient.get<ProdutosView>({
+    async getViewComposicaoProdutos(params: { id: number }): Promise<ComposicaoProdutosView | undefined> {
+        const response = await this.httpClient.get<ComposicaoProdutosView>({
             url: `${this.url}/listar/${params.id}`,
         })
         switch (response.statusCode) {
@@ -43,9 +32,11 @@ export class ProdutosService implements ProdutosInterface {
         }
     }
 
-    async listProdutosPaginate(params: ProdutosSearch): Promise<PaginateInterface<ProdutosList> | undefined> {
+    async listComposicaoProdutosPaginate(
+        params: ComposicaoProdutosSearch
+    ): Promise<PaginateInterface<ComposicaoProdutosList> | undefined> {
         try {
-            const response = await this.httpClient.get<PaginateInterface<ProdutosList>>({
+            const response = await this.httpClient.get<PaginateInterface<ComposicaoProdutosList>>({
                 url: `${this.url}/listar`,
                 body: params,
             })
@@ -56,14 +47,14 @@ export class ProdutosService implements ProdutosInterface {
                 default: throw new UnexpectedError()
             }
         } catch (error) {
-            console.error('Erro ao buscar produtos:', error)
+            console.error('Erro ao buscar composição de produtos:', error)
             throw error
         }
     }
 
-    async AsyncListProdutos(params: ProdutosSearch): Promise<ProdutosList[] | undefined> {
-        const response = await this.httpClient.get<ProdutosList[]>({
-            url: `${this.url}/produtos-list`,
+    async carregarComposicao(params: CarregarComposicaoParams): Promise<ComposicaoProdutosView | undefined> {
+        const response = await this.httpClient.get<ComposicaoProdutosView>({
+            url: `${this.url}/carregar-composicao`,
             body: params,
         })
         switch (response.statusCode) {
@@ -73,7 +64,7 @@ export class ProdutosService implements ProdutosInterface {
         }
     }
 
-    async createProdutos(params: ProdutosModel): Promise<number | undefined> {
+    async createComposicaoProdutos(params: ComposicaoProdutosModel): Promise<number | undefined> {
         const response = await this.httpClient.post({
             url: `${this.url}/cadastrar`,
             body: params,
@@ -81,11 +72,12 @@ export class ProdutosService implements ProdutosInterface {
         switch (response.statusCode) {
             case HttpStatusCode.ok: {
                 const body = response.body as Record<string, any>
-                const payload = (body && body.produtoBase) ? body.produtoBase : body
+                const payload = (body && body.composicaoProduto)
+                    ? body.composicaoProduto
+                    : ((body && body.composicao) ? body.composicao : body)
                 const data = (payload && payload.data) ? payload.data : payload
                 const id = data && data.id
-                if (id == null || Number.isNaN(Number(id))) return undefined
-                return Number(id)
+                return id != null ? Number(id) : undefined
             }
             case HttpStatusCode.noContent: return undefined
             case HttpStatusCode.unauthorized: throw new AccessDeniedError()
@@ -94,13 +86,13 @@ export class ProdutosService implements ProdutosInterface {
         }
     }
 
-    async editProdutos(params: ProdutosModel): Promise<void> {
+    async editComposicaoProdutos(params: ComposicaoProdutosModel) {
         const response = await this.httpClient.put({
             url: `${this.url}/editar`,
             body: params,
         })
         switch (response.statusCode) {
-            case HttpStatusCode.ok:
+            case HttpStatusCode.ok: return response.body
             case HttpStatusCode.noContent: return
             case HttpStatusCode.unauthorized: throw new AccessDeniedError()
             case HttpStatusCode.invalidForm: throw new ValidationError(response.body)
@@ -108,12 +100,12 @@ export class ProdutosService implements ProdutosInterface {
         }
     }
 
-    async deleteProdutos(id: number): Promise<void> {
+    async deleteComposicaoProdutos(id: number) {
         const response = await this.httpClient.delete({
             url: `${this.url}/excluir/${id}`,
         })
         switch (response.statusCode) {
-            case HttpStatusCode.ok:
+            case HttpStatusCode.ok: return response
             case HttpStatusCode.noContent: return
             case HttpStatusCode.unauthorized: throw new AccessDeniedError()
             case HttpStatusCode.invalidForm: throw new ValidationError(response.body)

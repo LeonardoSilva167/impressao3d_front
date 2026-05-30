@@ -2,17 +2,16 @@ import UiContent from 'Components/Common/UiContent'
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-    ButtonGroup, Card, CardBody, Col, DropdownItem,
+    Badge, ButtonGroup, Card, CardBody, Col, DropdownItem,
     DropdownMenu, DropdownToggle, Label, Row, UncontrolledDropdown
 } from 'reactstrap'
 import { PaginateInterface, PaginateSearch, PerPageProps } from 'interfaces/SystemInterfaces/PaginateInterface'
-import CustomModal from 'Components/ComponentController/Modal/CustomModal'
-import { ProdutosList, ProdutosSearch } from 'interfaces/Produtos/ProdutosInterface'
-import { ProdutosService } from 'services/ProdutosService/ProdutosService'
+import { ComposicaoProdutosList, ComposicaoProdutosSearch } from 'interfaces/ComposicaoProdutos/ComposicaoProdutosInterface'
+import { obterClasseBadgeStatus, obterLabelStatus } from '../hooks/useComposicaoProdutos'
 
-export interface ProdutosTableProps {
-    data: PaginateInterface<ProdutosList> | undefined
-    getData: (data: PaginateSearch & ProdutosSearch) => void
+export interface ComposicaoProdutosTableProps {
+    data: PaginateInterface<ComposicaoProdutosList> | undefined
+    getData: (data: PaginateSearch & ComposicaoProdutosSearch) => void
     setPerPage: (perPage: number) => void
     setPage: (page: number) => void
     page: number
@@ -20,12 +19,17 @@ export interface ProdutosTableProps {
     filters: any
 }
 
-const ProdutosTable = ({
-    data,
-    getData,
-    setPerPage,
-    perPage,
-}: ProdutosTableProps) => {
+const obterNomeProduto = (row: ComposicaoProdutosList): string =>
+    row.produto || row.produto_descricao || '—'
+
+const obterNomeProjeto = (row: ComposicaoProdutosList): string => {
+    if (row.projeto) return row.projeto
+    if (row.projeto_descricao) return row.projeto_descricao
+    const partes = [row.codigo_projeto, row.nome_projeto].filter(Boolean)
+    return partes.length > 0 ? partes.join(' - ') : '—'
+}
+
+export const ComposicaoProdutosTable = ({ data, getData, setPerPage, perPage }: ComposicaoProdutosTableProps) => {
     const [optPerPage] = useState<PerPageProps[]>([
         { value: 5, label: '5' },
         { value: 10, label: '10' },
@@ -33,31 +37,12 @@ const ProdutosTable = ({
         { value: 50, label: '50' },
         { value: 100, label: '100' },
     ])
-    const produtosService = new ProdutosService()
-    const [modalIsOpen, setModalIsOpen] = useState(false)
-    const [selectedId, setSelectedId] = useState<number | null>(null)
-
-    const toggleModal = () => setModalIsOpen(!modalIsOpen)
-
-    const handleRemoteDelete = async (id: number) => {
-        try {
-            await produtosService.deleteProdutos(id)
-            if (data) await handleThisRoute(data.first_page_url)
-            toggleModal()
-        } catch (error) {
-            console.error('Erro ao excluir:', error)
-        }
-    }
-
     const handleThisRoute = async (url: string) => {
         try {
             const new_url = new URL(url)
             await getData({
                 page: Number(new_url.searchParams.get('page')),
                 palavra_chave: new_url.searchParams.get('palavra_chave'),
-                codigo_base: new_url.searchParams.get('codigo_base'),
-                descricao_produto: new_url.searchParams.get('descricao_produto'),
-                sku_base: new_url.searchParams.get('sku_base'),
             })
         } catch (error) {
             console.error(error)
@@ -113,26 +98,22 @@ const ProdutosTable = ({
                                                     <table className="table align-middle table-nowrap table-striped-columns mb-0 text-center">
                                                         <thead className="table-light">
                                                             <tr>
-                                                                <th scope="col" className="text-start">Código Base</th>
-                                                                <th scope="col" className="text-start">Descrição</th>
-                                                                <th scope="col" className="text-start">Categoria</th>
-                                                                <th scope="col" className="text-start">Modelo</th>
-                                                                <th scope="col" className="text-start">Linha</th>
-                                                                <th scope="col" className="text-start">SKU Base</th>
-                                                                <th scope="col">Qtd. Variações</th>
+                                                                <th scope="col" className="text-start">Produto</th>
+                                                                <th scope="col" className="text-start">Projeto</th>
+                                                                <th scope="col">Status</th>
                                                                 <th scope="col" style={{ width: '150px' }}>Ação</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {data.data.map((row: ProdutosList, index: number) => (
+                                                            {data.data.map((row: ComposicaoProdutosList, index: number) => (
                                                                 <tr key={row.id != null ? row.id : index}>
-                                                                    <td className="text-start">{row.codigo_base}</td>
-                                                                    <td className="text-start">{row.descricao_produto}</td>
-                                                                    <td className="text-start">{row.categoria || '—'}</td>
-                                                                    <td className="text-start">{row.modelo || '—'}</td>
-                                                                    <td className="text-start">{row.linha || '—'}</td>
-                                                                    <td className="text-start">{row.sku_base || '—'}</td>
-                                                                    <td>{row.quantidade_variacoes != null ? row.quantidade_variacoes : 0}</td>
+                                                                    <td className="text-start">{obterNomeProduto(row)}</td>
+                                                                    <td className="text-start">{obterNomeProjeto(row)}</td>
+                                                                    <td>
+                                                                        <Badge className={obterClasseBadgeStatus(row.status)}>
+                                                                            {obterLabelStatus(row.status)}
+                                                                        </Badge>
+                                                                    </td>
                                                                     <td>
                                                                         <ButtonGroup>
                                                                             <UncontrolledDropdown direction="down">
@@ -140,28 +121,18 @@ const ProdutosTable = ({
                                                                                     <i className="ri-more-2-fill"></i>
                                                                                 </DropdownToggle>
                                                                                 <DropdownMenu style={{ zIndex: '999' }}>
-                                                                                    <Link to={`/produtos/view/${row.id}`} state={{ source: row }}>
+                                                                                    <Link
+                                                                                        to={`/composicao-produtos/view/${row.id}`}
+                                                                                        state={{ source: row }}
+                                                                                    >
                                                                                         <DropdownItem>Visualizar</DropdownItem>
                                                                                     </Link>
-                                                                                    <Link to={`/produtos/edit/${row.id}`} state={{ source: row }}>
+                                                                                    <Link
+                                                                                        to={`/composicao-produtos/edit/${row.id}`}
+                                                                                        state={{ source: row }}
+                                                                                    >
                                                                                         <DropdownItem>Editar</DropdownItem>
                                                                                     </Link>
-                                                                                    <DropdownItem
-                                                                                        onClick={() => {
-                                                                                            setSelectedId(row.id!)
-                                                                                            toggleModal()
-                                                                                        }}
-                                                                                    >
-                                                                                        Excluir
-                                                                                    </DropdownItem>
-                                                                                    <CustomModal
-                                                                                        isOpen={modalIsOpen}
-                                                                                        toggle={toggleModal}
-                                                                                        title="Confirmação de Exclusão"
-                                                                                        delete={true}
-                                                                                        body=""
-                                                                                        onConfirmDelete={() => handleRemoteDelete(selectedId!)}
-                                                                                    />
                                                                                 </DropdownMenu>
                                                                             </UncontrolledDropdown>
                                                                         </ButtonGroup>
@@ -203,6 +174,28 @@ const ProdutosTable = ({
                                                     </li>
                                                 </ul>
                                             </Col>
+                                            <Col xs="12" className="d-block d-sm-none">
+                                                <ul className="pagination pagination-md justify-content-center mb-2">
+                                                    <li className={data.current_page === 1 ? 'page-item disabled' : 'page-item'}>
+                                                        <Link to="#" className="page-link" onClick={() => handleThisRoute(data.links[0].url)}>Anterior</Link>
+                                                    </li>
+                                                </ul>
+                                                <ul className="pagination pagination-md justify-content-center mb-2 flex-wrap">
+                                                    {data.links.map((item: any, key: number) => {
+                                                        if (key === 0 || key === data.links.length - 1) return null
+                                                        return (
+                                                            <li key={item.label} className={`page-item ${item.active ? 'active' : ''}`}>
+                                                                <Link to="#" className="page-link" onClick={() => handleThisRoute(item.url)}>{item.label}</Link>
+                                                            </li>
+                                                        )
+                                                    })}
+                                                </ul>
+                                                <ul className="pagination pagination-md justify-content-center mb-0">
+                                                    <li className={data.current_page === data.last_page ? 'page-item disabled' : 'page-item'}>
+                                                        <Link to="#" className="page-link" onClick={() => handleThisRoute(data.links[data.links.length - 1].url)}>Próximo</Link>
+                                                    </li>
+                                                </ul>
+                                            </Col>
                                         </Row>
                                     </>
                                 )}
@@ -222,4 +215,4 @@ const ProdutosTable = ({
     )
 }
 
-export default ProdutosTable
+export default ComposicaoProdutosTable

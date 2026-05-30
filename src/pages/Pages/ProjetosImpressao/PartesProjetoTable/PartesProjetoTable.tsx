@@ -9,7 +9,6 @@ import { ProjetosImpressaoParteItensService } from 'services/ProjetosImpressaoPa
 import {
     calcularPesoTotalParte,
     calcularResumoPartesItens,
-    flattenPartesItens,
     formatarHexadecimalCss,
     formatarNumeroDecimal,
     obterValorNumerico,
@@ -38,8 +37,8 @@ const PartesProjetoTable = ({ projetoId, partes, onReload, readOnly = false }: P
     const [deleteTarget, setDeleteTarget] = useState<{ tipo: 'parte' | 'item'; id: number } | null>(null)
     const [salvando, setSalvando] = useState(false)
 
-    const linhas = useMemo(() => flattenPartesItens(partes), [partes])
     const resumo = useMemo(() => calcularResumoPartesItens(partes), [partes])
+    const totalColunas = readOnly ? 5 : 6
 
     const abrirModalNovaParte = () => {
         setParteEmEdicao(null)
@@ -171,7 +170,7 @@ const PartesProjetoTable = ({ projetoId, partes, onReload, readOnly = false }: P
 
             <Card>
                 <CardBody>
-                    {linhas.length === 0 ? (
+                    {partes.length === 0 ? (
                         <p className="text-muted text-center mb-0">Nenhuma parte ou item cadastrado.</p>
                     ) : (
                         <div className="table-responsive">
@@ -187,104 +186,122 @@ const PartesProjetoTable = ({ projetoId, partes, onReload, readOnly = false }: P
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {linhas.map((linha) => {
-                                        const item = linha.item
-                                        const pesoTotal = item
-                                            ? (item.peso_total != null
-                                                ? obterValorNumerico(item.peso_total)
-                                                : calcularPesoTotalParte(item))
-                                            : 0
+                                    {partes.map((parte) => {
+                                        const itens = parte.itens || []
 
                                         return (
-                                            <tr key={linha.chave}>
-                                                <td className="text-start">{linha.parte.nome_parte || '—'}</td>
-                                                <td className="text-start">{item ? item.nome_item : '—'}</td>
-                                                <td>
-                                                    {item ? (
-                                                        <div className="d-flex align-items-center justify-content-center gap-2">
-                                                            {item.cor_hexadecimal && (
-                                                                <span
-                                                                    style={{
-                                                                        width: '18px',
-                                                                        height: '18px',
-                                                                        borderRadius: '50%',
-                                                                        background: formatarHexadecimalCss(item.cor_hexadecimal),
-                                                                        border: '1px solid #ccc',
-                                                                        display: 'inline-block',
-                                                                    }}
-                                                                />
+                                            <React.Fragment key={`parte-${parte.id}`}>
+                                                <tr className="table-active">
+                                                    <td colSpan={totalColunas} className="text-start">
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <span className="fw-semibold">{parte.nome_parte || '—'}</span>
+                                                            {!readOnly && parte.id && (
+                                                                <div>
+                                                                    <Button
+                                                                        color="soft-success"
+                                                                        size="sm"
+                                                                        type="button"
+                                                                        className="me-1"
+                                                                        title="Adicionar Item"
+                                                                        onClick={() => abrirModalNovoItem(parte)}
+                                                                    >
+                                                                        <i className="ri-add-line"></i>
+                                                                    </Button>
+                                                                    <Button
+                                                                        color="soft-primary"
+                                                                        size="sm"
+                                                                        type="button"
+                                                                        className="me-1"
+                                                                        onClick={() => abrirModalEditarParte(parte)}
+                                                                    >
+                                                                        <i className="ri-edit-line"></i>
+                                                                    </Button>
+                                                                    <Button
+                                                                        color="soft-danger"
+                                                                        size="sm"
+                                                                        type="button"
+                                                                        onClick={() => confirmarExclusao('parte', Number(parte.id))}
+                                                                    >
+                                                                        <i className="ri-delete-bin-line"></i>
+                                                                    </Button>
+                                                                </div>
                                                             )}
-                                                            <span>{item.cor_descricao || '—'}</span>
                                                         </div>
-                                                    ) : '—'}
-                                                </td>
-                                                <td>{item ? (item.tempo_impressao || '—') : '—'}</td>
-                                                <td>
-                                                    {item && pesoTotal > 0
-                                                        ? `${formatarNumeroDecimal(pesoTotal)}g`
-                                                        : '—'}
-                                                </td>
-                                                {!readOnly && (
-                                                    <td>
-                                                        {!item && linha.parte.id && (
-                                                            <>
-                                                                <Button
-                                                                    color="soft-success"
-                                                                    size="sm"
-                                                                    type="button"
-                                                                    className="me-1"
-                                                                    title="Adicionar Item"
-                                                                    onClick={() => abrirModalNovoItem(linha.parte)}
-                                                                >
-                                                                    <i className="ri-add-line"></i>
-                                                                </Button>
-                                                                <Button
-                                                                    color="soft-primary"
-                                                                    size="sm"
-                                                                    type="button"
-                                                                    className="me-1"
-                                                                    onClick={() => abrirModalEditarParte(linha.parte)}
-                                                                >
-                                                                    <i className="ri-edit-line"></i>
-                                                                </Button>
-                                                                <Button
-                                                                    color="soft-danger"
-                                                                    size="sm"
-                                                                    type="button"
-                                                                    onClick={() => confirmarExclusao('parte', Number(linha.parte.id))}
-                                                                >
-                                                                    <i className="ri-delete-bin-line"></i>
-                                                                </Button>
-                                                            </>
-                                                        )}
-                                                        {item && item.id && (
-                                                            <>
-                                                                <Button
-                                                                    color="soft-primary"
-                                                                    size="sm"
-                                                                    type="button"
-                                                                    className="me-1"
-                                                                    onClick={() => abrirModalEditarItem(linha.parte, item)}
-                                                                >
-                                                                    <i className="ri-edit-line"></i>
-                                                                </Button>
-                                                                <Button
-                                                                    color="soft-danger"
-                                                                    size="sm"
-                                                                    type="button"
-                                                                    onClick={() => confirmarExclusao('item', Number(item.id))}
-                                                                >
-                                                                    <i className="ri-delete-bin-line"></i>
-                                                                </Button>
-                                                            </>
-                                                        )}
                                                     </td>
+                                                </tr>
+                                                {itens.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={totalColunas} className="text-muted text-start ps-4">
+                                                            Nenhum item cadastrado.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    itens.map((item) => {
+                                                        const pesoTotal = item.peso_total != null
+                                                            ? obterValorNumerico(item.peso_total)
+                                                            : calcularPesoTotalParte(item)
+
+                                                        return (
+                                                            <tr key={`item-${item.id}`}>
+                                                                <td />
+                                                                <td className="text-start">{item.nome_item || '—'}</td>
+                                                                <td>
+                                                                    <div className="d-flex align-items-center justify-content-center gap-2">
+                                                                        {item.cor_hexadecimal && (
+                                                                            <span
+                                                                                style={{
+                                                                                    width: '18px',
+                                                                                    height: '18px',
+                                                                                    borderRadius: '50%',
+                                                                                    background: formatarHexadecimalCss(item.cor_hexadecimal),
+                                                                                    border: '1px solid #ccc',
+                                                                                    display: 'inline-block',
+                                                                                }}
+                                                                            />
+                                                                        )}
+                                                                        <span>{item.cor_descricao || '—'}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td>{item.tempo_impressao || '—'}</td>
+                                                                <td>
+                                                                    {pesoTotal > 0
+                                                                        ? `${formatarNumeroDecimal(pesoTotal)}g`
+                                                                        : '—'}
+                                                                </td>
+                                                                {!readOnly && (
+                                                                    <td>
+                                                                        {item.id && (
+                                                                            <>
+                                                                                <Button
+                                                                                    color="soft-primary"
+                                                                                    size="sm"
+                                                                                    type="button"
+                                                                                    className="me-1"
+                                                                                    onClick={() => abrirModalEditarItem(parte, item)}
+                                                                                >
+                                                                                    <i className="ri-edit-line"></i>
+                                                                                </Button>
+                                                                                <Button
+                                                                                    color="soft-danger"
+                                                                                    size="sm"
+                                                                                    type="button"
+                                                                                    onClick={() => confirmarExclusao('item', Number(item.id))}
+                                                                                >
+                                                                                    <i className="ri-delete-bin-line"></i>
+                                                                                </Button>
+                                                                            </>
+                                                                        )}
+                                                                    </td>
+                                                                )}
+                                                            </tr>
+                                                        )
+                                                    })
                                                 )}
-                                            </tr>
+                                            </React.Fragment>
                                         )
                                     })}
                                 </tbody>
-                                {linhas.length > 0 && (
+                                {partes.length > 0 && (
                                     <tfoot className="table-light">
                                         <tr>
                                             <td colSpan={readOnly ? 2 : 2} className="text-end fw-semibold">

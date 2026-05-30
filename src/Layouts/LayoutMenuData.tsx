@@ -433,6 +433,12 @@ const Navdata = () => {
                     link: "/produtos",
                     parentId: "ProdutosMenu",
                 },
+                {
+                    id: "composicao-produtos",
+                    label: "Composição do Produto",
+                    link: "/composicao-produtos",
+                    parentId: "ProdutosMenu",
+                },
             ],
         },
         {
