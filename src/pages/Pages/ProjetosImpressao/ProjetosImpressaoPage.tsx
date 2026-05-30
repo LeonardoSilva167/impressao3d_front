@@ -6,6 +6,7 @@ import { ProjetosImpressaoList, ProjetosImpressaoSearch } from 'interfaces/Proje
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
 import ProjetosImpressaoFilter from './ProjetosImpressaoFilter/ProjetosImpressaoFilter'
 import ProjetosImpressaoTable from './ProjetosImpressaoTable/ProjetosImpressaoTable'
+import { normalizarProjetosImpressaoPaginate } from './hooks/useProjetosImpressao'
 
 type ProjetosImpressaoFilterContextType = {
     firstEntry: boolean
@@ -46,7 +47,7 @@ const ProjetosImpressaoPage = () => {
         projetosContext.palavra_chave = data.palavra_chave
         projetosContext.page = data.page
         projetosContext.firstEntry = true
-        if (list) setProjetosList(list)
+        if (list) setProjetosList(normalizarProjetosImpressaoPaginate(list))
     }
 
     useEffect(() => {

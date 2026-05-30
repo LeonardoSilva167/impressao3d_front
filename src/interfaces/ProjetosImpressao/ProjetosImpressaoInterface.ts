@@ -16,12 +16,6 @@ export interface ProjetosImpressaoView {
     nome_original_projeto?: string
     codigo_projeto?: string
     descricao_projeto?: string
-    bico_padrao?: string
-    tempo_total_projeto?: string
-    peso_total_projeto?: number | string
-    custo_estimado?: number | string
-    quantidade_partes?: number
-    cores?: CorProjetoModel[]
     partes?: ParteProjetoImpressaoModel[]
 }
 
@@ -30,11 +24,6 @@ export interface ProjetosImpressaoList {
     codigo_projeto?: string
     nome_original_projeto?: string
     descricao_projeto?: string
-    bico_padrao?: string
-    tempo_total_projeto?: string
-    peso_total_projeto?: number | string
-    custo_estimado?: number | string
-    quantidade_partes?: number
 }
 
 export interface ProjetosImpressaoModel {
@@ -44,22 +33,13 @@ export interface ProjetosImpressaoModel {
     nome_original_projeto?: string | undefined | null
     codigo_projeto?: string | undefined | null
     descricao_projeto?: string | undefined | null
-    bico_padrao?: string | undefined | null
-    tempo_total_projeto?: string | undefined | null
-    peso_total_projeto?: number | string | undefined | null
-    cores?: CorProjetoModel[]
-    partes?: ParteProjetoImpressaoModel[]
-}
-
-export interface LookupsProjetosImpressao {
-    // reservado para lookups futuros
 }
 
 export interface ProjetosImpressaoInterface {
     getViewProjetosImpressao(params: { id: number }): Promise<ProjetosImpressaoView | undefined>
     listProjetosImpressaoPaginate(params: ProjetosImpressaoSearch): Promise<any>
     AsyncListProjetosImpressao(params: ProjetosImpressaoSearch): Promise<ProjetosImpressaoModel[] | undefined>
-    createProjetosImpressao(params: ProjetosImpressaoModel): Promise<any>
+    createProjetosImpressao(params: ProjetosImpressaoModel): Promise<number | undefined>
     editProjetosImpressao(params: ProjetosImpressaoModel): Promise<any>
     deleteProjetosImpressao(id: number): Promise<any>
 }
@@ -71,9 +51,7 @@ export const ProjetosImpressaoDefaultValues: ProjetosImpressaoModel = {
     nome_original_projeto: null,
     codigo_projeto: null,
     descricao_projeto: null,
-    bico_padrao: '0.4',
-    tempo_total_projeto: null,
-    peso_total_projeto: null,
-    cores: [],
-    partes: [],
 }
+
+/** @deprecated Project-level colors removed; kept for legacy references */
+export type { CorProjetoModel }

@@ -7,19 +7,11 @@ import { Breadcrumb, BreadcrumbItem, Card, CardBody, Col, Container, Label, Row,
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { required } from 'Components/ComponentController/ValidatorForm/ValidatorForm'
 import { InputTextControlled } from 'Components/ComponentController/Inputs/Text/InputTextControlled'
-import { InputTextArea } from 'Components/ComponentController/Inputs/Text/InputTextArea'
-import { InputNumber } from 'Components/ComponentController/Inputs/Number/InputNumber'
-import { SelectListControlled } from 'Components/ComponentController/Selects/Select/SelectListControlled'
-import { BICO_OPTIONS } from 'interfaces/ConfiguracoesTecnicas/ConfiguracoesTecnicasInterface'
-import { CorProjetoModel } from 'interfaces/ProjetosImpressao/CorProjetoInterface'
-import { ParteProjetoImpressaoModel } from 'interfaces/ProjetosImpressao/ParteProjetoImpressaoInterface'
 import {
     ProjetosImpressaoDefaultValues,
     ProjetosImpressaoModel,
 } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
-import { validarSomaCoresIgualPesoTotal, normalizarCoresProjeto } from '../hooks/useProjetosImpressao'
-import FilamentosProjetoTable from '../FilamentosProjetoTable/FilamentosProjetoTable'
 
 const ProjetosImpressaoForm = () => {
     const { state } = useLocation()
@@ -27,7 +19,7 @@ const ProjetosImpressaoForm = () => {
     const recordId = state && state.source && state.source.id ? state.source.id : (id ? Number(id) : null)
     const isEditing = recordId != null
 
-    const { handleSubmit, control, register, reset, watch } = useForm<ProjetosImpressaoModel>({
+    const { handleSubmit, control, reset } = useForm<ProjetosImpressaoModel>({
         defaultValues: ProjetosImpressaoDefaultValues,
     })
     const { voltarParaRotaAnterior } = useNavegacao()
@@ -35,10 +27,6 @@ const ProjetosImpressaoForm = () => {
     const projetosImpressaoService = new ProjetosImpressaoService()
 
     const [loadingRecord, setLoadingRecord] = useState(isEditing)
-    const [filamentos, setFilamentos] = useState<CorProjetoModel[]>([])
-    const [partesExistentes, setPartesExistentes] = useState<ParteProjetoImpressaoModel[]>([])
-
-    const pesoTotalWatch = watch('peso_total_projeto')
 
     const loadRecord = async (): Promise<void> => {
         if (!recordId) return
@@ -53,12 +41,7 @@ const ProjetosImpressaoForm = () => {
                     nome_original_projeto: view.nome_original_projeto,
                     codigo_projeto: view.codigo_projeto,
                     descricao_projeto: view.descricao_projeto,
-                    bico_padrao: view.bico_padrao || '0.4',
-                    tempo_total_projeto: view.tempo_total_projeto,
-                    peso_total_projeto: view.peso_total_projeto,
                 })
-                setFilamentos(normalizarCoresProjeto(view.cores ? view.cores : []))
-                setPartesExistentes(view.partes ? view.partes : [])
             }
         } catch (error) {
             console.error('Erro ao carregar projeto:', error)
@@ -68,32 +51,14 @@ const ProjetosImpressaoForm = () => {
         }
     }
 
-    const validarFilamentos = (): boolean => {
-        if (filamentos.length === 0) {
-            toast.error('Adicione ao menos um filamento ao projeto.')
-            return false
-        }
-        if (!validarSomaCoresIgualPesoTotal(filamentos, pesoTotalWatch)) {
-            toast.error('O somatório dos filamentos deve ser igual ao peso total do projeto.')
-            return false
-        }
-        return true
-    }
-
-    const montarPayloadCores = () => filamentos.map(({ id_cor, id_filamento, peso_gramas }) => ({
-        id_cor,
-        id_filamento,
-        peso_gramas,
-    }))
-
     const onSubmit: SubmitHandler<ProjetosImpressaoModel> = async (data) => {
-        if (!validarFilamentos()) return
-
         try {
             const payload: ProjetosImpressaoModel = {
-                ...data,
-                cores: montarPayloadCores(),
-                partes: isEditing ? partesExistentes : [],
+                id: data.id,
+                url_projeto: data.url_projeto,
+                nome_original_projeto: data.nome_original_projeto,
+                codigo_projeto: data.codigo_projeto,
+                descricao_projeto: data.descricao_projeto,
             }
 
             if (isEditing) {
@@ -103,7 +68,11 @@ const ProjetosImpressaoForm = () => {
             } else {
                 const newId = await projetosImpressaoService.createProjetosImpressao(payload)
                 toast.success('Projeto cadastrado com sucesso.')
-                navigate(`/projetos-impressao/view/${newId}`)
+                if (newId) {
+                    navigate(`/projetos-impressao/view/${newId}`)
+                } else {
+                    navigate('/projetos-impressao')
+                }
             }
         } catch (error: any) {
             console.error('Erro ao salvar projeto:', error)
@@ -119,7 +88,6 @@ const ProjetosImpressaoForm = () => {
                 ...ProjetosImpressaoDefaultValues,
                 ...state.source,
             })
-            setFilamentos(normalizarCoresProjeto(state.source.cores ? state.source.cores : []))
         }
     }, [recordId])
 
@@ -174,6 +142,7 @@ const ProjetosImpressaoForm = () => {
                                                         <InputTextControlled<ProjetosImpressaoModel>
                                                             field={'url_projeto'}
                                                             control={control}
+                                                            required={required}
                                                             placeholder="https://..."
                                                         />
                                                     </div>
@@ -184,7 +153,7 @@ const ProjetosImpressaoForm = () => {
                                                         <InputTextControlled<ProjetosImpressaoModel>
                                                             field={'nome_original_projeto'}
                                                             control={control}
-                                                            rules={required}
+                                                            required={required}
                                                         />
                                                     </div>
                                                 </Col>
@@ -197,65 +166,25 @@ const ProjetosImpressaoForm = () => {
                                                         <InputTextControlled<ProjetosImpressaoModel>
                                                             field={'codigo_projeto'}
                                                             control={control}
-                                                            rules={required}
+                                                            required={required}
                                                         />
                                                     </div>
                                                 </Col>
                                                 <Col md={8}>
                                                     <div className="mb-3">
                                                         <Label htmlFor="descricao_projeto" className="form-label">Descrição/Apelido Projeto</Label>
-                                                        <InputTextArea<ProjetosImpressaoModel>
-                                                            field={'descricao_projeto'}
-                                                            register={register}
-                                                            rows={2}
-                                                        />
-                                                    </div>
-                                                </Col>
-                                            </Row>
-
-                                            <Row>
-                                                <Col md={4}>
-                                                    <div className="mb-3">
-                                                        <Label htmlFor="bico_padrao" className="form-label">Bico Padrão</Label>
-                                                        <SelectListControlled<ProjetosImpressaoModel>
-                                                            field={'bico_padrao'}
-                                                            control={control}
-                                                            options={BICO_OPTIONS}
-                                                            required={required}
-                                                        />
-                                                    </div>
-                                                </Col>
-                                                <Col md={4}>
-                                                    <div className="mb-3">
-                                                        <Label htmlFor="tempo_total_projeto" className="form-label">Tempo Total Projeto</Label>
                                                         <InputTextControlled<ProjetosImpressaoModel>
-                                                            field={'tempo_total_projeto'}
+                                                            field={'descricao_projeto'}
                                                             control={control}
-                                                            rules={required}
-                                                            placeholder="Ex: 3.5h"
-                                                        />
-                                                    </div>
-                                                </Col>
-                                                <Col md={4}>
-                                                    <div className="mb-3">
-                                                        <Label htmlFor="peso_total_projeto" className="form-label">Peso Total Projeto (g)</Label>
-                                                        <InputNumber<ProjetosImpressaoModel>
-                                                            field={'peso_total_projeto'}
-                                                            register={register}
                                                             required={required}
+                                                            placeholder="Ex: Caixa de Jóias Nº1"
                                                         />
                                                     </div>
                                                 </Col>
                                             </Row>
-
-                                            <FilamentosProjetoTable
-                                                filamentos={filamentos}
-                                                onChange={setFilamentos}
-                                                pesoTotalProjeto={pesoTotalWatch}
-                                            />
 
                                             <hr />
-                                            <Row className="mt-5">
+                                            <Row className="mt-4">
                                                 <Col md={12}>
                                                     <div className="hstack gap-2 justify-content-end">
                                                         <button type="submit" className="btn btn-primary">

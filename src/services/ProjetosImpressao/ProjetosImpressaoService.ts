@@ -61,14 +61,25 @@ export class ProjetosImpressaoService implements ProjetosImpressaoInterface {
         }
     }
 
-    async createProjetosImpressao(params: ProjetosImpressaoModel) {
+    async createProjetosImpressao(params: ProjetosImpressaoModel): Promise<number | undefined> {
         const response = await this.httpClient.post({
             url: this.url + '/cadastrar',
             body: params,
         })
         switch (response.statusCode) {
-            case HttpStatusCode.ok: return response.body
-            case HttpStatusCode.noContent: return
+            case HttpStatusCode.ok: {
+                const body = response.body as Record<string, any>
+                const projetoPayload = body?.projetoImpressao ?? body
+                const data = projetoPayload?.data ?? projetoPayload
+                const id = data?.id
+
+                if (id == null || Number.isNaN(Number(id))) {
+                    return undefined
+                }
+
+                return Number(id)
+            }
+            case HttpStatusCode.noContent: return undefined
             case HttpStatusCode.unauthorized: throw new AccessDeniedError()
             case HttpStatusCode.invalidForm: throw new ValidationError(response.body)
             default: throw new UnexpectedError(response.message)

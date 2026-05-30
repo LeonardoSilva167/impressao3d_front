@@ -9,8 +9,6 @@ import { PaginateInterface, PaginateSearch, PerPageProps } from 'interfaces/Syst
 import CustomModal from 'Components/ComponentController/Modal/CustomModal'
 import { ProjetosImpressaoList, ProjetosImpressaoSearch } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
-import { formatarParaMoedaSemSimbolo } from 'helpers/functions_helpers'
-import { formatarNumeroDecimal, obterValorNumerico } from '../hooks/useProjetosImpressao'
 
 export interface ProjetosImpressaoTableProps {
     data: PaginateInterface<ProjetosImpressaoList> | undefined
@@ -116,11 +114,8 @@ export const ProjetosImpressaoTable = ({
                                                         <thead className="table-light">
                                                             <tr>
                                                                 <th scope="col" className="text-start">Código Projeto</th>
-                                                                <th scope="col" className="text-start">Nome Projeto</th>
-                                                                <th scope="col">Peso Total</th>
-                                                                <th scope="col">Tempo Total</th>
-                                                                <th scope="col">Custo Estimado</th>
-                                                                <th scope="col">Quantidade Partes</th>
+                                                                <th scope="col" className="text-start">Nome Original</th>
+                                                                <th scope="col" className="text-start">Descrição/Apelido</th>
                                                                 <th scope="col" style={{ width: '150px' }}>Ação</th>
                                                             </tr>
                                                         </thead>
@@ -129,18 +124,7 @@ export const ProjetosImpressaoTable = ({
                                                                 <tr key={row.id != null ? row.id : index}>
                                                                     <td className="text-start">{row.codigo_projeto}</td>
                                                                     <td className="text-start">{row.nome_original_projeto}</td>
-                                                                    <td>
-                                                                        {row.peso_total_projeto != null
-                                                                            ? `${formatarNumeroDecimal(obterValorNumerico(row.peso_total_projeto))}g`
-                                                                            : '—'}
-                                                                    </td>
-                                                                    <td>{row.tempo_total_projeto || '—'}</td>
-                                                                    <td>
-                                                                        {row.custo_estimado != null
-                                                                            ? `R$ ${formatarParaMoedaSemSimbolo(row.custo_estimado)}`
-                                                                            : '—'}
-                                                                    </td>
-                                                                    <td>{row.quantidade_partes != null ? row.quantidade_partes : 0}</td>
+                                                                    <td className="text-start">{row.descricao_projeto || '—'}</td>
                                                                     <td>
                                                                         <ButtonGroup>
                                                                             <UncontrolledDropdown direction="down">

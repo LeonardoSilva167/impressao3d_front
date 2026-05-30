@@ -19,9 +19,14 @@ export class FilamentosService implements FilamentosInterface {
         this.httpClient = new AxiosHttpClient()
     }
 
-    async getViewFilamentos(params: any): Promise<FilamentosView | undefined> {
+    async getViewFilamentos(params: { id: string | number | null | undefined }): Promise<FilamentosView | undefined> {
+        const id = params.id
+        if (id == null || String(id).trim() === '' || String(id) === 'undefined') {
+            return undefined
+        }
+
         const response = await this.httpClient.get<FilamentosView>({
-            url: `${this.url}/listar/${params.id}`
+            url: `${this.url}/listar/${id}`
         })
         switch (response.statusCode) {
             case HttpStatusCode.ok: return response.body

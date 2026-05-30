@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
-import { formatarParaMoedaSemSimbolo, useNavegacao } from 'helpers/functions_helpers'
+import { useNavegacao } from 'helpers/functions_helpers'
 import {
     Breadcrumb,
     BreadcrumbItem,
-    Button,
     Card,
     CardBody,
     Col,
@@ -15,17 +14,10 @@ import {
     Row,
     Spinner,
 } from 'reactstrap'
-import { CorProjetoModel } from 'interfaces/ProjetosImpressao/CorProjetoInterface'
 import { ParteProjetoImpressaoModel } from 'interfaces/ProjetosImpressao/ParteProjetoImpressaoInterface'
 import { ProjetosImpressaoView } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
-import {
-    calcularCustoTotalFilamentos,
-    formatarNumeroDecimal,
-    normalizarCoresProjeto,
-    obterValorNumerico,
-} from '../hooks/useProjetosImpressao'
-import FilamentosProjetoTable from '../FilamentosProjetoTable/FilamentosProjetoTable'
+import { normalizarPartesProjeto, normalizarProjetoImpressao } from '../hooks/useProjetosImpressao'
 import PartesProjetoTable from '../PartesProjetoTable/PartesProjetoTable'
 
 const ProjetosImpressaoViewPage = () => {
@@ -35,58 +27,27 @@ const ProjetosImpressaoViewPage = () => {
 
     const [projeto, setProjeto] = useState<ProjetosImpressaoView>()
     const [partes, setPartes] = useState<ParteProjetoImpressaoModel[]>([])
-    const [filamentos, setFilamentos] = useState<CorProjetoModel[]>([])
     const [loading, setLoading] = useState(true)
-    const [savingPartes, setSavingPartes] = useState(false)
 
     const loadProjeto = async () => {
         if (!id) return
 
+        const projetoId = Number(id)
+        if (Number.isNaN(projetoId)) return
+
         setLoading(true)
         try {
-            const view = await projetosImpressaoService.getViewProjetosImpressao({ id: Number(id) })
+            const view = await projetosImpressaoService.getViewProjetosImpressao({ id: projetoId })
             if (view) {
-                setProjeto(view)
-                setFilamentos(normalizarCoresProjeto(view.cores ? view.cores : []))
-                setPartes(view.partes ? view.partes : [])
+                const projetoNormalizado = normalizarProjetoImpressao(view)
+                setProjeto(projetoNormalizado)
+                setPartes(normalizarPartesProjeto(projetoNormalizado.partes || []))
             }
         } catch (error) {
             console.error('Erro ao carregar projeto:', error)
             toast.error('Erro ao carregar projeto de impressão.')
         } finally {
             setLoading(false)
-        }
-    }
-
-    const salvarPartes = async () => {
-        if (!projeto || !projeto.id) return
-
-        setSavingPartes(true)
-        try {
-            await projetosImpressaoService.editProjetosImpressao({
-                id: projeto.id,
-                projeto_impressao_id: projeto.id,
-                url_projeto: projeto.url_projeto,
-                nome_original_projeto: projeto.nome_original_projeto,
-                codigo_projeto: projeto.codigo_projeto,
-                descricao_projeto: projeto.descricao_projeto,
-                bico_padrao: projeto.bico_padrao,
-                tempo_total_projeto: projeto.tempo_total_projeto,
-                peso_total_projeto: projeto.peso_total_projeto,
-                cores: filamentos.map(({ id_cor, id_filamento, peso_gramas }) => ({
-                    id_cor,
-                    id_filamento,
-                    peso_gramas,
-                })),
-                partes,
-            })
-            toast.success('Partes salvas com sucesso.')
-            await loadProjeto()
-        } catch (error) {
-            console.error('Erro ao salvar partes:', error)
-            toast.error('Erro ao salvar partes do projeto.')
-        } finally {
-            setSavingPartes(false)
         }
     }
 
@@ -97,11 +58,6 @@ const ProjetosImpressaoViewPage = () => {
     useEffect(() => {
         loadProjeto()
     }, [id])
-
-    const custoFilamentos = calcularCustoTotalFilamentos(filamentos)
-    const custoEstimado = projeto && projeto.custo_estimado != null
-        ? obterValorNumerico(projeto.custo_estimado)
-        : custoFilamentos
 
     return (
         <React.Fragment>
@@ -169,63 +125,21 @@ const ProjetosImpressaoViewPage = () => {
                                                     <Label className="form-label fw-semibold">Descrição/Apelido</Label>
                                                     <div>{projeto.descricao_projeto || '—'}</div>
                                                 </Col>
-                                                <Col md={4} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Bico Padrão</Label>
-                                                    <div>{projeto.bico_padrao || '—'}</div>
-                                                </Col>
-                                                <Col md={4} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Tempo Total</Label>
-                                                    <div>{projeto.tempo_total_projeto || '—'}</div>
-                                                </Col>
-                                                <Col md={4} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Peso Total</Label>
-                                                    <div>
-                                                        {projeto.peso_total_projeto != null
-                                                            ? `${formatarNumeroDecimal(obterValorNumerico(projeto.peso_total_projeto))}g`
-                                                            : '—'}
-                                                    </div>
-                                                </Col>
-                                                <Col md={4} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Custo Estimado</Label>
-                                                    <div>R$ {formatarParaMoedaSemSimbolo(custoEstimado)}</div>
-                                                </Col>
                                             </Row>
 
                                             <hr />
-                                            <FilamentosProjetoTable
-                                                filamentos={filamentos}
-                                                onChange={setFilamentos}
-                                                pesoTotalProjeto={projeto.peso_total_projeto}
-                                                readOnly
-                                            />
-
-                                            <hr />
-                                            <PartesProjetoTable
-                                                partes={partes}
-                                                onChange={setPartes}
-                                                bicoPadrao={projeto.bico_padrao}
-                                                modoView
-                                            />
+                                            {projeto.id && (
+                                                <PartesProjetoTable
+                                                    projetoId={projeto.id}
+                                                    partes={partes}
+                                                    onReload={loadProjeto}
+                                                />
+                                            )}
 
                                             <hr />
                                             <Row className="mt-4">
                                                 <Col md={12}>
                                                     <div className="hstack gap-2 justify-content-end">
-                                                        <Button
-                                                            color="primary"
-                                                            type="button"
-                                                            disabled={savingPartes}
-                                                            onClick={salvarPartes}
-                                                        >
-                                                            {savingPartes ? (
-                                                                <>
-                                                                    <Spinner size="sm" className="me-2" />
-                                                                    Salvando...
-                                                                </>
-                                                            ) : (
-                                                                'Salvar Partes'
-                                                            )}
-                                                        </Button>
                                                         <button
                                                             type="button"
                                                             className="btn btn-soft-success"

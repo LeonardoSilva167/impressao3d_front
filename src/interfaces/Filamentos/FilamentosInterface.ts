@@ -4,14 +4,23 @@ export interface FilamentosSearch {
     palavra_chave?: string | null | undefined | unknown
 }
 
+export interface FilamentoCorView {
+    id?: number
+    descricao?: string | null
+    hexadecimal?: string | null
+}
+
 export interface FilamentosView {
     id?: number | undefined
+    id_item?: number | undefined
     codigo?: string
     resumo?: string
     qtd?: number
     preco_medio_grama?: number
+    preco_medio_por_grama?: number
     estoque_atual?: number | null
     preco_medio_atual?: number | null
+    cor?: FilamentoCorView | null
 }
 
 export interface FilamentosList {
@@ -39,7 +48,7 @@ export interface FilamentosModel {
 }
 
 export interface FilamentosInterface {
-    getViewFilamentos(params: any): Promise<FilamentosView | undefined>
+    getViewFilamentos(params: { id: string | number | null | undefined }): Promise<FilamentosView | undefined>
     listFilamentosPaginate(params: FilamentosSearch): Promise<any>
     AsyncListFilamentos(params: FilamentosSearch): Promise<FilamentosModel[] | undefined>
     createFilamentos(params: FilamentosModel): Promise<any>

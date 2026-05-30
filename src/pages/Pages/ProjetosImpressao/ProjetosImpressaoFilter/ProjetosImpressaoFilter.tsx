@@ -40,7 +40,7 @@ const ProjetosImpressaoFilter = ({ getRemoteProjetosImpressaoList }: ProjetosImp
                 <Col xs={12}>
                     <div className="d-flex flex-row justify-content-end align-items-center mb-4">
                         <Link to="add" className="btn btn-primary">
-                            <i className="ri-add-circle-line align-middle me-1"></i> Add
+                            <i className="ri-add-circle-line align-middle me-1"></i> Adicionar
                         </Link>
                     </div>
                 </Col>
