@@ -1,8 +1,14 @@
 import {
+    ComposicaoCorConfigurada,
     ComposicaoItemConfigModel,
+    ComposicaoParteConfigView,
     ComposicaoParteResumo,
+    ComposicaoProdutosModel,
     ComposicaoProdutosView,
+    ComposicaoSalvarCoresPartePayload,
+    ComposicaoSalvarFilamentosPayload,
     ComposicaoStatus,
+    ComposicaoVariacaoApiModel,
     ComposicaoVariacaoItemModel,
 } from 'interfaces/ComposicaoProdutos/ComposicaoProdutosInterface'
 import { LookupItem } from 'interfaces/Produtos/ProdutosInterface'
@@ -365,6 +371,7 @@ export const atualizarFilamentoVariacaoItem = (
     chave: string,
     filamento: {
         id?: string | number | null
+        value?: string | number | null
         label?: string
         cor_filamento?: string | null
         preco_medio_grama?: number | string | null
@@ -384,9 +391,11 @@ export const atualizarFilamentoVariacaoItem = (
             }
         }
 
+        const idFilamento = filamento.id ?? filamento.value ?? null
+
         return {
             ...linha,
-            id_filamento: filamento.id,
+            id_filamento: idFilamento,
             descricao_filamento: filamento.label || null,
             cor_filamento: filamento.cor_filamento || null,
             preco_medio_grama: filamento.preco_medio_grama,
@@ -486,3 +495,144 @@ export const obterParteProjeto = (
 ): ParteProjetoImpressaoModel | undefined => (
     (projeto.partes || []).find((p) => String(p.id) === String(idParte))
 )
+
+export const extrairDataRespostaApi = <T>(response: T | { data?: T } | null | undefined): T | undefined => {
+    if (response == null) return undefined
+    if (typeof response === 'object' && 'data' in response && response.data != null) {
+        return response.data as T
+    }
+    return response as T
+}
+
+const extrairIdsCoresGrupoApi = (cores?: ComposicaoCorConfigurada[]): number[] => {
+    if (!Array.isArray(cores)) return []
+    return [...new Set(
+        cores
+            .map((cor) => Number(cor.id_cor))
+            .filter((id) => !Number.isNaN(id) && id > 0)
+    )]
+}
+
+export const mapConfiguracaoParteToItens = (
+    configParte: ComposicaoParteConfigView
+): ComposicaoItemConfigModel[] => (
+    (configParte.itens || []).map((item) => ({
+        id_projeto_impressao_parte: configParte.parte.id,
+        id_projeto_impressao_parte_item: item.id,
+        nome_parte: configParte.parte.nome_parte || '',
+        nome_item: item.nome_item || '',
+        peso: item.peso_total ?? null,
+        tempo: item.tempo_impressao || null,
+        cores_primarias: extrairIdsCoresGrupoApi(item.cores?.primarias),
+        cores_secundarias: extrairIdsCoresGrupoApi(item.cores?.secundarias),
+        cores_terciarias: extrairIdsCoresGrupoApi(item.cores?.terciarias),
+    }))
+)
+
+export const chaveVariacaoParteApi = (
+    idItem: number | string | null | undefined,
+    tipoCor: string | null | undefined,
+    idCor: number | string | null | undefined
+): string => `${idItem != null ? String(idItem) : 'item'}:${tipoCor || 'COR'}:${idCor != null ? String(idCor) : '0'}`
+
+export const mapVariacaoApiToModel = (
+    variacao: ComposicaoVariacaoApiModel,
+    pesoItem?: number | string | null
+): ComposicaoVariacaoItemModel => {
+    const idParte = variacao.id_parte ?? variacao.id_projeto_impressao_parte
+    const idItem = variacao.id_item_projeto ?? variacao.id_projeto_impressao_parte_item
+    const idCor = variacao.id_cor
+    const tipoCor = variacao.tipo_cor
+    const filamento = variacao.filamento
+
+    return {
+        id: variacao.id,
+        chave: chaveVariacaoParteApi(idItem, tipoCor, idCor),
+        id_projeto_impressao_parte: idParte,
+        id_projeto_impressao_parte_item: idItem,
+        nome_parte: variacao.nome_parte,
+        nome_item: variacao.nome_item,
+        id_cor: idCor,
+        id_cor_primaria: tipoCor === 'PRIMARIA' ? idCor : null,
+        id_cor_secundaria: tipoCor === 'SECUNDARIA' ? idCor : null,
+        id_cor_terciaria: tipoCor === 'TERCIARIA' ? idCor : null,
+        cor_descricao: variacao.cor?.descricao || null,
+        descricao: variacao.descricao_variacao || null,
+        peso: filamento?.peso_item ?? pesoItem ?? null,
+        id_filamento: filamento?.id ?? null,
+        descricao_filamento: filamento?.resumo || null,
+        preco_medio_grama: filamento?.preco_medio_grama ?? null,
+        custo: filamento?.custo_item ?? variacao.custo_item ?? 0,
+    }
+}
+
+export const mapVariacoesApiLista = (
+    variacoes: ComposicaoVariacaoApiModel[] | undefined,
+    itensParte: ComposicaoItemConfigModel[] = []
+): ComposicaoVariacaoItemModel[] => {
+    const pesoPorItem = new Map<string, number | string | null>()
+    itensParte.forEach((item) => {
+        if (item.id_projeto_impressao_parte_item != null) {
+            pesoPorItem.set(String(item.id_projeto_impressao_parte_item), item.peso ?? null)
+        }
+    })
+
+    return (variacoes || []).map((variacao) => {
+        const idItem = variacao.id_item_projeto ?? variacao.id_projeto_impressao_parte_item
+        return mapVariacaoApiToModel(
+            variacao,
+            idItem != null ? pesoPorItem.get(String(idItem)) : null
+        )
+    })
+}
+
+export const extrairVariacoesRespostaApi = (
+    response: unknown,
+    itensParte: ComposicaoItemConfigModel[] = []
+): ComposicaoVariacaoItemModel[] => {
+    const data = extrairDataRespostaApi<{ variacoes?: ComposicaoVariacaoApiModel[] }>(
+        response as { data?: { variacoes?: ComposicaoVariacaoApiModel[] } }
+    )
+    if (data?.variacoes?.length) {
+        return mapVariacoesApiLista(data.variacoes, itensParte)
+    }
+    if (Array.isArray((response as { variacoes?: ComposicaoVariacaoApiModel[] })?.variacoes)) {
+        return mapVariacoesApiLista(
+            (response as { variacoes: ComposicaoVariacaoApiModel[] }).variacoes,
+            itensParte
+        )
+    }
+    return []
+}
+
+export const prepararPayloadSalvarCoresParte = (
+    idComposicao: number,
+    idParte: number | string,
+    itensParte: ComposicaoItemConfigModel[]
+): ComposicaoSalvarCoresPartePayload => ({
+    id_composicao: idComposicao,
+    id_parte: Number(idParte),
+    itens: itensParte.map((item) => ({
+        id_item_projeto: item.id_projeto_impressao_parte_item!,
+        cores_primarias: item.cores_primarias || [],
+        cores_secundarias: item.cores_secundarias || [],
+        cores_terciarias: item.cores_terciarias || [],
+    })),
+})
+
+export const prepararPayloadSalvarFilamentosParte = (
+    idComposicao: number,
+    idParte: number | string,
+    variacoes: ComposicaoVariacaoItemModel[]
+): ComposicaoSalvarFilamentosPayload => ({
+    id_composicao: idComposicao,
+    id_parte: Number(idParte),
+    filamentos: variacoes
+        .filter((v) => v.id != null && v.id_filamento != null)
+        .map((v) => ({
+            id_variacao: Number(v.id),
+            id_filamento: v.id_filamento!,
+            peso_item: v.peso ?? 0,
+            preco_medio_grama: v.preco_medio_grama ?? null,
+        })),
+})

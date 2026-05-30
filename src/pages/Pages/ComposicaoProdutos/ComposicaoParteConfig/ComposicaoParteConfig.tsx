@@ -6,25 +6,20 @@ import { useNavegacao } from 'helpers/functions_helpers'
 import {
     Alert, Breadcrumb, BreadcrumbItem, Button, Card, CardBody, Col, Container, Row, Spinner
 } from 'reactstrap'
-import { ComposicaoItemConfigModel, ComposicaoProdutosModel } from 'interfaces/ComposicaoProdutos/ComposicaoProdutosInterface'
+import { ComposicaoItemConfigModel, ComposicaoParteConfigView } from 'interfaces/ComposicaoProdutos/ComposicaoProdutosInterface'
 import { LookupItem } from 'interfaces/Produtos/ProdutosInterface'
-import { ProjetosImpressaoView } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { ComposicaoProdutosService } from 'services/ComposicaoProdutos/ComposicaoProdutosService'
-import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
-import { CoresService } from 'services/Cores/CoresService'
 import ComposicaoParteItensCores, { CampoCoresItem } from '../ComposicaoParteItensCores/ComposicaoParteItensCores'
 import ComposicaoVariacoesItemTable from '../ComposicaoVariacoesItemTable/ComposicaoVariacoesItemTable'
 import {
     atualizarFilamentoVariacaoItem,
-    filtrarItensConfigPorParte,
-    gerarVariacoesIndividuaisItens,
+    extrairDataRespostaApi,
+    extrairVariacoesRespostaApi,
     itemTemCoresConfiguradas,
-    mesclarConfiguracaoItens,
-    mesclarVariacoesItens,
-    montarItensConfigFromProjeto,
-    normalizarComposicaoView,
-    obterParteProjeto,
-    prepararPayloadSalvar,
+    mapConfiguracaoParteToItens,
+    mapVariacoesApiLista,
+    prepararPayloadSalvarCoresParte,
+    prepararPayloadSalvarFilamentosParte,
     validarCoresItensParte,
 } from '../hooks/useComposicaoProdutos'
 
@@ -34,122 +29,60 @@ const ComposicaoParteConfig = () => {
     const { voltarParaRotaAnterior } = useNavegacao()
 
     const composicaoService = new ComposicaoProdutosService()
-    const projetosService = new ProjetosImpressaoService()
-    const coresService = new CoresService()
 
     const [loading, setLoading] = useState(true)
     const [salvandoCores, setSalvandoCores] = useState(false)
     const [salvandoFilamentos, setSalvandoFilamentos] = useState(false)
-    const [projeto, setProjeto] = useState<ProjetosImpressaoView>()
     const [nomeParte, setNomeParte] = useState('')
-    const [configuracaoCompleta, setConfiguracaoCompleta] = useState<ComposicaoItemConfigModel[]>([])
     const [itensParte, setItensParte] = useState<ComposicaoItemConfigModel[]>([])
-    const [variacoesParte, setVariacoesParte] = useState<ReturnType<typeof gerarVariacoesIndividuaisItens>>([])
-    const [variacoesOutrasPartes, setVariacoesOutrasPartes] = useState<ReturnType<typeof gerarVariacoesIndividuaisItens>>([])
+    const [variacoesParte, setVariacoesParte] = useState<ReturnType<typeof mapVariacoesApiLista>>([])
     const [coresLookup, setCoresLookup] = useState<LookupItem[]>([])
     const [coresSalvas, setCoresSalvas] = useState(false)
     const [variacoesGeradas, setVariacoesGeradas] = useState(false)
-    const [composicaoBase, setComposicaoBase] = useState<ComposicaoProdutosModel | null>(null)
     const [erro, setErro] = useState('')
 
-    const loadCores = async () => {
-        const list = await coresService.AsyncListCores({})
-        if (list) {
-            setCoresLookup(list.map((cor) => ({
-                id: cor.id,
-                descricao: cor.descricao,
-                codigo: cor.codigo,
-            })))
-        }
+    const aplicarConfiguracaoParte = (configParte: ComposicaoParteConfigView) => {
+        const itensInicial = mapConfiguracaoParteToItens(configParte)
+        const variacoesExistentes = (configParte.itens || []).flatMap((item) => (
+            mapVariacoesApiLista(item.variacoes || [], itensInicial)
+        ))
+
+        const temCores = itensInicial.length > 0
+            && itensInicial.every((item) => itemTemCoresConfiguradas(item))
+        const temVariacoes = variacoesExistentes.length > 0
+
+        setNomeParte(configParte.parte.nome_parte || 'Parte')
+        setItensParte(itensInicial)
+        setVariacoesParte(temVariacoes ? variacoesExistentes : [])
+        setCoresLookup((configParte.cores_disponiveis || []).map((cor) => ({
+            id: cor.id,
+            descricao: cor.descricao,
+            codigo: cor.codigo,
+        })))
+        setCoresSalvas(temCores)
+        setVariacoesGeradas(temVariacoes)
     }
 
     const loadDados = async () => {
         if (!id || !idParte) return
 
         const composicaoId = Number(id)
-        const parteId = idParte
-        if (Number.isNaN(composicaoId)) return
+        const parteId = Number(idParte)
+        if (Number.isNaN(composicaoId) || Number.isNaN(parteId)) return
 
         setLoading(true)
         try {
-            const view = await composicaoService.getViewComposicaoProdutos({ id: composicaoId })
-            if (!view || !view.id_projeto_impressao) {
-                toast.error('Composição não encontrada.')
+            const configParte = await composicaoService.getConfigurarParte({
+                id: composicaoId,
+                idParte: parteId,
+            })
+
+            if (!configParte) {
+                toast.error('Configuração da parte não encontrada.')
                 return
             }
 
-            const projetoView = await projetosService.getViewProjetosImpressao({
-                id: Number(view.id_projeto_impressao),
-            })
-            if (!projetoView) {
-                toast.error('Projeto não encontrado.')
-                return
-            }
-
-            const parte = obterParteProjeto(projetoView, parteId)
-            if (!parte) {
-                toast.error('Parte não encontrada no projeto.')
-                return
-            }
-
-            const normalizada = normalizarComposicaoView(view, projetoView)
-            let config = normalizada.configuracao_itens || []
-
-            if (config.length === 0) {
-                config = montarItensConfigFromProjeto(projetoView)
-            }
-
-            const itensDaParte = filtrarItensConfigPorParte(config, parteId)
-            const configMap = new Map<string, ComposicaoItemConfigModel>()
-            config.forEach((item) => {
-                if (item.id_projeto_impressao_parte_item != null) {
-                    configMap.set(String(item.id_projeto_impressao_parte_item), item)
-                }
-            })
-
-            const itensInicial = (parte.itens || []).map((itemProjeto) => {
-                const existente = configMap.get(String(itemProjeto.id))
-                const peso = itemProjeto.peso_total != null
-                    ? Number(itemProjeto.peso_total)
-                    : 0
-
-                return existente || {
-                    id_projeto_impressao_parte: parte.id,
-                    id_projeto_impressao_parte_item: itemProjeto.id,
-                    nome_parte: parte.nome_parte || '',
-                    nome_item: itemProjeto.nome_item || '',
-                    peso,
-                    tempo: itemProjeto.tempo_impressao || null,
-                    cores_primarias: [],
-                    cores_secundarias: [],
-                    cores_terciarias: [],
-                }
-            })
-
-            const todasVariacoes = normalizada.variacoes_itens || []
-            const variacoesDaParte = todasVariacoes.filter(
-                (v) => String(v.id_projeto_impressao_parte) === String(parteId)
-            )
-            const outras = todasVariacoes.filter(
-                (v) => String(v.id_projeto_impressao_parte) !== String(parteId)
-            )
-
-            const temCores = itensInicial.length > 0
-                && itensInicial.every((item) => itemTemCoresConfiguradas(item))
-
-            setProjeto(projetoView)
-            setNomeParte(parte.nome_parte || 'Parte')
-            setConfiguracaoCompleta(config)
-            setItensParte(itensInicial)
-            setVariacoesOutrasPartes(outras)
-            setVariacoesParte(variacoesDaParte)
-            setCoresSalvas(temCores)
-            setVariacoesGeradas(variacoesDaParte.length > 0)
-            setComposicaoBase({
-                id: normalizada.id,
-                id_produto_base: normalizada.id_produto_base,
-                id_projeto_impressao: normalizada.id_projeto_impressao,
-            })
+            aplicarConfiguracaoParte(configParte)
         } catch (error) {
             console.error('Erro ao carregar configuração da parte:', error)
             toast.error('Erro ao carregar dados.')
@@ -175,20 +108,27 @@ const ComposicaoParteConfig = () => {
             return
         }
 
-        if (!composicaoBase) return
+        if (!id || !idParte) return
 
         setSalvandoCores(true)
         try {
-            const novaConfig = mesclarConfiguracaoItens(configuracaoCompleta, itensParte)
-            const payload = prepararPayloadSalvar({
-                ...composicaoBase,
-                configuracao_itens: novaConfig,
-                variacoes_itens: mesclarVariacoesItens(variacoesOutrasPartes, idParte!, variacoesParte),
-            })
+            const payload = prepararPayloadSalvarCoresParte(
+                Number(id),
+                idParte,
+                itensParte
+            )
 
-            await composicaoService.editComposicaoProdutos(payload)
-            setConfiguracaoCompleta(novaConfig)
-            setCoresSalvas(true)
+            const response = await composicaoService.salvarCoresParte(payload)
+            const configParte = extrairDataRespostaApi<ComposicaoParteConfigView>(response)
+
+            if (configParte) {
+                aplicarConfiguracaoParte(configParte)
+            } else {
+                setCoresSalvas(true)
+                setVariacoesGeradas(false)
+                setVariacoesParte([])
+            }
+
             toast.success('Cores salvas com sucesso.')
         } catch (error) {
             console.error('Erro ao salvar cores:', error)
@@ -198,7 +138,7 @@ const ComposicaoParteConfig = () => {
         }
     }
 
-    const handleGerarVariacoes = () => {
+    const handleGerarVariacoes = async () => {
         setErro('')
         if (!coresSalvas) {
             toast.warning('Salve as cores antes de gerar as variações.')
@@ -211,26 +151,35 @@ const ComposicaoParteConfig = () => {
             return
         }
 
-        const preview = gerarVariacoesIndividuaisItens(
-            itensParte,
-            coresLookup,
-            variacoesParte
-        )
+        if (!id || !idParte) return
 
-        if (preview.length === 0) {
-            toast.warning('Nenhuma variação gerada. Selecione cores para os itens.')
-            return
+        try {
+            const response = await composicaoService.gerarVariacoesParte({
+                id: Number(id),
+                idParte,
+            })
+
+            const preview = extrairVariacoesRespostaApi(response, itensParte)
+
+            if (preview.length === 0) {
+                toast.warning('Nenhuma variação gerada. Selecione cores para os itens.')
+                return
+            }
+
+            setVariacoesParte(preview)
+            setVariacoesGeradas(true)
+            toast.info('Variações individuais geradas. Configure os filamentos e salve.')
+        } catch (error) {
+            console.error('Erro ao gerar variações:', error)
+            toast.error('Erro ao gerar variações.')
         }
-
-        setVariacoesParte(preview)
-        setVariacoesGeradas(true)
-        toast.info('Variações individuais geradas. Configure os filamentos e salve.')
     }
 
     const handleFilamentoChange = (
         chave: string,
         filamento: {
             id?: string | number | null
+            value?: string | number | null
             label?: string
             cor_filamento?: string | null
             preco_medio_grama?: number | string | null
@@ -253,24 +202,47 @@ const ComposicaoParteConfig = () => {
             return
         }
 
-        if (!composicaoBase || !idParte) return
+        if (!id || !idParte) return
 
         setSalvandoFilamentos(true)
         try {
-            const novaConfig = mesclarConfiguracaoItens(configuracaoCompleta, itensParte)
-            const todasVariacoes = mesclarVariacoesItens(
-                variacoesOutrasPartes,
-                idParte,
-                variacoesParte
-            )
-
-            const payload = prepararPayloadSalvar({
-                ...composicaoBase,
-                configuracao_itens: novaConfig,
-                variacoes_itens: todasVariacoes,
+            const confirmResponse = await composicaoService.confirmarVariacoes({
+                id_composicao: Number(id),
+                id_parte: Number(idParte),
             })
 
-            await composicaoService.editComposicaoProdutos(payload)
+            const variacoesConfirmadas = extrairVariacoesRespostaApi(confirmResponse, itensParte)
+            const selecoesPorChave = new Map(
+                variacoesParte
+                    .filter((v) => v.chave)
+                    .map((v) => [v.chave!, v])
+            )
+
+            const variacoesParaSalvar = variacoesConfirmadas.map((confirmada) => {
+                const selecao = confirmada.chave
+                    ? selecoesPorChave.get(confirmada.chave)
+                    : undefined
+
+                if (!selecao) return confirmada
+
+                return {
+                    ...confirmada,
+                    id_filamento: selecao.id_filamento,
+                    descricao_filamento: selecao.descricao_filamento,
+                    cor_filamento: selecao.cor_filamento,
+                    preco_medio_grama: selecao.preco_medio_grama,
+                    peso: confirmada.peso != null ? confirmada.peso : selecao.peso,
+                    custo: selecao.custo,
+                }
+            })
+
+            const payload = prepararPayloadSalvarFilamentosParte(
+                Number(id),
+                idParte,
+                variacoesParaSalvar
+            )
+
+            await composicaoService.salvarFilamentosParte(payload)
             toast.success('Configuração da parte salva com sucesso.')
             navigate(`/composicao-produtos/view/${id}`)
         } catch (error) {
@@ -286,7 +258,6 @@ const ComposicaoParteConfig = () => {
     }, [])
 
     useEffect(() => {
-        loadCores()
         loadDados()
     }, [id, idParte])
 

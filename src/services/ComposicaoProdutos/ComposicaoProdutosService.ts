@@ -5,11 +5,15 @@ import { ValidationError } from '../../libs/api/exceptions/ValidationError'
 import { PaginateInterface } from 'interfaces/SystemInterfaces/PaginateInterface'
 import {
     CarregarComposicaoParams,
+    ComposicaoConfirmarVariacoesPayload,
+    ComposicaoParteConfigView,
     ComposicaoProdutosInterface,
     ComposicaoProdutosList,
     ComposicaoProdutosModel,
     ComposicaoProdutosSearch,
     ComposicaoProdutosView,
+    ComposicaoSalvarCoresPartePayload,
+    ComposicaoSalvarFilamentosPayload,
 } from 'interfaces/ComposicaoProdutos/ComposicaoProdutosInterface'
 
 export class ComposicaoProdutosService implements ComposicaoProdutosInterface {
@@ -24,6 +28,20 @@ export class ComposicaoProdutosService implements ComposicaoProdutosInterface {
     async getViewComposicaoProdutos(params: { id: number }): Promise<ComposicaoProdutosView | undefined> {
         const response = await this.httpClient.get<ComposicaoProdutosView>({
             url: `${this.url}/listar/${params.id}`,
+        })
+        switch (response.statusCode) {
+            case HttpStatusCode.ok: return response.body
+            case HttpStatusCode.unauthorized: throw new AccessDeniedError()
+            default: throw new UnexpectedError()
+        }
+    }
+
+    async getConfigurarParte(params: {
+        id: number
+        idParte: number | string
+    }): Promise<ComposicaoParteConfigView | undefined> {
+        const response = await this.httpClient.get<ComposicaoParteConfigView>({
+            url: `${this.url}/configurar-parte/${params.id}/${params.idParte}`,
         })
         switch (response.statusCode) {
             case HttpStatusCode.ok: return response.body
@@ -89,6 +107,71 @@ export class ComposicaoProdutosService implements ComposicaoProdutosInterface {
     async editComposicaoProdutos(params: ComposicaoProdutosModel) {
         const response = await this.httpClient.put({
             url: `${this.url}/editar`,
+            body: params,
+        })
+        switch (response.statusCode) {
+            case HttpStatusCode.ok: return response.body
+            case HttpStatusCode.noContent: return
+            case HttpStatusCode.unauthorized: throw new AccessDeniedError()
+            case HttpStatusCode.invalidForm: throw new ValidationError(response.body)
+            default: throw new UnexpectedError(response.message)
+        }
+    }
+
+    async salvarCoresParte(params: ComposicaoSalvarCoresPartePayload) {
+        const response = await this.httpClient.put({
+            url: `${this.url}/salvar-cores-parte`,
+            body: params,
+        })
+        switch (response.statusCode) {
+            case HttpStatusCode.ok: return response.body
+            case HttpStatusCode.noContent: return
+            case HttpStatusCode.unauthorized: throw new AccessDeniedError()
+            case HttpStatusCode.invalidForm: throw new ValidationError(response.body)
+            default: throw new UnexpectedError(response.message)
+        }
+    }
+
+    async gerarVariacoesParte(params: {
+        id: number
+        idParte?: number | string
+        idItemProjeto?: number | string
+    }) {
+        const queryParts: string[] = []
+        if (params.idParte != null) queryParts.push(`id_parte=${params.idParte}`)
+        if (params.idItemProjeto != null) queryParts.push(`id_item_projeto=${params.idItemProjeto}`)
+
+        const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : ''
+        const response = await this.httpClient.post({
+            url: `${this.url}/gerar-variacoes/${params.id}${query}`,
+            body: {},
+        })
+        switch (response.statusCode) {
+            case HttpStatusCode.ok: return response.body
+            case HttpStatusCode.noContent: return
+            case HttpStatusCode.unauthorized: throw new AccessDeniedError()
+            case HttpStatusCode.invalidForm: throw new ValidationError(response.body)
+            default: throw new UnexpectedError(response.message)
+        }
+    }
+
+    async confirmarVariacoes(params: ComposicaoConfirmarVariacoesPayload) {
+        const response = await this.httpClient.post({
+            url: `${this.url}/confirmar-variacoes`,
+            body: params,
+        })
+        switch (response.statusCode) {
+            case HttpStatusCode.ok: return response.body
+            case HttpStatusCode.noContent: return
+            case HttpStatusCode.unauthorized: throw new AccessDeniedError()
+            case HttpStatusCode.invalidForm: throw new ValidationError(response.body)
+            default: throw new UnexpectedError(response.message)
+        }
+    }
+
+    async salvarFilamentosParte(params: ComposicaoSalvarFilamentosPayload) {
+        const response = await this.httpClient.put({
+            url: `${this.url}/salvar-filamentos`,
             body: params,
         })
         switch (response.statusCode) {

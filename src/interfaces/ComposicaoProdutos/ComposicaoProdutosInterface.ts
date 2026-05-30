@@ -1,3 +1,5 @@
+import { LookupItem } from 'interfaces/Produtos/ProdutosInterface'
+
 export type ComposicaoStatus = 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDA' | string
 
 export interface ComposicaoProdutosSearch {
@@ -93,12 +95,105 @@ export interface CarregarComposicaoParams {
     id_projeto_impressao: number | string
 }
 
+export interface ComposicaoCorConfigurada {
+    id?: number
+    id_cor: number
+    tipo_cor?: string
+    descricao?: string | null
+    codigo?: string | null
+    hexadecimal?: string | null
+}
+
+export interface ComposicaoParteItemView {
+    id: number
+    nome_item?: string | null
+    peso_total?: number | string | null
+    tempo_impressao?: string | null
+    cores?: {
+        primarias?: ComposicaoCorConfigurada[]
+        secundarias?: ComposicaoCorConfigurada[]
+        terciarias?: ComposicaoCorConfigurada[]
+    }
+    variacoes?: ComposicaoVariacaoApiModel[]
+}
+
+export interface ComposicaoVariacaoApiModel {
+    id?: number
+    id_composicao_cor?: number
+    id_parte?: number
+    id_item_projeto?: number
+    id_projeto_impressao_parte?: number | string | null
+    id_projeto_impressao_parte_item?: number | string | null
+    nome_parte?: string | null
+    nome_item?: string | null
+    tipo_cor?: string | null
+    id_cor?: number
+    descricao_variacao?: string | null
+    cor?: {
+        descricao?: string | null
+        codigo?: string | null
+        hexadecimal?: string | null
+    }
+    custo_item?: number | string | null
+    filamento?: {
+        id?: number
+        resumo?: string | null
+        preco_medio_grama?: number | string | null
+        peso_item?: number | string | null
+        custo_item?: number | string | null
+    } | null
+}
+
+export interface ComposicaoParteConfigView {
+    parte: {
+        id: number
+        nome_parte?: string | null
+    }
+    itens: ComposicaoParteItemView[]
+    cores_disponiveis?: LookupItem[]
+    tipos_cor?: string[]
+    filamentos?: unknown[]
+}
+
+export interface ComposicaoSalvarCoresPartePayload {
+    id_composicao: number
+    id_parte: number
+    itens: {
+        id_item_projeto: number | string
+        cores_primarias?: number[]
+        cores_secundarias?: number[]
+        cores_terciarias?: number[]
+    }[]
+}
+
+export interface ComposicaoConfirmarVariacoesPayload {
+    id_composicao: number
+    id_parte?: number
+    id_item_projeto?: number
+}
+
+export interface ComposicaoSalvarFilamentosPayload {
+    id_composicao: number
+    id_parte?: number
+    filamentos: {
+        id_variacao: number
+        id_filamento: number | string
+        peso_item: number | string
+        preco_medio_grama?: number | string | null
+    }[]
+}
+
 export interface ComposicaoProdutosInterface {
     getViewComposicaoProdutos(params: { id: number }): Promise<ComposicaoProdutosView | undefined>
+    getConfigurarParte(params: { id: number; idParte: number | string }): Promise<ComposicaoParteConfigView | undefined>
     listComposicaoProdutosPaginate(params: ComposicaoProdutosSearch): Promise<any>
     carregarComposicao(params: CarregarComposicaoParams): Promise<ComposicaoProdutosView | undefined>
     createComposicaoProdutos(params: ComposicaoProdutosModel): Promise<number | undefined>
     editComposicaoProdutos(params: ComposicaoProdutosModel): Promise<any>
+    salvarCoresParte(params: ComposicaoSalvarCoresPartePayload): Promise<any>
+    gerarVariacoesParte(params: { id: number; idParte?: number | string; idItemProjeto?: number | string }): Promise<any>
+    confirmarVariacoes(params: ComposicaoConfirmarVariacoesPayload): Promise<any>
+    salvarFilamentosParte(params: ComposicaoSalvarFilamentosPayload): Promise<any>
     deleteComposicaoProdutos(id: number): Promise<any>
 }
 
