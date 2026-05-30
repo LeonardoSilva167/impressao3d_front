@@ -117,6 +117,7 @@ export const mapProdutoGeradoListApi = (
         nome_produto: produto.nome_produto as string | undefined,
         sku: produto.sku as string | undefined,
         codigo_base: produto.codigo_base as string | number | null | undefined,
+        descricao_combinacao: produto.descricao_combinacao as string | null | undefined,
         partes: produto.partes as string | null | undefined,
         partes_utilizadas: produto.partes_utilizadas as GradeParteResumo[] | undefined,
         peso_total: produto.peso_total as number | string | null | undefined,

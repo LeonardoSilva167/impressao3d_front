@@ -2,8 +2,7 @@ import UiContent from 'Components/Common/UiContent'
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-    Badge, ButtonGroup, Card, CardBody, Col, DropdownItem,
-    DropdownMenu, DropdownToggle, Label, Row, UncontrolledDropdown
+    Badge, Card, CardBody, Col, Label, Row
 } from 'reactstrap'
 import { PaginateInterface, PaginateSearch, PerPageProps } from 'interfaces/SystemInterfaces/PaginateInterface'
 import { GradeProdutoGeradoList, GradeProdutosSearch } from 'interfaces/GradeProdutos/GradeProdutosInterface'
@@ -101,6 +100,7 @@ export const GradeProdutosTable = ({ data, getData, setPerPage, perPage, filters
                                                         <thead className="table-light">
                                                             <tr>
                                                                 <th scope="col" className="text-start">SKU</th>
+                                                                <th scope="col" className="text-start">Combinação</th>
                                                                 <th scope="col" className="text-start">Nome Produto</th>
                                                                 <th scope="col" className="text-start">Código Base</th>
                                                                 <th scope="col" className="text-start">Partes</th>
@@ -118,6 +118,7 @@ export const GradeProdutosTable = ({ data, getData, setPerPage, perPage, filters
                                                             {data.data.map((row: GradeProdutoGeradoList, index: number) => (
                                                                 <tr key={row.id != null ? row.id : index}>
                                                                     <td className="text-start">{row.sku || '—'}</td>
+                                                                    <td className="text-start">{row.descricao_combinacao || '—'}</td>
                                                                     <td className="text-start">{row.nome_produto || '—'}</td>
                                                                     <td className="text-start">{row.codigo_base != null ? row.codigo_base : '—'}</td>
                                                                     <td className="text-start">{obterPartesProdutoGerado(row)}</td>

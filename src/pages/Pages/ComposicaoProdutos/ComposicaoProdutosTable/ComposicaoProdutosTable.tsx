@@ -20,7 +20,7 @@ export interface ComposicaoProdutosTableProps {
 }
 
 const obterNomeProduto = (row: ComposicaoProdutosList): string =>
-    row.produto || row.produto_descricao || '—'
+    row.produto || row.descricao_produto || '—'
 
 const obterNomeProjeto = (row: ComposicaoProdutosList): string => {
     if (row.projeto) return row.projeto

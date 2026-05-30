@@ -77,6 +77,7 @@ export interface GradeProdutoGeradoList {
     nome_produto?: string
     sku?: string
     codigo_base?: string | number | null
+    descricao_combinacao?: string | null
     partes?: string | null
     partes_utilizadas?: GradeParteResumo[]
     peso_total?: number | string | null
