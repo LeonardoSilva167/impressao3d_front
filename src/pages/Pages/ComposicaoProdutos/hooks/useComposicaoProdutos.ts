@@ -19,6 +19,11 @@ import {
     obterValorNumerico,
 } from 'pages/Pages/ProjetosImpressao/hooks/useProjetosImpressao'
 import {
+    calcularCustosProducao,
+    CustosProducaoConfig,
+    extrairCustosProducao,
+} from 'helpers/custosProducao_helpers'
+import {
     chaveCombinacaoCores,
     gerarCombinacoesCores,
     obterDescricaoLookup,
@@ -375,7 +380,8 @@ export const atualizarFilamentoVariacaoItem = (
         label?: string
         cor_filamento?: string | null
         preco_medio_grama?: number | string | null
-    } | null
+    } | null,
+    config?: Partial<CustosProducaoConfig>
 ): ComposicaoVariacaoItemModel[] => (
     variacoes.map((linha) => {
         if (linha.chave !== chave) return linha
@@ -388,10 +394,20 @@ export const atualizarFilamentoVariacaoItem = (
                 cor_filamento: null,
                 preco_medio_grama: null,
                 custo: 0,
+                custo_filamento: 0,
+                custo_energia: 0,
+                custo_desgaste: 0,
+                custo_total: 0,
             }
         }
 
         const idFilamento = filamento.id ?? filamento.value ?? null
+        const custos = calcularCustosProducao({
+            peso: linha.peso,
+            tempo: linha.tempo,
+            precoMedioGrama: filamento.preco_medio_grama,
+            config,
+        })
 
         return {
             ...linha,
@@ -399,7 +415,11 @@ export const atualizarFilamentoVariacaoItem = (
             descricao_filamento: filamento.label || null,
             cor_filamento: filamento.cor_filamento || null,
             preco_medio_grama: filamento.preco_medio_grama,
-            custo: calcularCustoItem(linha.peso, filamento.preco_medio_grama),
+            custo: custos.custo_filamento,
+            custo_filamento: custos.custo_filamento,
+            custo_energia: custos.custo_energia,
+            custo_desgaste: custos.custo_desgaste,
+            custo_total: custos.custo_total,
         }
     })
 )
@@ -537,13 +557,21 @@ export const chaveVariacaoParteApi = (
 
 export const mapVariacaoApiToModel = (
     variacao: ComposicaoVariacaoApiModel,
-    pesoItem?: number | string | null
+    pesoItem?: number | string | null,
+    tempoItem?: string | null
 ): ComposicaoVariacaoItemModel => {
     const idParte = variacao.id_parte ?? variacao.id_projeto_impressao_parte
     const idItem = variacao.id_item_projeto ?? variacao.id_projeto_impressao_parte_item
     const idCor = variacao.id_cor
     const tipoCor = variacao.tipo_cor
     const filamento = variacao.filamento
+    const custos = extrairCustosProducao({
+        custo_filamento: variacao.custo_filamento ?? filamento?.custo_item,
+        custo_energia: variacao.custo_energia,
+        custo_desgaste: variacao.custo_desgaste,
+        custo_total: variacao.custo_total,
+        custo: variacao.custo_item,
+    })
 
     return {
         id: variacao.id,
@@ -559,10 +587,15 @@ export const mapVariacaoApiToModel = (
         cor_descricao: variacao.cor?.descricao || null,
         descricao: variacao.descricao_variacao || null,
         peso: filamento?.peso_item ?? pesoItem ?? null,
+        tempo: tempoItem ?? null,
         id_filamento: filamento?.id ?? null,
         descricao_filamento: filamento?.resumo || null,
         preco_medio_grama: filamento?.preco_medio_grama ?? null,
-        custo: filamento?.custo_item ?? variacao.custo_item ?? 0,
+        custo: custos.custo_filamento,
+        custo_filamento: custos.custo_filamento,
+        custo_energia: custos.custo_energia,
+        custo_desgaste: custos.custo_desgaste,
+        custo_total: custos.custo_total,
     }
 }
 
@@ -571,17 +604,22 @@ export const mapVariacoesApiLista = (
     itensParte: ComposicaoItemConfigModel[] = []
 ): ComposicaoVariacaoItemModel[] => {
     const pesoPorItem = new Map<string, number | string | null>()
+    const tempoPorItem = new Map<string, string | null>()
     itensParte.forEach((item) => {
         if (item.id_projeto_impressao_parte_item != null) {
-            pesoPorItem.set(String(item.id_projeto_impressao_parte_item), item.peso ?? null)
+            const chaveItem = String(item.id_projeto_impressao_parte_item)
+            pesoPorItem.set(chaveItem, item.peso ?? null)
+            tempoPorItem.set(chaveItem, item.tempo ?? null)
         }
     })
 
     return (variacoes || []).map((variacao) => {
         const idItem = variacao.id_item_projeto ?? variacao.id_projeto_impressao_parte_item
+        const chaveItem = idItem != null ? String(idItem) : null
         return mapVariacaoApiToModel(
             variacao,
-            idItem != null ? pesoPorItem.get(String(idItem)) : null
+            chaveItem ? pesoPorItem.get(chaveItem) : null,
+            chaveItem ? tempoPorItem.get(chaveItem) : null
         )
     })
 }

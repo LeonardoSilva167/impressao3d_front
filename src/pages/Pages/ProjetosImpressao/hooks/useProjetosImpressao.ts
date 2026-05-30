@@ -3,6 +3,7 @@ import { ItemParteProjetoModel } from 'interfaces/ProjetosImpressao/ItemPartePro
 import { ParteProjetoImpressaoModel } from 'interfaces/ProjetosImpressao/ParteProjetoImpressaoInterface'
 import { ProjetosImpressaoList } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { PaginateInterface } from 'interfaces/SystemInterfaces/PaginateInterface'
+import { extrairCustosProducao } from 'helpers/custosProducao_helpers'
 
 export const obterValorNumerico = (valor: number | string | null | undefined): number => {
     if (typeof valor === 'string') {
@@ -163,6 +164,10 @@ export const normalizarItemParte = (item: Record<string, any>): ItemParteProjeto
     usa_engomagem: item.usa_engomagem,
     velocidade_engomagem: item.velocidade_engomagem,
     fluxo_engomagem: item.fluxo_engomagem,
+    custo_filamento: item.custo_filamento,
+    custo_energia: item.custo_energia,
+    custo_desgaste: item.custo_desgaste,
+    custo_total: item.custo_total,
 })
 
 export const normalizarPartesProjeto = (partes: ParteProjetoImpressaoModel[] = []): ParteProjetoImpressaoModel[] => (
@@ -171,6 +176,10 @@ export const normalizarPartesProjeto = (partes: ParteProjetoImpressaoModel[] = [
         id_projeto_impressao: parte.id_projeto_impressao,
         nome_parte: parte.nome_parte,
         itens: (parte.itens || []).map((item) => normalizarItemParte(item as Record<string, any>)),
+        custo_filamento: parte.custo_filamento,
+        custo_energia: parte.custo_energia,
+        custo_desgaste: parte.custo_desgaste,
+        custo_total: parte.custo_total,
     }))
 )
 
@@ -224,6 +233,10 @@ export const calcularResumoPartesItens = (partes: ParteProjetoImpressaoModel[]) 
     let totalItens = 0
     let totalMinutos = 0
     let totalPeso = 0
+    let totalCustoFilamento = 0
+    let totalCustoEnergia = 0
+    let totalCustoDesgaste = 0
+    let totalCustoTotal = 0
 
     partes.forEach((parte) => {
         (parte.itens || []).forEach((item) => {
@@ -233,6 +246,10 @@ export const calcularResumoPartesItens = (partes: ParteProjetoImpressaoModel[]) 
                 ? obterValorNumerico(item.peso_total)
                 : calcularPesoTotalParte(item)
             totalPeso += peso
+            totalCustoFilamento += obterValorNumerico(item.custo_filamento)
+            totalCustoEnergia += obterValorNumerico(item.custo_energia)
+            totalCustoDesgaste += obterValorNumerico(item.custo_desgaste)
+            totalCustoTotal += obterValorNumerico(item.custo_total)
         })
     })
 
@@ -240,5 +257,11 @@ export const calcularResumoPartesItens = (partes: ParteProjetoImpressaoModel[]) 
         totalItens,
         tempoTotal: minutosParaTempo(totalMinutos),
         pesoTotal: totalPeso,
+        ...extrairCustosProducao({
+            custo_filamento: totalCustoFilamento,
+            custo_energia: totalCustoEnergia,
+            custo_desgaste: totalCustoDesgaste,
+            custo_total: totalCustoTotal,
+        }),
     }
 }

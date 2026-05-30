@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
@@ -17,8 +17,10 @@ import {
 import { ParteProjetoImpressaoModel } from 'interfaces/ProjetosImpressao/ParteProjetoImpressaoInterface'
 import { ProjetosImpressaoView } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
-import { normalizarPartesProjeto, normalizarProjetoImpressao } from '../hooks/useProjetosImpressao'
+import { normalizarPartesProjeto, normalizarProjetoImpressao, calcularResumoPartesItens } from '../hooks/useProjetosImpressao'
 import PartesProjetoTable from '../PartesProjetoTable/PartesProjetoTable'
+import ResumoCustosProducao from 'Components/Common/ResumoCustosProducao'
+import { extrairCustosProducao } from 'helpers/custosProducao_helpers'
 
 const ProjetosImpressaoViewPage = () => {
     const { id } = useParams()
@@ -28,6 +30,8 @@ const ProjetosImpressaoViewPage = () => {
     const [projeto, setProjeto] = useState<ProjetosImpressaoView>()
     const [partes, setPartes] = useState<ParteProjetoImpressaoModel[]>([])
     const [loading, setLoading] = useState(true)
+    const resumoProjeto = useMemo(() => calcularResumoPartesItens(partes), [partes])
+    const custosProjeto = useMemo(() => extrairCustosProducao(projeto), [projeto])
 
     const loadProjeto = async () => {
         if (!id) return
@@ -129,11 +133,21 @@ const ProjetosImpressaoViewPage = () => {
 
                                             <hr />
                                             {projeto.id && (
-                                                <PartesProjetoTable
-                                                    projetoId={projeto.id}
-                                                    partes={partes}
-                                                    onReload={loadProjeto}
-                                                />
+                                                <>
+                                                    <PartesProjetoTable
+                                                        projetoId={projeto.id}
+                                                        partes={partes}
+                                                        onReload={loadProjeto}
+                                                    />
+
+                                                    <div className="mt-4">
+                                                        <ResumoCustosProducao
+                                                            pesoTotal={resumoProjeto.pesoTotal}
+                                                            tempoTotal={resumoProjeto.tempoTotal}
+                                                            custos={custosProjeto}
+                                                        />
+                                                    </div>
+                                                </>
                                             )}
 
                                             <hr />

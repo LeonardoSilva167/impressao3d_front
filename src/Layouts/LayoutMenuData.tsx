@@ -14,6 +14,7 @@ const Navdata = () => {
     const [isFilamentos, setIsFilamentos] = useState<boolean>(false);
     const [isCompras, setIsCompras] = useState<boolean>(false);
     const [isProducao, setIsProducao] = useState<boolean>(false);
+    const [isConfiguracoes, setIsConfiguracoes] = useState<boolean>(false);
 
     // Multi Level
     const [isLevel1, setIsLevel1] = useState<boolean>(false);
@@ -92,6 +93,9 @@ const Navdata = () => {
         }
         if (iscurrentState !== 'Producao') {
             setIsProducao(false);
+        }
+        if (iscurrentState !== 'Configuracoes') {
+            setIsConfiguracoes(false);
         }
         if (iscurrentState !== 'ProdutosMenu') {
             setIsProdutos(false);
@@ -439,6 +443,12 @@ const Navdata = () => {
                     link: "/composicao-produtos",
                     parentId: "ProdutosMenu",
                 },
+                {
+                    id: "grade-produtos",
+                    label: "Grade de Produtos",
+                    link: "/grade-produtos",
+                    parentId: "ProdutosMenu",
+                },
             ],
         },
         {
@@ -461,6 +471,18 @@ const Navdata = () => {
                     parentId: "Producao",
                 },
             ],
+        },
+        {
+            id: "configuracoes",
+            label: "Configurações",
+            icon: "ri-settings-3-line",
+            link: "/configuracoes",
+            click: function (e: any) {
+                e.preventDefault();
+                setIsConfiguracoes(!isConfiguracoes);
+                setIscurrentState('Configuracoes');
+                updateIconSidebar(e);
+            },
         },
 
         // {

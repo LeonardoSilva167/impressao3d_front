@@ -18,6 +18,7 @@ import {
 } from 'interfaces/ProjetosImpressao/ItemParteProjetoInterface'
 import { ProjetosImpressaoParteItensService } from 'services/ProjetosImpressaoParteItens/ProjetosImpressaoParteItensService'
 import { calcularPesoTotalParte, formatarNumeroDecimal } from '../hooks/useProjetosImpressao'
+import { extrairCustosProducao, formatarCustoProducao } from 'helpers/custosProducao_helpers'
 
 export interface ItemParteProjetoModalProps {
     isOpen: boolean
@@ -51,6 +52,7 @@ const ItemParteProjetoModal = ({
     const pesoSuporteWatch = watch('peso_suporte')
     const pesoCoradoWatch = watch('peso_corado')
     const pesoTorreWatch = watch('peso_torre')
+    const tempoWatch = watch('tempo_impressao')
 
     const pesoTotalCalculado = useMemo(() => (
         calcularPesoTotalParte({
@@ -258,6 +260,70 @@ const ItemParteProjetoModal = ({
                                 />
                             </div>
                         </Col>
+                        {item?.id && (
+                            <>
+                                <Col md={3}>
+                                    <div className="mb-3">
+                                        <Label className="form-label">Tempo</Label>
+                                        <input
+                                            type="text"
+                                            className="form-control bg-light"
+                                            readOnly
+                                            disabled
+                                            value={tempoWatch || '—'}
+                                        />
+                                    </div>
+                                </Col>
+                                <Col md={3}>
+                                    <div className="mb-3">
+                                        <Label className="form-label">Custo Filamento</Label>
+                                        <input
+                                            type="text"
+                                            className="form-control bg-light"
+                                            readOnly
+                                            disabled
+                                            value={formatarCustoProducao(extrairCustosProducao(item).custo_filamento)}
+                                        />
+                                    </div>
+                                </Col>
+                                <Col md={3}>
+                                    <div className="mb-3">
+                                        <Label className="form-label">Custo Energia</Label>
+                                        <input
+                                            type="text"
+                                            className="form-control bg-light"
+                                            readOnly
+                                            disabled
+                                            value={formatarCustoProducao(extrairCustosProducao(item).custo_energia)}
+                                        />
+                                    </div>
+                                </Col>
+                                <Col md={3}>
+                                    <div className="mb-3">
+                                        <Label className="form-label">Custo Desgaste</Label>
+                                        <input
+                                            type="text"
+                                            className="form-control bg-light"
+                                            readOnly
+                                            disabled
+                                            value={formatarCustoProducao(extrairCustosProducao(item).custo_desgaste)}
+                                        />
+                                    </div>
+                                </Col>
+                                <Col md={3}>
+                                    <div className="mb-3">
+                                        <Label className="form-label">Custo Total</Label>
+                                        <input
+                                            type="text"
+                                            className="form-control bg-light fw-semibold"
+                                            readOnly
+                                            disabled
+                                            value={formatarCustoProducao(extrairCustosProducao(item).custo_total)}
+                                        />
+                                    </div>
+                                </Col>
+                            </>
+                        )}
                     </Row>
 
                     <Row className="mb-3">

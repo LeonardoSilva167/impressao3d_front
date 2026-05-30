@@ -6,6 +6,7 @@ import { ComposicaoVariacaoItemModel } from 'interfaces/ComposicaoProdutos/Compo
 import { FilamentosView } from 'interfaces/Filamentos/FilamentosInterface'
 import { FilamentosService } from 'services/Filamentos/FilamentosService'
 import { formatarParaMoedaSemSimbolo } from 'helpers/functions_helpers'
+import { formatarCustoProducao } from 'helpers/custosProducao_helpers'
 import { formatarNumeroDecimal } from 'pages/Pages/ProjetosImpressao/hooks/useProjetosImpressao'
 import 'Components/ComponentController/Selects/AsyncSelect/AsyncSelecStyle.css'
 
@@ -157,9 +158,12 @@ const ComposicaoVariacoesItemTable = ({
                         <th>Descrição</th>
                         <th style={{ minWidth: '220px' }}>Filamento</th>
                         <th>Cor Filamento</th>
-                        <th className="text-end">Preço Médio</th>
+                        <th className="text-end">Preço Médio/g</th>
                         <th className="text-end">Peso</th>
-                        <th className="text-end">Custo</th>
+                        <th className="text-end">Custo Filamento</th>
+                        <th className="text-end">Custo Energia</th>
+                        <th className="text-end">Custo Desgaste</th>
+                        <th className="text-end">Custo Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -203,10 +207,21 @@ const ComposicaoVariacoesItemTable = ({
                                     : '—'}
                             </td>
                             <td className="text-end">
-                                {formatarNumeroDecimal(Number(linha.peso) || 0)}g
+                                {linha.peso != null
+                                    ? `${formatarNumeroDecimal(Number(linha.peso) || 0)}g`
+                                    : '—'}
                             </td>
                             <td className="text-end">
-                                R$ {formatarParaMoedaSemSimbolo(linha.custo || 0)}
+                                {formatarCustoProducao(linha.custo_filamento ?? linha.custo)}
+                            </td>
+                            <td className="text-end">
+                                {formatarCustoProducao(linha.custo_energia)}
+                            </td>
+                            <td className="text-end">
+                                {formatarCustoProducao(linha.custo_desgaste)}
+                            </td>
+                            <td className="text-end">
+                                {formatarCustoProducao(linha.custo_total)}
                             </td>
                         </tr>
                     ))}

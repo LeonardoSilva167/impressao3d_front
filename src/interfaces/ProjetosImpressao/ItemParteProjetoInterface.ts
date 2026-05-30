@@ -24,6 +24,10 @@ export interface ItemParteProjetoModel {
     usa_engomagem?: boolean | undefined
     velocidade_engomagem?: number | string | undefined | null
     fluxo_engomagem?: number | string | undefined | null
+    custo_filamento?: number | string | undefined | null
+    custo_energia?: number | string | undefined | null
+    custo_desgaste?: number | string | undefined | null
+    custo_total?: number | string | undefined | null
 }
 
 export const TIPO_SUPORTE_ITEM_OPTIONS = [

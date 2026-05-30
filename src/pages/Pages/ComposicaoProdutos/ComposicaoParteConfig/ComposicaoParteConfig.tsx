@@ -22,11 +22,13 @@ import {
     prepararPayloadSalvarFilamentosParte,
     validarCoresItensParte,
 } from '../hooks/useComposicaoProdutos'
+import { useCustosProducaoConfig } from 'hooks/useCustosProducaoConfig'
 
 const ComposicaoParteConfig = () => {
     const { id, idParte } = useParams()
     const navigate = useNavigate()
     const { voltarParaRotaAnterior } = useNavegacao()
+    const { config: custosConfig } = useCustosProducaoConfig()
 
     const composicaoService = new ComposicaoProdutosService()
 
@@ -185,7 +187,7 @@ const ComposicaoParteConfig = () => {
             preco_medio_grama?: number | string | null
         } | null
     ) => {
-        setVariacoesParte((prev) => atualizarFilamentoVariacaoItem(prev, chave, filamento))
+        setVariacoesParte((prev) => atualizarFilamentoVariacaoItem(prev, chave, filamento, custosConfig))
     }
 
     const salvarFilamentos = async () => {

@@ -18,6 +18,10 @@ export interface ParteProjetoImpressaoModel {
     id_projeto_impressao?: number | string | undefined | null
     nome_parte?: string | undefined | null
     itens?: ItemParteProjetoModel[]
+    custo_filamento?: number | string | undefined | null
+    custo_energia?: number | string | undefined | null
+    custo_desgaste?: number | string | undefined | null
+    custo_total?: number | string | undefined | null
 }
 
 export const ParteProjetoImpressaoDefaultValues: ParteProjetoImpressaoModel = {

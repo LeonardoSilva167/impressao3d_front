@@ -17,6 +17,10 @@ export interface ProjetosImpressaoView {
     codigo_projeto?: string
     descricao_projeto?: string
     partes?: ParteProjetoImpressaoModel[]
+    custo_filamento?: number | string | null
+    custo_energia?: number | string | null
+    custo_desgaste?: number | string | null
+    custo_total?: number | string | null
 }
 
 export interface ProjetosImpressaoList {

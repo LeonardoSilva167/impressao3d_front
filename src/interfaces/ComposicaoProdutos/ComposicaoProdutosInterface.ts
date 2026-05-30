@@ -65,6 +65,10 @@ export interface ComposicaoVariacaoItemModel {
     cor_filamento?: string | null
     preco_medio_grama?: number | string | null
     custo?: number | string | null
+    custo_filamento?: number | string | null
+    custo_energia?: number | string | null
+    custo_desgaste?: number | string | null
+    custo_total?: number | string | null
 }
 
 export interface ComposicaoProdutosView {
@@ -135,6 +139,10 @@ export interface ComposicaoVariacaoApiModel {
         hexadecimal?: string | null
     }
     custo_item?: number | string | null
+    custo_filamento?: number | string | null
+    custo_energia?: number | string | null
+    custo_desgaste?: number | string | null
+    custo_total?: number | string | null
     filamento?: {
         id?: number
         resumo?: string | null

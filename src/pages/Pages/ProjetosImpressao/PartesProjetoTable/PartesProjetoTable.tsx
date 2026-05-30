@@ -13,6 +13,7 @@ import {
     formatarNumeroDecimal,
     obterValorNumerico,
 } from '../hooks/useProjetosImpressao'
+import { formatarCustoProducao } from 'helpers/custosProducao_helpers'
 import ParteNomeModal from '../ParteNomeModal/ParteNomeModal'
 import ItemParteProjetoModal from '../ItemParteProjetoModal/ItemParteProjetoModal'
 
@@ -38,7 +39,7 @@ const PartesProjetoTable = ({ projetoId, partes, onReload, readOnly = false }: P
     const [salvando, setSalvando] = useState(false)
 
     const resumo = useMemo(() => calcularResumoPartesItens(partes), [partes])
-    const totalColunas = readOnly ? 5 : 6
+    const totalColunas = readOnly ? 9 : 10
 
     const abrirModalNovaParte = () => {
         setParteEmEdicao(null)
@@ -182,6 +183,10 @@ const PartesProjetoTable = ({ projetoId, partes, onReload, readOnly = false }: P
                                         <th scope="col">Cor</th>
                                         <th scope="col">Tempo</th>
                                         <th scope="col">Peso Total</th>
+                                        <th scope="col">Custo Filamento</th>
+                                        <th scope="col">Custo Energia</th>
+                                        <th scope="col">Custo Desgaste</th>
+                                        <th scope="col">Custo Total</th>
                                         {!readOnly && <th scope="col" style={{ width: '140px' }}>Ação</th>}
                                     </tr>
                                 </thead>
@@ -268,6 +273,10 @@ const PartesProjetoTable = ({ projetoId, partes, onReload, readOnly = false }: P
                                                                         ? `${formatarNumeroDecimal(pesoTotal)}g`
                                                                         : '—'}
                                                                 </td>
+                                                                <td>{formatarCustoProducao(item.custo_filamento)}</td>
+                                                                <td>{formatarCustoProducao(item.custo_energia)}</td>
+                                                                <td>{formatarCustoProducao(item.custo_desgaste)}</td>
+                                                                <td>{formatarCustoProducao(item.custo_total)}</td>
                                                                 {!readOnly && (
                                                                     <td>
                                                                         {item.id && (
@@ -304,21 +313,17 @@ const PartesProjetoTable = ({ projetoId, partes, onReload, readOnly = false }: P
                                 {partes.length > 0 && (
                                     <tfoot className="table-light">
                                         <tr>
-                                            <td colSpan={readOnly ? 2 : 2} className="text-end fw-semibold">
-                                                Total de Itens:
+                                            <td colSpan={3} className="text-end fw-semibold">
+                                                Totais do Projeto ({resumo.totalItens} itens):
                                             </td>
-                                            <td className="fw-semibold">{resumo.totalItens}</td>
-                                            <td className="text-end fw-semibold">Tempo Total Projeto:</td>
                                             <td className="fw-semibold">{resumo.tempoTotal}</td>
-                                            {!readOnly && <td />}
-                                        </tr>
-                                        <tr>
-                                            <td colSpan={readOnly ? 4 : 4} className="text-end fw-semibold">
-                                                Peso Total Projeto:
-                                            </td>
                                             <td className="fw-semibold">
                                                 {formatarNumeroDecimal(resumo.pesoTotal)}g
                                             </td>
+                                            <td className="fw-semibold">{formatarCustoProducao(resumo.custo_filamento)}</td>
+                                            <td className="fw-semibold">{formatarCustoProducao(resumo.custo_energia)}</td>
+                                            <td className="fw-semibold">{formatarCustoProducao(resumo.custo_desgaste)}</td>
+                                            <td className="fw-semibold">{formatarCustoProducao(resumo.custo_total)}</td>
                                             {!readOnly && <td />}
                                         </tr>
                                     </tfoot>

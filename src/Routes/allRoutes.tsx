@@ -78,6 +78,11 @@ import ComposicaoProdutosPage from "../pages/Pages/ComposicaoProdutos/Composicao
 import ComposicaoProdutosForm from "../pages/Pages/ComposicaoProdutos/ComposicaoProdutosForm/ComposicaoProdutosForm";
 import ComposicaoProdutosViewPage from "../pages/Pages/ComposicaoProdutos/ComposicaoProdutosView/ComposicaoProdutosView";
 import ComposicaoParteConfig from "../pages/Pages/ComposicaoProdutos/ComposicaoParteConfig/ComposicaoParteConfig";
+import GradeProdutosPage from "../pages/Pages/GradeProdutos/GradeProdutosPage";
+import GradeProdutosForm from "../pages/Pages/GradeProdutos/GradeProdutosForm/GradeProdutosForm";
+import GradeProdutosViewPage from "../pages/Pages/GradeProdutos/GradeProdutosView/GradeProdutosView";
+import GradeProdutoGeradoViewPage from "../pages/Pages/GradeProdutos/GradeProdutoGeradoView/GradeProdutoGeradoView";
+import ConfiguracoesPage from "../pages/Pages/Configuracoes/ConfiguracoesPage";
 
 
 
@@ -195,6 +200,16 @@ const authProtectedRoutes = [
   { path: "/composicao-produtos/view/:id", component: <ComposicaoProdutosViewPage /> },
   { path: "/composicao-produtos/:id/parte/:idParte/configurar", component: <ComposicaoParteConfig /> },
 
+  // Grade de Produtos
+  { path: "/grade-produtos", component: <GradeProdutosPage /> },
+  { path: "/grade-produtos/add", component: <GradeProdutosForm /> },
+  { path: "/grade-produtos/edit/:id", component: <GradeProdutosForm /> },
+  { path: "/grade-produtos/view/:id", component: <GradeProdutosViewPage /> },
+  { path: "/grade-produtos/produto/:id", component: <GradeProdutoGeradoViewPage /> },
+
+  // Configurações
+  { path: "/configuracoes", component: <ConfiguracoesPage /> },
+
   // Categorias
   { path: "/categorias-itens", component: <CategoriasPage /> },
   { path: "/categorias-itens/add", component: <CategoriasForm /> },
@@ -219,43 +234,7 @@ const authProtectedRoutes = [
   // Estoque
   { path: "/lotes", component: <LotesPage /> },
   { path: "/movimentacoes-estoque", component: <MovimentacoesEstoquePage /> },
-  // // // ContasBancarias
-  // { path: "/linha-produto", component: <LinhasProdutos /> },
-  // { path: "/linha-produto/add", component: <LinhasProdutosForm /> },
-  // { path: "/linha-produto/edit/:idContaBancaria", component: <LinhasProdutosForm /> },
 
-  // // // ContasBancarias
-  // { path: "/produtos", component: <Produtos /> },
-  // { path: "/produtos/add", component: <ProdutosForm /> },
-  // { path: "/produtos/edit/:idContaBancaria", component: <ProdutosForm /> },
-
-  // // // ContasBancarias
-  // { path: "/grade-produtos", component: <GradesProdutos /> },
-  // { path: "/grade-produtos/add", component: <GradesProdutosForm /> },
-  // { path: "/grade-produtos/edit/:idContaBancaria", component: <GradesProdutosForm /> },
-
-  // // // ContasBancarias
-  // { path: "/contas-bancarias", component: <ContasBancarias /> },
-  // { path: "/contas-bancarias/add", component: <ContasBancariasForm /> },
-  // { path: "/contas-bancarias/edit/:idContaBancaria", component: <ContasBancariasForm /> },
-
-  // // // Despesas
-  // { path: "/despesas", component: <Despesas /> },
-  // { path: "/despesas/add", component: <DespesasForm /> },
-  // { path: "/despesas/edit/:idDespesas", component: <DespesasForm /> },
-
-  // // // Contas A pagar
-  // { path: "contas-a-pagar", component: <ContasPagar /> },
-  // { path: "contas-a-pagar/add", component: <ContasPagarForm /> },
-  // { path: "contas-a-pagar/edit/:idContasPagar", component: <ContasPagarForm /> },
-
-  // // // Contas A pagar
-  // { path: "lancamentos", component: <Lancamentos /> },
-  // { path: "lancamentos/add", component: <LancamentosForm /> },
-  // { path: "lancamentos/edit/:idLancamentos", component: <LancamentosForm /> },
-
-  // this route should be at the end of all other routes
-  // eslint-disable-next-line react/display-name
   {
     path: "/",
     exact: true,
@@ -265,14 +244,10 @@ const authProtectedRoutes = [
 ];
 
 const publicRoutes = [
-  // Authentication Page
   { path: "/logout", component: <Logout /> },
   { path: "/login", component: <Login /> },
   { path: "/forgot-password", component: <ForgetPasswordPage /> },
   { path: "/register", component: <Register /> },
-
-
 ];
-
 
 export { authProtectedRoutes, publicRoutes };
