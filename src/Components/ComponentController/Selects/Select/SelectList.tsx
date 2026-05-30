@@ -1,6 +1,6 @@
 import { SelectProps } from 'interfaces/SystemInterfaces/SelectInterface';
-import { useState } from 'react';
-import Select, { GroupBase, StylesConfig } from 'react-select'
+import { useEffect, useState } from 'react';
+import Select from 'react-select'
 
 const customStyles = {
     multiValue: (styles: any, { data }: any) => {
@@ -60,12 +60,13 @@ export function SelectList(props: SelectProps) {
                 <Select
                     className={` ${props.errors ? 'select is-invalid' : ''}`}
                     placeholder="Selecione"
-                    value={selectedMulti2}
+                    value={selectedMulti}
                     isMulti={true}
                     isClearable={true}
-                    onChange={(selectedMulti2: any) => {
-                        handleMulti2(selectedMulti2);
-                        props.onChange(selectedMulti2);
+                    onChange={(selected: any) => {
+                        const value = selected ? selected : [];
+                        setSelectedMulti(value);
+                        props.onChange(value);
                     }}
                     name={props.name}
                     options={props.options}

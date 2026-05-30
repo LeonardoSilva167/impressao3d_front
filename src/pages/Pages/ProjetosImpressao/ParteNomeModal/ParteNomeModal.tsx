@@ -47,6 +47,7 @@ const ParteNomeModal = ({ isOpen, toggle, parte, onSave }: ParteNomeModalProps) 
                                     control={control}
                                     required={required}
                                     placeholder="Ex: Tampa, Base, Olho..."
+                                    uppercase
                                 />
                             </div>
                         </Col>

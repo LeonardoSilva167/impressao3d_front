@@ -59,6 +59,21 @@ import CarreteisFinalizadosForm from "../pages/Pages/CarreteisFinalizados/Carret
 import ProjetosImpressaoPage from "../pages/Pages/ProjetosImpressao/ProjetosImpressaoPage";
 import ProjetosImpressaoForm from "../pages/Pages/ProjetosImpressao/ProjetosImpressaoForm/ProjetosImpressaoForm";
 import ProjetosImpressaoViewPage from "../pages/Pages/ProjetosImpressao/ProjetosImpressaoView/ProjetosImpressaoView";
+import ProdutosPage from "../pages/Pages/Produtos/ProdutosPage";
+import ProdutosForm from "../pages/Pages/Produtos/ProdutosForm/ProdutosForm";
+import ProdutosViewPage from "../pages/Pages/Produtos/ProdutosView/ProdutosView";
+import CategoriasProdutosPage from "../pages/Pages/CategoriasProdutos/CategoriasProdutosPage";
+import CategoriasProdutosForm from "../pages/Pages/CategoriasProdutos/CategoriasProdutosForm/CategoriasProdutosForm";
+import CategoriasProdutosViewPage from "../pages/Pages/CategoriasProdutos/CategoriasProdutosView/CategoriasProdutosView";
+import ModelosProdutosPage from "../pages/Pages/ModelosProdutos/ModelosProdutosPage";
+import ModelosProdutosForm from "../pages/Pages/ModelosProdutos/ModelosProdutosForm/ModelosProdutosForm";
+import ModelosProdutosViewPage from "../pages/Pages/ModelosProdutos/ModelosProdutosView/ModelosProdutosView";
+import LinhasProdutosPage from "../pages/Pages/LinhasProdutos/LinhasProdutosPage";
+import LinhasProdutosForm from "../pages/Pages/LinhasProdutos/LinhasProdutosForm/LinhasProdutosForm";
+import LinhasProdutosViewPage from "../pages/Pages/LinhasProdutos/LinhasProdutosView/LinhasProdutosView";
+import PartesBaseProdutosPage from "../pages/Pages/PartesBaseProdutos/PartesBaseProdutosPage";
+import PartesBaseProdutosForm from "../pages/Pages/PartesBaseProdutos/PartesBaseProdutosForm/PartesBaseProdutosForm";
+import PartesBaseProdutosViewPage from "../pages/Pages/PartesBaseProdutos/PartesBaseProdutosView/PartesBaseProdutosView";
 
 
 
@@ -138,6 +153,36 @@ const authProtectedRoutes = [
   { path: "/projetos-impressao/add", component: <ProjetosImpressaoForm /> },
   { path: "/projetos-impressao/edit/:id", component: <ProjetosImpressaoForm /> },
   { path: "/projetos-impressao/view/:id", component: <ProjetosImpressaoViewPage /> },
+
+  // Produtos
+  { path: "/produtos", component: <ProdutosPage /> },
+  { path: "/produtos/add", component: <ProdutosForm /> },
+  { path: "/produtos/edit/:id", component: <ProdutosForm /> },
+  { path: "/produtos/view/:id", component: <ProdutosViewPage /> },
+
+  // Categorias de Produtos
+  { path: "/categorias-produtos", component: <CategoriasProdutosPage /> },
+  { path: "/categorias-produtos/add", component: <CategoriasProdutosForm /> },
+  { path: "/categorias-produtos/edit/:id", component: <CategoriasProdutosForm /> },
+  { path: "/categorias-produtos/view/:id", component: <CategoriasProdutosViewPage /> },
+
+  // Modelos de Produtos
+  { path: "/modelos-produtos", component: <ModelosProdutosPage /> },
+  { path: "/modelos-produtos/add", component: <ModelosProdutosForm /> },
+  { path: "/modelos-produtos/edit/:id", component: <ModelosProdutosForm /> },
+  { path: "/modelos-produtos/view/:id", component: <ModelosProdutosViewPage /> },
+
+  // Linhas de Produtos
+  { path: "/linhas-produtos", component: <LinhasProdutosPage /> },
+  { path: "/linhas-produtos/add", component: <LinhasProdutosForm /> },
+  { path: "/linhas-produtos/edit/:id", component: <LinhasProdutosForm /> },
+  { path: "/linhas-produtos/view/:id", component: <LinhasProdutosViewPage /> },
+
+  // Partes Base de Produtos
+  { path: "/partes-base-produtos", component: <PartesBaseProdutosPage /> },
+  { path: "/partes-base-produtos/add", component: <PartesBaseProdutosForm /> },
+  { path: "/partes-base-produtos/edit/:id", component: <PartesBaseProdutosForm /> },
+  { path: "/partes-base-produtos/view/:id", component: <PartesBaseProdutosViewPage /> },
 
   // Categorias
   { path: "/categorias-itens", component: <CategoriasPage /> },

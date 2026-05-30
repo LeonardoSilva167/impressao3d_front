@@ -110,6 +110,7 @@ const ItemParteProjetoModal = ({
                                     control={control}
                                     required={required}
                                     placeholder="Ex: Base, Pegador, Trava..."
+                                    uppercase
                                 />
                             </div>
                         </Col>

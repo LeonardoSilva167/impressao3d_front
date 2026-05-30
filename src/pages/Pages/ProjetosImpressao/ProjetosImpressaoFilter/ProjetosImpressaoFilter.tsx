@@ -1,7 +1,7 @@
 import UiContent from 'Components/Common/UiContent'
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { Breadcrumb, BreadcrumbItem, Button, Card, CardHeader, Col, Collapse, Row } from 'reactstrap'
 import { InputTextControlled } from 'Components/ComponentController/Inputs/Text/InputTextControlled'
 import { ProjetosImpressaoSearch } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
@@ -11,7 +11,7 @@ export interface ProjetosImpressaoFilterProps {
 }
 
 const ProjetosImpressaoFilter = ({ getRemoteProjetosImpressaoList }: ProjetosImpressaoFilterProps) => {
-    const { handleSubmit, control, register } = useForm<ProjetosImpressaoSearch>({ defaultValues: {} })
+    const { handleSubmit, control } = useForm<ProjetosImpressaoSearch>({ defaultValues: {} })
     const [showFilter, setShowFilter] = useState<boolean>(false)
 
     return (
@@ -58,11 +58,19 @@ const ProjetosImpressaoFilter = ({ getRemoteProjetosImpressaoList }: ProjetosImp
                                         <Col md={8}>
                                             <form onSubmit={handleSubmit(getRemoteProjetosImpressaoList)}>
                                                 <div className="input-group">
-                                                    <input
-                                                        {...register('palavra_chave')}
-                                                        type="text"
-                                                        className="form-control"
-                                                        placeholder="Buscar..."
+                                                    <Controller
+                                                        name="palavra_chave"
+                                                        control={control}
+                                                        render={({ field }) => (
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                placeholder="Buscar..."
+                                                                style={{ textTransform: 'uppercase' }}
+                                                                value={field.value || ''}
+                                                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                                                            />
+                                                        )}
                                                     />
                                                     <button className="btn btn-success" type="submit">
                                                         <i className="ri-search-line align-middle me-1"></i> Buscar
@@ -90,6 +98,7 @@ const ProjetosImpressaoFilter = ({ getRemoteProjetosImpressaoList }: ProjetosImp
                                                             field={'codigo_projeto'}
                                                             control={control}
                                                             placeholder="Código..."
+                                                            uppercase
                                                         />
                                                     </div>
                                                 </Col>
@@ -100,6 +109,7 @@ const ProjetosImpressaoFilter = ({ getRemoteProjetosImpressaoList }: ProjetosImp
                                                             field={'nome_original_projeto'}
                                                             control={control}
                                                             placeholder="Nome original..."
+                                                            uppercase
                                                         />
                                                     </div>
                                                 </Col>
@@ -110,6 +120,7 @@ const ProjetosImpressaoFilter = ({ getRemoteProjetosImpressaoList }: ProjetosImp
                                                             field={'descricao_projeto'}
                                                             control={control}
                                                             placeholder="Apelido..."
+                                                            uppercase
                                                         />
                                                     </div>
                                                 </Col>
@@ -121,6 +132,7 @@ const ProjetosImpressaoFilter = ({ getRemoteProjetosImpressaoList }: ProjetosImp
                                                             field={'palavra_chave'}
                                                             control={control}
                                                             placeholder="Buscar..."
+                                                            uppercase
                                                         />
                                                     </Col>
                                                     <Col md={2} className="me-3">

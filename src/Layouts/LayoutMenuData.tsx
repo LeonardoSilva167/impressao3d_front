@@ -10,7 +10,7 @@ const Navdata = () => {
     const [isDashboard, setIsDashboard] = useState<boolean>(false);
     const [isProdutoConfig, setIsProdutoConfig] = useState<boolean>(false);
     const [isCaixa, setIsCaixa] = useState<boolean>(false);
-    // const [isProdutos, setIsProdutos] = useState<boolean>(false);
+    const [isProdutos, setIsProdutos] = useState<boolean>(false);
     const [isFilamentos, setIsFilamentos] = useState<boolean>(false);
     const [isCompras, setIsCompras] = useState<boolean>(false);
     const [isProducao, setIsProducao] = useState<boolean>(false);
@@ -81,9 +81,9 @@ const Navdata = () => {
         if (iscurrentState !== 'Vendas') {
             setIsCaixa(false);
         }
-        // if (iscurrentState !== 'Produtos') {
-        //     setIsProdutos(false);
-        // }
+        if (iscurrentState !== 'ProdutosMenu') {
+            setIsProdutos(false);
+        }
         if (iscurrentState !== 'Filamentos') {
             setIsFilamentos(false);
         }
@@ -93,6 +93,9 @@ const Navdata = () => {
         if (iscurrentState !== 'Producao') {
             setIsProducao(false);
         }
+        if (iscurrentState !== 'ProdutosMenu') {
+            setIsProdutos(false);
+        }
         // if (iscurrentState === 'Filamentos') {
         //     history("/cores"); // Redirecionar ao clicar na raiz ou apenas expandir, o comum no template é history e layout
         //     document.body.classList.add('twocolumn-panel');
@@ -101,7 +104,8 @@ const Navdata = () => {
         history,
         iscurrentState,
         isDashboard,
-        isProdutoConfig
+        isProdutoConfig,
+        isProdutos
     ]);
 
     const menuItems: any = [
@@ -383,6 +387,51 @@ const Navdata = () => {
                     label: "Movimentações de Estoque",
                     link: "/movimentacoes-estoque",
                     parentId: "Compras",
+                },
+            ],
+        },
+        {
+            id: "ProdutosMenu",
+            label: "Produtos",
+            icon: "ri-shopping-bag-3-line",
+            link: "/#",
+            stateVariables: isProdutos,
+            click: function (e: any) {
+                e.preventDefault();
+                setIsProdutos(!isProdutos);
+                setIscurrentState('ProdutosMenu');
+                updateIconSidebar(e);
+            },
+            subItems: [
+                {
+                    id: "categorias-produtos",
+                    label: "Categorias",
+                    link: "/categorias-produtos",
+                    parentId: "ProdutosMenu",
+                },
+                {
+                    id: "modelos-produtos",
+                    label: "Modelos",
+                    link: "/modelos-produtos",
+                    parentId: "ProdutosMenu",
+                },
+                {
+                    id: "linhas-produtos",
+                    label: "Linhas",
+                    link: "/linhas-produtos",
+                    parentId: "ProdutosMenu",
+                },
+                {
+                    id: "partes-base-produtos",
+                    label: "Partes Base",
+                    link: "/partes-base-produtos",
+                    parentId: "ProdutosMenu",
+                },
+                {
+                    id: "produtos",
+                    label: "Produtos",
+                    link: "/produtos",
+                    parentId: "ProdutosMenu",
                 },
             ],
         },

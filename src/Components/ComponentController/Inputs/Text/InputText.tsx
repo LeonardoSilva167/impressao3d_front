@@ -19,6 +19,7 @@ interface InputTextProps<T extends FieldValues> {
     onBlur?: any,
     onKeyUp?: any,
     defaultValue?: any
+    uppercase?: boolean
 }
 
 export const InputText = <T extends Record<keyof T, any>>(
@@ -34,7 +35,8 @@ export const InputText = <T extends Record<keyof T, any>>(
         errors,
         onChange,
         onBlur,
-        onKeyUp
+        onKeyUp,
+        uppercase,
     }: InputTextProps<T>) => {
     return (
         <>
@@ -50,6 +52,7 @@ export const InputText = <T extends Record<keyof T, any>>(
                 value={value}
                 onChange={onChange}
                 onKeyUp={onKeyUp}
+                style={uppercase ? { textTransform: 'uppercase' } : undefined}
             />
         </>
     )

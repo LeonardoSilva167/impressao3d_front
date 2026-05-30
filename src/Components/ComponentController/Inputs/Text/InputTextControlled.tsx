@@ -21,6 +21,7 @@ interface InputTextControlledProps<T extends FieldValues> {
     onBlur?: ((e: any) => void) | ((e: any) => Promise<void>),
     control: Control<T>,
     defaultValue?: any
+    uppercase?: boolean
 }
 
 
@@ -28,12 +29,19 @@ export const InputTextControlled = <T extends Partial<Record<keyof T, any>>>(pro
 
     const onChangeWithMask = (e: any) => {
         const { value } = e.target
-        return !!props.mask ? removeMask(value) : value
+        let result = !!props.mask ? removeMask(value) : value
+        if (props.uppercase && typeof result === 'string') {
+            result = result.toUpperCase()
+        }
+        return result
     }
     const setValue = (v: any): any => {  // Alterando o tipo de retorno para `any`
         if (props.mask) {
             const maskedValue = mask(props.mask, v);
             return maskedValue !== undefined ? maskedValue : v;
+        }
+        if (props.uppercase && typeof v === 'string') {
+            return v.toUpperCase()
         }
         return v;
     }
@@ -58,6 +66,7 @@ export const InputTextControlled = <T extends Partial<Record<keyof T, any>>>(pro
                     disabled={props.disabled}
                     readOnly={props.readOnly}
                     onKeyUp={props.onKeyUp}
+                    uppercase={props.uppercase}
                 />
             )}
 

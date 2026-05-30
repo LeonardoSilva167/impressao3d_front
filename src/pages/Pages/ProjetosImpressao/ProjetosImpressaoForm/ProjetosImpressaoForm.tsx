@@ -144,6 +144,7 @@ const ProjetosImpressaoForm = () => {
                                                             control={control}
                                                             required={required}
                                                             placeholder="https://..."
+                                                            uppercase
                                                         />
                                                     </div>
                                                 </Col>
@@ -154,6 +155,7 @@ const ProjetosImpressaoForm = () => {
                                                             field={'nome_original_projeto'}
                                                             control={control}
                                                             required={required}
+                                                            uppercase
                                                         />
                                                     </div>
                                                 </Col>
@@ -167,6 +169,7 @@ const ProjetosImpressaoForm = () => {
                                                             field={'codigo_projeto'}
                                                             control={control}
                                                             required={required}
+                                                            uppercase
                                                         />
                                                     </div>
                                                 </Col>
@@ -178,6 +181,7 @@ const ProjetosImpressaoForm = () => {
                                                             control={control}
                                                             required={required}
                                                             placeholder="Ex: Caixa de Jóias Nº1"
+                                                            uppercase
                                                         />
                                                     </div>
                                                 </Col>
