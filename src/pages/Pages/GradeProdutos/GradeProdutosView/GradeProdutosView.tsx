@@ -7,9 +7,8 @@ import {
     Badge, Breadcrumb, BreadcrumbItem, Card, CardBody, Col, Container,
     Label, Row, Spinner, Table
 } from 'reactstrap'
-import { GradeProdutosView, GradeProdutoGeradoList } from 'interfaces/GradeProdutos/GradeProdutosInterface'
+import { GradeProdutosView } from 'interfaces/GradeProdutos/GradeProdutosInterface'
 import { GradeProdutosService } from 'services/GradeProdutos/GradeProdutosService'
-import { carregarCustosProducaoConfig } from 'hooks/useCustosProducaoConfig'
 import {
     formatarCustoGrade,
     formatarPartesCombinacao,
@@ -21,7 +20,6 @@ import {
     obterPartesUtilizadasGrade,
     obterQuantidadeCombinacoesGrade,
     obterQuantidadeProdutosGerados,
-    resolverProdutosGeradosGrade,
 } from '../hooks/useGradeProdutos'
 
 const GradeProdutosViewPage = () => {
@@ -30,7 +28,6 @@ const GradeProdutosViewPage = () => {
     const gradeService = new GradeProdutosService()
 
     const [registro, setRegistro] = useState<GradeProdutosView>()
-    const [produtosGerados, setProdutosGerados] = useState<GradeProdutoGeradoList[]>([])
     const [loading, setLoading] = useState(true)
 
     const loadRegistro = async () => {
@@ -41,14 +38,12 @@ const GradeProdutosViewPage = () => {
 
         setLoading(true)
         try {
-            const config = await carregarCustosProducaoConfig()
             const view = await gradeService.getViewGradeProdutos({ id: registroId })
             if (!view) {
                 toast.error('Grade não encontrada.')
                 return
             }
             setRegistro(view)
-            setProdutosGerados(resolverProdutosGeradosGrade(view, config))
         } catch (error) {
             console.error('Erro ao carregar grade:', error)
             toast.error('Erro ao carregar grade.')
@@ -158,7 +153,7 @@ const GradeProdutosViewPage = () => {
                                             )}
                                             <h5 className="mb-3">Produtos Gerados</h5>
 
-                                            {produtosGerados.length === 0 ? (
+                                            {(registro.produtos_gerados || []).length === 0 ? (
                                                 <p className="text-muted">Nenhum produto gerado nesta grade.</p>
                                             ) : (
                                                 <div className="table-responsive">
@@ -178,7 +173,7 @@ const GradeProdutosViewPage = () => {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {produtosGerados.map((produto, index) => (
+                                                            {(registro.produtos_gerados || []).map((produto, index) => (
                                                                 <tr key={produto.id != null ? produto.id : index}>
                                                                     <td>{produto.nome_produto || '—'}</td>
                                                                     <td>{produto.sku || '—'}</td>

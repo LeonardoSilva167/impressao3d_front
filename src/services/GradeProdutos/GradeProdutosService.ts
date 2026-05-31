@@ -14,7 +14,6 @@ import {
     GradeProdutoGeradoList,
     GradeProdutoGeradoView,
 } from 'interfaces/GradeProdutos/GradeProdutosInterface'
-import { carregarCustosProducaoConfig } from 'hooks/useCustosProducaoConfig'
 import {
     mapCarregarDadosGrade,
     mapProdutoGeradoListApi,
@@ -87,13 +86,10 @@ export class GradeProdutosService implements GradeProdutosInterface {
             switch (response.statusCode) {
                 case HttpStatusCode.ok: {
                     if (!response.body) return undefined
-                    const config = await carregarCustosProducaoConfig()
                     const body = response.body
                     return {
                         ...body,
-                        data: (body.data || []).map((item) =>
-                            mapProdutoGeradoListApi(item, config)
-                        ),
+                        data: (body.data || []).map((item) => mapProdutoGeradoListApi(item)),
                     }
                 }
                 case HttpStatusCode.unauthorized: throw new AccessDeniedError()

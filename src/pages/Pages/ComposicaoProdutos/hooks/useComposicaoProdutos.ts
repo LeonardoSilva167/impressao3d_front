@@ -18,11 +18,7 @@ import {
     calcularPesoTotalParte,
     obterValorNumerico,
 } from 'pages/Pages/ProjetosImpressao/hooks/useProjetosImpressao'
-import {
-    calcularCustosProducao,
-    CustosProducaoConfig,
-    extrairCustosProducao,
-} from 'helpers/custosProducao_helpers'
+import { extrairCustosProducao } from 'helpers/custosProducao_helpers'
 import {
     chaveCombinacaoCores,
     gerarCombinacoesCores,
@@ -380,8 +376,7 @@ export const atualizarFilamentoVariacaoItem = (
         label?: string
         cor_filamento?: string | null
         preco_medio_grama?: number | string | null
-    } | null,
-    config?: Partial<CustosProducaoConfig>
+    } | null
 ): ComposicaoVariacaoItemModel[] => (
     variacoes.map((linha) => {
         if (linha.chave !== chave) return linha
@@ -395,19 +390,14 @@ export const atualizarFilamentoVariacaoItem = (
                 preco_medio_grama: null,
                 custo: 0,
                 custo_filamento: 0,
-                custo_energia: 0,
-                custo_desgaste: 0,
-                custo_total: 0,
+                custo_energia: undefined,
+                custo_desgaste: undefined,
+                custo_total: undefined,
             }
         }
 
         const idFilamento = filamento.id ?? filamento.value ?? null
-        const custos = calcularCustosProducao({
-            peso: linha.peso,
-            tempo: linha.tempo,
-            precoMedioGrama: filamento.preco_medio_grama,
-            config,
-        })
+        const custoFilamento = calcularCustoItem(linha.peso, filamento.preco_medio_grama)
 
         return {
             ...linha,
@@ -415,11 +405,11 @@ export const atualizarFilamentoVariacaoItem = (
             descricao_filamento: filamento.label || null,
             cor_filamento: filamento.cor_filamento || null,
             preco_medio_grama: filamento.preco_medio_grama,
-            custo: custos.custo_filamento,
-            custo_filamento: custos.custo_filamento,
-            custo_energia: custos.custo_energia,
-            custo_desgaste: custos.custo_desgaste,
-            custo_total: custos.custo_total,
+            custo: custoFilamento,
+            custo_filamento: custoFilamento,
+            custo_energia: undefined,
+            custo_desgaste: undefined,
+            custo_total: undefined,
         }
     })
 )

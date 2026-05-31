@@ -59,13 +59,7 @@ interface GradeCarregarDadosApiResponse extends GradeProdutosCarregarDados {
     }
 }
 import { formatarParaMoedaReal } from 'helpers/functions_helpers'
-import {
-    calcularCustoDesgaste,
-    calcularCustoEnergia,
-    calcularCustoTotalProducao,
-    CUSTOS_PRODUCAO_DEFAULT,
-    CustosProducaoConfig,
-} from 'helpers/custosProducao_helpers'
+import { extrairCustosProducao } from 'helpers/custosProducao_helpers'
 import { obterValorNumerico } from 'pages/Pages/ProjetosImpressao/hooks/useProjetosImpressao'
 
 const obterCustoFilamentoProdutoApi = (produto: Record<string, unknown>): number | string | null | undefined => {
@@ -83,33 +77,16 @@ const obterCustoFilamentoProdutoApi = (produto: Record<string, unknown>): number
 }
 
 export const mapProdutoGeradoListApi = (
-    produto: Record<string, unknown>,
-    config: CustosProducaoConfig = CUSTOS_PRODUCAO_DEFAULT
+    produto: Record<string, unknown>
 ): GradeProdutoGeradoList => {
-    const custoFilamento = obterValorNumerico(obterCustoFilamentoProdutoApi(produto))
     const tempoTotal = produto.tempo_total as string | null | undefined
-
-    const custoEnergiaApi = obterValorNumerico(produto.custo_energia as number | string | null | undefined)
-    const custoDesgasteApi = obterValorNumerico(produto.custo_desgaste as number | string | null | undefined)
-
-    let custoEnergia = custoEnergiaApi
-    let custoDesgaste = custoDesgasteApi
-    let custosComplementados = false
-
-    if (custoEnergia <= 0 && tempoTotal) {
-        custoEnergia = calcularCustoEnergia(tempoTotal, config.custo_energia_kwh)
-        custosComplementados = true
-    }
-    if (custoDesgaste <= 0 && tempoTotal) {
-        custoDesgaste = calcularCustoDesgaste(tempoTotal, config.custo_desgaste_hora)
-        custosComplementados = true
-    }
-
-    const custoTotalInformado = obterValorNumerico(produto.custo_total as number | string | null | undefined)
-    const custoTotalCalculado = calcularCustoTotalProducao(custoFilamento, custoEnergia, custoDesgaste)
-    const custoTotal = custosComplementados || custoTotalInformado <= custoFilamento
-        ? custoTotalCalculado
-        : custoTotalInformado
+    const custos = extrairCustosProducao({
+        custo_filamento: obterCustoFilamentoProdutoApi(produto),
+        custo_energia: produto.custo_energia as number | string | null | undefined,
+        custo_desgaste: produto.custo_desgaste as number | string | null | undefined,
+        custo_total: produto.custo_total as number | string | null | undefined,
+        custo: produto.custo as number | string | null | undefined,
+    })
 
     return {
         id: produto.id as number | undefined,
@@ -123,10 +100,10 @@ export const mapProdutoGeradoListApi = (
         peso_total: produto.peso_total as number | string | null | undefined,
         tempo_total: tempoTotal || null,
         status: produto.status as GradeProdutoGeradoList['status'],
-        custo_filamento: custoFilamento,
-        custo_energia: custoEnergia,
-        custo_desgaste: custoDesgaste,
-        custo_total: custoTotal,
+        custo_filamento: custos.custo_filamento,
+        custo_energia: custos.custo_energia,
+        custo_desgaste: custos.custo_desgaste,
+        custo_total: custos.custo_total,
     }
 }
 
@@ -155,8 +132,7 @@ export const obterClasseBadgeStatusProdutoGerado = (
 }
 
 export const resolverProdutosGeradosGrade = (
-    view: GradeProdutosView | Record<string, unknown> | null | undefined,
-    config: CustosProducaoConfig = CUSTOS_PRODUCAO_DEFAULT
+    view: GradeProdutosView | Record<string, unknown> | null | undefined
 ): GradeProdutoGeradoList[] => {
     if (!view || typeof view !== 'object') return []
 
@@ -164,7 +140,7 @@ export const resolverProdutosGeradosGrade = (
     const produtosRaw = raw.produtos_gerados
     if (!Array.isArray(produtosRaw)) return []
 
-    return produtosRaw.map((produto) => mapProdutoGeradoListApi(produto as Record<string, unknown>, config))
+    return produtosRaw.map((produto) => mapProdutoGeradoListApi(produto as Record<string, unknown>))
 }
 
 const mapCombinacoesApi = (combinacoes: unknown): GradeCombinacao[] => {
