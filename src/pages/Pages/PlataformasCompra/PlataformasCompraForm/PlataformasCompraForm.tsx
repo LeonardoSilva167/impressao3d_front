@@ -46,14 +46,14 @@ const PlataformasCompraForm = () => {
                         <Col xs={12}>
                             <div className="page-title-box d-sm-flex align-items-center justify-content-between">
                                 <div className="d-sm-flex align-items-center justify-content-between">
-                                    <Link to="/plataformas-compra"><i className="bx bx-arrow-back bx-sm"></i></Link>
+                                    <Link to="/configuracoes-plataformas"><i className="bx bx-arrow-back bx-sm"></i></Link>
                                     <h4 className="mb-sm-0 ms-3">
-                                        {record.id ? 'Editar' : 'Adicionar'} Plataforma de Compra
+                                        {record.id ? 'Editar' : 'Adicionar'} Plataforma de Compra / Venda
                                     </h4>
                                 </div>
                                 <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                                     <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
-                                    <BreadcrumbItem><Link to="/plataformas-compra">Plataformas de Compra</Link></BreadcrumbItem>
+                                    <BreadcrumbItem><Link to="/configuracoes-plataformas">Plataformas de Compra / Venda</Link></BreadcrumbItem>
                                     <BreadcrumbItem active>
                                         {record.id ? 'Editar' : 'Adicionar'} Plataforma de Compra
                                     </BreadcrumbItem>

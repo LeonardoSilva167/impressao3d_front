@@ -44,7 +44,7 @@ export class PlataformasCompraService implements PlataformasCompraInterface {
                 default: throw new UnexpectedError()
             }
         } catch (error) {
-            console.error(`Erro ao buscar plataformas de compra:`, error)
+            console.error(`Erro ao buscar plataforma:`, error)
             throw error
         }
     }

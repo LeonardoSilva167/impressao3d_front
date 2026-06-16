@@ -1,4 +1,3 @@
-import { CorProjetoModel } from './CorProjetoInterface'
 import { ParteProjetoImpressaoModel } from './ParteProjetoImpressaoInterface'
 
 export interface ProjetosImpressaoSearch {
@@ -56,6 +55,3 @@ export const ProjetosImpressaoDefaultValues: ProjetosImpressaoModel = {
     codigo_projeto: null,
     descricao_projeto: null,
 }
-
-/** @deprecated Project-level colors removed; kept for legacy references */
-export type { CorProjetoModel }

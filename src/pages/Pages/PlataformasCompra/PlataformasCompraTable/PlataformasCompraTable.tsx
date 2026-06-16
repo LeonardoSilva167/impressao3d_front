@@ -130,10 +130,10 @@ export const PlataformasCompraTable = ({ data, getData, setPerPage, setPage, per
                                                                                     <i className="ri-more-2-fill"></i>
                                                                                 </DropdownToggle>
                                                                                 <DropdownMenu style={{ zIndex: '999' }}>
-                                                                                    <Link to={`/plataformas-compra/view/${row.id}`} state={{ source: row }}>
+                                                                                    <Link to={`/configuracoes-plataformas/view/${row.id}`} state={{ source: row }}>
                                                                                         <DropdownItem>Visualizar</DropdownItem>
                                                                                     </Link>
-                                                                                    <Link to={`/plataformas-compra/edit/${row.id}`} state={{ source: row }}>
+                                                                                    <Link to={`/configuracoes-plataformas/edit/${row.id}`} state={{ source: row }}>
                                                                                         <DropdownItem>Editar</DropdownItem>
                                                                                     </Link>
                                                                                     <DropdownItem

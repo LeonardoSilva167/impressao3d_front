@@ -32,7 +32,7 @@ const ComprasFilter = ({ getRemoteComprasList }: ComprasFilterProps) => {
                 setPlataformas(res.map((el: any) => ({ value: el.id, label: el.descricao })))
             }
         } catch (error) {
-            console.error("Erro ao carregar plataformas de compra:", error)
+            console.error("Erro ao carregar plataforma:", error)
         }
     }
 

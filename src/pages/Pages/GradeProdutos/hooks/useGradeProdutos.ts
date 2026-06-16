@@ -11,6 +11,9 @@ import {
     GradeProdutosView,
     GradeVariacaoDisponivel,
 } from 'interfaces/GradeProdutos/GradeProdutosInterface'
+import { formatarParaMoedaReal } from 'helpers/functions_helpers'
+import { extrairCustosProducao } from 'helpers/custosProducao_helpers'
+import { obterValorNumerico } from 'pages/Pages/ProjetosImpressao/hooks/useProjetosImpressao'
 
 interface GradeCarregarDadosParteApi {
     id?: number
@@ -58,9 +61,6 @@ interface GradeCarregarDadosApiResponse extends GradeProdutosCarregarDados {
         partes?: GradeCarregarDadosParteApi[]
     }
 }
-import { formatarParaMoedaReal } from 'helpers/functions_helpers'
-import { extrairCustosProducao } from 'helpers/custosProducao_helpers'
-import { obterValorNumerico } from 'pages/Pages/ProjetosImpressao/hooks/useProjetosImpressao'
 
 const obterCustoFilamentoProdutoApi = (produto: Record<string, unknown>): number | string | null | undefined => {
     if (produto.custo_filamento != null) return produto.custo_filamento as number | string

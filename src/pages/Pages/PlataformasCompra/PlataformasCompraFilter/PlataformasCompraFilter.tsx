@@ -27,11 +27,11 @@ const PlataformasCompraFilter = ({ getRemotePlataformasCompraList }: Plataformas
                             <Link to="/dashboard" className="me-2">
                                 <i className="bx bx-arrow-back bx-sm"></i>
                             </Link>
-                            <h4 className="mb-0">Plataformas de Compra</h4>
+                            <h4 className="mb-0">Plataformas de Compra / Venda</h4>
                         </div>
                         <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                             <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
-                            <BreadcrumbItem active>Plataformas de Compra</BreadcrumbItem>
+                            <BreadcrumbItem active>Plataformas de Compra / Venda</BreadcrumbItem>
                         </Breadcrumb>
                     </div>
                 </Col>

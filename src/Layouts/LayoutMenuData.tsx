@@ -14,6 +14,7 @@ const Navdata = () => {
     const [isFilamentos, setIsFilamentos] = useState<boolean>(false);
     const [isCompras, setIsCompras] = useState<boolean>(false);
     const [isProducao, setIsProducao] = useState<boolean>(false);
+    const [isEstoque, setIsEstoque] = useState<boolean>(false);
     const [isConfiguracoes, setIsConfiguracoes] = useState<boolean>(false);
 
     // Multi Level
@@ -93,6 +94,9 @@ const Navdata = () => {
         }
         if (iscurrentState !== 'Producao') {
             setIsProducao(false);
+        }
+        if (iscurrentState !== 'Estoque') {
+            setIsEstoque(false);
         }
         if (iscurrentState !== 'Configuracoes') {
             setIsConfiguracoes(false);
@@ -363,9 +367,9 @@ const Navdata = () => {
                     parentId: "Compras",
                 },
                 {
-                    id: "plataformas-compra",
-                    label: "Plataformas de Compra",
-                    link: "/plataformas-compra",
+                    id: "analise-compras",
+                    label: "Análise de Compras",
+                    link: "/analise-compras",
                     parentId: "Compras",
                 },
                 {
@@ -374,23 +378,39 @@ const Navdata = () => {
                     link: "/categorias-itens",
                     parentId: "Compras",
                 },
+
+            ],
+        },
+        {
+            id: "Estoque",
+            label: "Estoque",
+            icon: "ri-archive-fill",
+            link: "/#",
+            stateVariables: isEstoque,
+            click: function (e: any) {
+                e.preventDefault();
+                setIsEstoque(!isEstoque);
+                setIscurrentState('Estoque');
+                updateIconSidebar(e);
+            },
+            subItems: [
                 {
                     id: "itens",
                     label: "Itens",
                     link: "/itens",
-                    parentId: "Compras",
+                    parentId: "Estoque",
                 },
-                {
+                                {
                     id: "lotes",
                     label: "Lotes",
                     link: "/lotes",
-                    parentId: "Compras",
+                    parentId: "Estoque",
                 },
                 {
                     id: "movimentacoes-estoque",
                     label: "Movimentações de Estoque",
                     link: "/movimentacoes-estoque",
-                    parentId: "Compras",
+                    parentId: "Estoque",
                 },
             ],
         },
@@ -472,17 +492,44 @@ const Navdata = () => {
                 },
             ],
         },
-        {
+        // {
+        //     id: "configuracoes",
+        //     label: "Configurações",
+        //     icon: "ri-settings-3-line",
+        //     link: "/configuracoes",
+        //     click: function (e: any) {
+        //         e.preventDefault();
+        //         setIsConfiguracoes(!isConfiguracoes);
+        //         setIscurrentState('Configuracoes');
+        //         updateIconSidebar(e);
+        //     },
+        // },
+                {
             id: "configuracoes",
             label: "Configurações",
             icon: "ri-settings-3-line",
-            link: "/configuracoes",
+            link: "/#",
+            stateVariables: isConfiguracoes,
             click: function (e: any) {
                 e.preventDefault();
                 setIsConfiguracoes(!isConfiguracoes);
                 setIscurrentState('Configuracoes');
                 updateIconSidebar(e);
             },
+            subItems: [
+                {
+                    id: "configuracoes-plataformas-compra",
+                    label: "Plataformas de Compra / Venda",
+                    link: "/configuracoes-plataformas",
+                    parentId: "Configuracoes",
+                },
+                {
+                    id: "configuracoes-gerais",
+                    label: "Gerais",
+                    link: "/configuracoes-gerais",
+                    parentId: "Configuracoes",
+                },
+            ],
         },
 
         // {

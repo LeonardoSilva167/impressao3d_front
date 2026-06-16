@@ -52,6 +52,7 @@ import PlataformasCompraForm from "../pages/Pages/PlataformasCompra/PlataformasC
 import ComprasPage from "../pages/Pages/Compras/ComprasPage";
 import ComprasForm from "../pages/Pages/Compras/ComprasForm/ComprasForm";
 import ComprasViewPage from "../pages/Pages/Compras/ComprasView/ComprasView";
+import AnaliseComprasPage from "../pages/Pages/AnaliseCompras/AnaliseComprasPage";
 import LotesPage from "../pages/Pages/Lotes/LotesPage";
 import MovimentacoesEstoquePage from "../pages/Pages/MovimentacoesEstoque/MovimentacoesEstoquePage";
 import CarreteisFinalizadosPage from "../pages/Pages/CarreteisFinalizados/CarreteisFinalizadosPage";
@@ -208,7 +209,7 @@ const authProtectedRoutes = [
   { path: "/grade-produtos/produto/:id", component: <GradeProdutoGeradoViewPage /> },
 
   // Configurações
-  { path: "/configuracoes", component: <ConfiguracoesPage /> },
+  { path: "/configuracoes-gerais", component: <ConfiguracoesPage /> },
 
   // Categorias
   { path: "/categorias-itens", component: <CategoriasPage /> },
@@ -220,16 +221,17 @@ const authProtectedRoutes = [
   { path: "/itens/add", component: <ItensForm /> },
   { path: "/itens/edit/:id", component: <ItensForm /> },
 
-  // Plataformas de Compra
-  { path: "/plataformas-compra", component: <PlataformasCompraPage /> },
-  { path: "/plataformas-compra/add", component: <PlataformasCompraForm /> },
-  { path: "/plataformas-compra/edit/:id", component: <PlataformasCompraForm /> },
+  // Plataformas de Compra / Venda
+  { path: "/configuracoes-plataformas", component: <PlataformasCompraPage /> },
+  { path: "/configuracoes-plataformas/add", component: <PlataformasCompraForm /> },
+  { path: "/configuracoes-plataformas/edit/:id", component: <PlataformasCompraForm /> },
 
   // Compras
   { path: "/compras", component: <ComprasPage /> },
   { path: "/compras/add", component: <ComprasForm /> },
   { path: "/compras/edit/:id", component: <ComprasForm /> },
   { path: "/compras/view/:id", component: <ComprasViewPage /> },
+  { path: "/analise-compras", component: <AnaliseComprasPage /> },
 
   // Estoque
   { path: "/lotes", component: <LotesPage /> },
