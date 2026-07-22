@@ -10,6 +10,7 @@ import { ComposicaoProdutosView } from 'interfaces/ComposicaoProdutos/Composicao
 import { ProjetosImpressaoView } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { ComposicaoProdutosService } from 'services/ComposicaoProdutos/ComposicaoProdutosService'
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
+import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import {
     montarPartesResumo,
     normalizarComposicaoView,
@@ -45,7 +46,7 @@ const ComposicaoProdutosViewPage = () => {
         try {
             const view = await composicaoService.getViewComposicaoProdutos({ id: registroId })
             if (!view) {
-                toast.error('Composição não encontrada.')
+                toast.error('Vínculo não encontrado.')
                 return
             }
 
@@ -60,7 +61,7 @@ const ComposicaoProdutosViewPage = () => {
             setRegistro(normalizarComposicaoView(view, projetoView))
         } catch (error) {
             console.error('Erro ao carregar composição:', error)
-            toast.error('Erro ao carregar composição.')
+            toast.error('Erro ao carregar vínculo.')
         } finally {
             setLoading(false)
         }
@@ -93,12 +94,12 @@ const ComposicaoProdutosViewPage = () => {
                             <div className="page-title-box d-sm-flex align-items-center justify-content-between">
                                 <div className="d-sm-flex align-items-center justify-content-between">
                                     <Link to="/composicao-produtos"><i className="bx bx-arrow-back bx-sm"></i></Link>
-                                    <h4 className="mb-sm-0 ms-3">Visualizar Composição do Produto</h4>
+                                    <h4 className="mb-sm-0 ms-3">Visualizar {DominioProducaoLabels.vinculo}</h4>
                                 </div>
                                 <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                                     <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
                                     <BreadcrumbItem>Produtos</BreadcrumbItem>
-                                    <BreadcrumbItem><Link to="/composicao-produtos">Composição do Produto</Link></BreadcrumbItem>
+                                    <BreadcrumbItem><Link to="/composicao-produtos">{DominioProducaoLabels.vinculo}</Link></BreadcrumbItem>
                                     <BreadcrumbItem active>Visualizar</BreadcrumbItem>
                                 </Breadcrumb>
                             </div>
@@ -114,19 +115,33 @@ const ComposicaoProdutosViewPage = () => {
                                             <Spinner animation="border" variant="primary" />
                                         </div>
                                     ) : !registro ? (
-                                        <div className="text-center py-5 text-muted">Composição não encontrada.</div>
+                                        <div className="text-center py-5 text-muted">Vínculo não encontrado.</div>
                                     ) : (
                                         <>
-                                            <div className="d-flex justify-content-end gap-2 mb-4">
+                                            <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
+                                                <Link
+                                                    to="/fluxo-producao?etapa=2"
+                                                    className="btn btn-soft-secondary"
+                                                >
+                                                    <i className="ri-guide-line me-1"></i>
+                                                    Voltar à etapa 2
+                                                </Link>
                                                 <Link
                                                     to={`/composicao-produtos/edit/${registro.id}`}
                                                     className="btn btn-soft-primary"
                                                 >
                                                     <i className="ri-edit-line me-1"></i> Editar
                                                 </Link>
+                                                <Link
+                                                    to="/fluxo-producao?etapa=3"
+                                                    className="btn btn-success"
+                                                >
+                                                    <i className="ri-arrow-right-line me-1"></i>
+                                                    Continuar: montagem
+                                                </Link>
                                             </div>
 
-                                            <h5 className="mb-3">Dados da Composição</h5>
+                                            <h5 className="mb-3">Dados do Vínculo</h5>
                                             <Row>
                                                 <Col md={4} className="mb-3">
                                                     <Label className="form-label fw-semibold">Produto</Label>
@@ -157,7 +172,7 @@ const ComposicaoProdutosViewPage = () => {
                                                         <thead className="table-light">
                                                             <tr>
                                                                 <th>Parte</th>
-                                                                <th>Quantidade de Itens</th>
+                                                                <th>Config. de impressão</th>
                                                                 <th style={{ width: '200px' }}>Ação</th>
                                                             </tr>
                                                         </thead>

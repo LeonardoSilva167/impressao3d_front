@@ -16,6 +16,7 @@ import { ProjetosImpressaoModel } from 'interfaces/ProjetosImpressao/ProjetosImp
 import { ComposicaoProdutosService } from 'services/ComposicaoProdutos/ComposicaoProdutosService'
 import { ProdutosService } from 'services/ProdutosService/ProdutosService'
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
+import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import { prepararPayloadSalvar } from '../hooks/useComposicaoProdutos'
 
 interface ComposicaoFormFields {
@@ -84,14 +85,14 @@ const ComposicaoProdutosForm = () => {
         try {
             const view = await composicaoService.getViewComposicaoProdutos({ id: registroId })
             if (!view) {
-                toast.error('Composição não encontrada.')
+                toast.error('Vínculo não encontrado.')
                 return
             }
             setValue('id_produto_base', view.id_produto_base || null)
             setValue('id_projeto_impressao', view.id_projeto_impressao || null)
         } catch (error) {
-            console.error('Erro ao carregar composição:', error)
-            toast.error('Erro ao carregar composição.')
+            console.error('Erro ao carregar vínculo:', error)
+            toast.error('Erro ao carregar vínculo.')
         } finally {
             setLoading(false)
         }
@@ -110,11 +111,11 @@ const ComposicaoProdutosForm = () => {
 
             if (isEditing) {
                 await composicaoService.editComposicaoProdutos(payload)
-                toast.success('Composição atualizada com sucesso.')
+                toast.success('Vínculo atualizado com sucesso.')
                 navigate(`/composicao-produtos/view/${id}`)
             } else {
                 const newId = await composicaoService.createComposicaoProdutos(payload)
-                toast.success('Composição cadastrada com sucesso.')
+                toast.success('Vínculo cadastrado. Configure as partes e os filamentos.')
                 if (newId != null) {
                     navigate(`/composicao-produtos/view/${newId}`)
                 } else {
@@ -122,8 +123,8 @@ const ComposicaoProdutosForm = () => {
                 }
             }
         } catch (error) {
-            console.error('Erro ao salvar composição:', error)
-            toast.error('Erro ao salvar composição.')
+            console.error('Erro ao salvar vínculo:', error)
+            toast.error('Erro ao salvar vínculo.')
         } finally {
             setSalvando(false)
         }
@@ -152,13 +153,13 @@ const ComposicaoProdutosForm = () => {
                                 <div className="d-sm-flex align-items-center justify-content-between">
                                     <Link to="/composicao-produtos"><i className="bx bx-arrow-back bx-sm"></i></Link>
                                     <h4 className="mb-sm-0 ms-3">
-                                        {isEditing ? 'Editar' : 'Adicionar'} Composição do Produto
+                                        {isEditing ? 'Editar' : 'Adicionar'} {DominioProducaoLabels.vinculo}
                                     </h4>
                                 </div>
                                 <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                                     <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
                                     <BreadcrumbItem>Produtos</BreadcrumbItem>
-                                    <BreadcrumbItem><Link to="/composicao-produtos">Composição do Produto</Link></BreadcrumbItem>
+                                    <BreadcrumbItem><Link to="/composicao-produtos">{DominioProducaoLabels.vinculo}</Link></BreadcrumbItem>
                                     <BreadcrumbItem active>
                                         {isEditing ? 'Editar' : 'Adicionar'}
                                     </BreadcrumbItem>
@@ -178,8 +179,8 @@ const ComposicaoProdutosForm = () => {
                                     ) : (
                                         <form onSubmit={handleSubmit(onSubmit)}>
                                             <p className="text-muted mb-4">
-                                                Informe o produto base e o projeto de impressão.
-                                                Após salvar, você configurará cada parte na tela de visualização.
+                                                Vincule o produto base ao projeto de impressão.
+                                                Depois, configure cores e filamento de cada parte na visualização.
                                             </p>
 
                                             <Row>

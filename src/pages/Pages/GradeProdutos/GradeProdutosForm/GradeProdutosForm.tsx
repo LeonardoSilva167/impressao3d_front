@@ -19,6 +19,7 @@ import {
 import { ProdutosList } from 'interfaces/Produtos/ProdutosInterface'
 import { GradeProdutosService } from 'services/GradeProdutos/GradeProdutosService'
 import { ProdutosService } from 'services/ProdutosService/ProdutosService'
+import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import GradeCombinacaoModal from '../GradeCombinacaoModal/GradeCombinacaoModal'
 import {
     formatarPartesCombinacao,
@@ -107,7 +108,7 @@ const GradeProdutosForm = () => {
         try {
             const view = await gradeService.getViewGradeProdutos({ id: registroId })
             if (!view) {
-                toast.error('Grade não encontrada.')
+                toast.error('Montagem não encontrada.')
                 return
             }
 
@@ -123,8 +124,8 @@ const GradeProdutosForm = () => {
                 }
             }
         } catch (error) {
-            console.error('Erro ao carregar grade:', error)
-            toast.error('Erro ao carregar grade.')
+            console.error('Erro ao carregar montagem:', error)
+            toast.error('Erro ao carregar montagem.')
         } finally {
             setLoading(false)
         }
@@ -189,7 +190,7 @@ const GradeProdutosForm = () => {
         }
 
         if (combinacoes.length === 0) {
-            toast.error('Cadastre ao menos uma combinação para gerar a grade.')
+            toast.error('Cadastre ao menos uma combinação para gerar a montagem.')
             return
         }
 
@@ -202,7 +203,7 @@ const GradeProdutosForm = () => {
             }
 
             const gradeId = await gradeService.gerarGrade(payload)
-            toast.success(isEditing ? 'Grade atualizada com sucesso.' : 'Grade gerada com sucesso.')
+            toast.success(isEditing ? 'Montagem atualizada com sucesso.' : 'Montagem gerada com sucesso.')
 
             const destinoId = gradeId != null ? gradeId : (isEditing ? Number(id) : null)
             if (destinoId != null) {
@@ -211,8 +212,8 @@ const GradeProdutosForm = () => {
                 navigate('/grade-produtos')
             }
         } catch (error) {
-            console.error('Erro ao gerar grade:', error)
-            toast.error('Erro ao gerar grade.')
+            console.error('Erro ao gerar montagem:', error)
+            toast.error('Erro ao gerar montagem.')
         } finally {
             setGerando(false)
         }
@@ -248,13 +249,13 @@ const GradeProdutosForm = () => {
                                 <div className="d-sm-flex align-items-center justify-content-between">
                                     <Link to="/grade-produtos"><i className="bx bx-arrow-back bx-sm"></i></Link>
                                     <h4 className="mb-sm-0 ms-3">
-                                        {isEditing ? 'Editar' : 'Adicionar'} Grade de Produtos
+                                        {isEditing ? 'Editar' : 'Adicionar'} {DominioProducaoLabels.montagem}
                                     </h4>
                                 </div>
                                 <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                                     <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
                                     <BreadcrumbItem>Produtos</BreadcrumbItem>
-                                    <BreadcrumbItem><Link to="/grade-produtos">Grade de Produtos</Link></BreadcrumbItem>
+                                    <BreadcrumbItem><Link to="/grade-produtos">{DominioProducaoLabels.montagem}</Link></BreadcrumbItem>
                                     <BreadcrumbItem active>{isEditing ? 'Editar' : 'Adicionar'}</BreadcrumbItem>
                                 </Breadcrumb>
                             </div>
@@ -272,8 +273,8 @@ const GradeProdutosForm = () => {
                                     ) : (
                                         <form onSubmit={handleSubmit(onSubmit)}>
                                             <p className="text-muted mb-4">
-                                                Selecione o produto base e cadastre as combinações de partes
-                                                que serão utilizadas para gerar os produtos finais.
+                                                Defina o kit: selecione o produto base e as combinações de partes
+                                                que geram os produtos finais (SKU, peso, tempo e custos).
                                             </p>
 
                                             <Row>
@@ -380,7 +381,7 @@ const GradeProdutosForm = () => {
                                                                 || combinacoes.length === 0
                                                             }
                                                         >
-                                                            {gerando ? 'Gerando...' : 'Gerar Grade'}
+                                                            {gerando ? 'Gerando...' : 'Gerar Montagem'}
                                                         </button>
                                                         <button
                                                             type="button"

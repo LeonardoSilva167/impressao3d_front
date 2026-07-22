@@ -7,6 +7,7 @@ import {
 } from 'reactstrap'
 import { InputTextControlled } from 'Components/ComponentController/Inputs/Text/InputTextControlled'
 import { GradeProdutosSearch } from 'interfaces/GradeProdutos/GradeProdutosInterface'
+import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 
 export interface GradeProdutosFilterProps {
     getRemoteProdutosList: (data: any) => void
@@ -27,12 +28,12 @@ const GradeProdutosFilter = ({ getRemoteProdutosList }: GradeProdutosFilterProps
                             <Link to="/dashboard" className="me-2">
                                 <i className="bx bx-arrow-back bx-sm"></i>
                             </Link>
-                            <h4 className="mb-0">Grade de Produtos</h4>
+                            <h4 className="mb-0">{DominioProducaoLabels.montagem}</h4>
                         </div>
                         <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                             <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
                             <BreadcrumbItem>Produtos</BreadcrumbItem>
-                            <BreadcrumbItem active>Grade de Produtos</BreadcrumbItem>
+                            <BreadcrumbItem active>{DominioProducaoLabels.montagem}</BreadcrumbItem>
                         </Breadcrumb>
                     </div>
                 </Col>
@@ -42,7 +43,7 @@ const GradeProdutosFilter = ({ getRemoteProdutosList }: GradeProdutosFilterProps
                 <Col xs={12}>
                     <div className="d-flex flex-row justify-content-end align-items-center mb-4">
                         <Link to="add" className="btn btn-primary">
-                            <i className="ri-add-circle-line align-middle me-1"></i> Adicionar Grade
+                            <i className="ri-add-circle-line align-middle me-1"></i> Adicionar Montagem
                         </Link>
                     </div>
                 </Col>

@@ -96,7 +96,21 @@ const ProjetosImpressaoViewPage = () => {
                                         <div className="text-center py-5 text-muted">Projeto não encontrado.</div>
                                     ) : (
                                         <>
-                                            <div className="d-flex justify-content-end gap-2 mb-4">
+                                            <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
+                                                <Link
+                                                    to="/fluxo-producao?etapa=2"
+                                                    className="btn btn-soft-secondary"
+                                                >
+                                                    <i className="ri-guide-line me-1"></i>
+                                                    Voltar à etapa 2
+                                                </Link>
+                                                <Link
+                                                    to="/composicao-produtos/add"
+                                                    className="btn btn-success"
+                                                >
+                                                    <i className="ri-link me-1"></i>
+                                                    Continuar: criar vínculo
+                                                </Link>
                                                 <Link
                                                     to={`/projetos-impressao/edit/${projeto.id}`}
                                                     className="btn btn-soft-primary"

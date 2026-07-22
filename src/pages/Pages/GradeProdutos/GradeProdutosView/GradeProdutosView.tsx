@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { useNavegacao } from 'helpers/functions_helpers'
@@ -9,6 +9,7 @@ import {
 } from 'reactstrap'
 import { GradeProdutosView } from 'interfaces/GradeProdutos/GradeProdutosInterface'
 import { GradeProdutosService } from 'services/GradeProdutos/GradeProdutosService'
+import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import {
     formatarCustoGrade,
     formatarPartesCombinacao,
@@ -24,6 +25,7 @@ import {
 
 const GradeProdutosViewPage = () => {
     const { id } = useParams()
+    const navigate = useNavigate()
     const { voltarParaRotaAnterior } = useNavegacao()
     const gradeService = new GradeProdutosService()
 
@@ -31,22 +33,43 @@ const GradeProdutosViewPage = () => {
     const [loading, setLoading] = useState(true)
 
     const loadRegistro = async () => {
-        if (!id) return
+        if (!id) {
+            setLoading(false)
+            return
+        }
 
         const registroId = Number(id)
-        if (Number.isNaN(registroId)) return
+        if (Number.isNaN(registroId)) {
+            setLoading(false)
+            return
+        }
 
         setLoading(true)
         try {
             const view = await gradeService.getViewGradeProdutos({ id: registroId })
-            if (!view) {
-                toast.error('Grade não encontrada.')
+            if (!view || view.id == null) {
+                // Fallback: listar/:id às vezes é produto gerado — redireciona para a tela correta
+                const produto = await gradeService.getViewProdutoGerado({ id: registroId })
+                if (produto?.id != null) {
+                    navigate(`/grade-produtos/produto/${produto.id}`, { replace: true })
+                    return
+                }
+                toast.error('Montagem não encontrada.')
                 return
             }
             setRegistro(view)
         } catch (error) {
-            console.error('Erro ao carregar grade:', error)
-            toast.error('Erro ao carregar grade.')
+            console.error('Erro ao carregar montagem:', error)
+            try {
+                const produto = await gradeService.getViewProdutoGerado({ id: registroId })
+                if (produto?.id != null) {
+                    navigate(`/grade-produtos/produto/${produto.id}`, { replace: true })
+                    return
+                }
+            } catch {
+                // ignore fallback error
+            }
+            toast.error('Erro ao carregar montagem.')
         } finally {
             setLoading(false)
         }
@@ -69,12 +92,12 @@ const GradeProdutosViewPage = () => {
                             <div className="page-title-box d-sm-flex align-items-center justify-content-between">
                                 <div className="d-sm-flex align-items-center justify-content-between">
                                     <Link to="/grade-produtos"><i className="bx bx-arrow-back bx-sm"></i></Link>
-                                    <h4 className="mb-sm-0 ms-3">Visualizar Grade de Produtos</h4>
+                                    <h4 className="mb-sm-0 ms-3">Visualizar {DominioProducaoLabels.montagem}</h4>
                                 </div>
                                 <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                                     <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
                                     <BreadcrumbItem>Produtos</BreadcrumbItem>
-                                    <BreadcrumbItem><Link to="/grade-produtos">Grade de Produtos</Link></BreadcrumbItem>
+                                    <BreadcrumbItem><Link to="/grade-produtos">{DominioProducaoLabels.montagem}</Link></BreadcrumbItem>
                                     <BreadcrumbItem active>Visualizar</BreadcrumbItem>
                                 </Breadcrumb>
                             </div>
@@ -90,7 +113,7 @@ const GradeProdutosViewPage = () => {
                                             <Spinner animation="border" variant="primary" />
                                         </div>
                                     ) : !registro ? (
-                                        <div className="text-center py-5 text-muted">Grade não encontrada.</div>
+                                        <div className="text-center py-5 text-muted">Montagem não encontrada.</div>
                                     ) : (
                                         <>
                                             <div className="d-flex justify-content-end gap-2 mb-4">
@@ -102,14 +125,14 @@ const GradeProdutosViewPage = () => {
                                                 </Link>
                                             </div>
 
-                                            <h5 className="mb-3">Dados da Grade</h5>
+                                            <h5 className="mb-3">Dados da Montagem</h5>
                                             <Row>
                                                 <Col md={4} className="mb-3">
                                                     <Label className="form-label fw-semibold">Código Base</Label>
                                                     <div>{obterCodigoBaseGrade(registro)}</div>
                                                 </Col>
                                                 <Col md={4} className="mb-3">
-                                                    <Label className="form-label fw-semibold">Descrição da Grade</Label>
+                                                    <Label className="form-label fw-semibold">Descrição da Montagem</Label>
                                                     <div>{registro.descricao || '—'}</div>
                                                 </Col>
                                                 <Col md={4} className="mb-3">
@@ -154,7 +177,7 @@ const GradeProdutosViewPage = () => {
                                             <h5 className="mb-3">Produtos Gerados</h5>
 
                                             {(registro.produtos_gerados || []).length === 0 ? (
-                                                <p className="text-muted">Nenhum produto gerado nesta grade.</p>
+                                                <p className="text-muted">Nenhum produto gerado nesta montagem.</p>
                                             ) : (
                                                 <div className="table-responsive">
                                                     <Table className="table align-middle table-nowrap table-striped-columns mb-0">

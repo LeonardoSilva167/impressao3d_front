@@ -31,7 +31,7 @@ export class GradeProdutosService implements GradeProdutosInterface {
 
     async getViewGradeProdutos(params: { id: number }): Promise<GradeProdutosView | undefined> {
         const response = await this.httpClient.get<GradeProdutosView>({
-            url: `${this.url}/listar/${params.id}`,
+            url: `${this.url}/listar-grade/${params.id}`,
         })
         switch (response.statusCode) {
             case HttpStatusCode.ok: {
@@ -127,7 +127,12 @@ export class GradeProdutosService implements GradeProdutosInterface {
                     ? body.gradeProduto
                     : ((body && body.grade) ? body.grade : body)
                 const data = (payload && payload.data) ? payload.data : payload
-                const id = data && data.id
+                // Preferir id da montagem; APIs antigas às vezes devolvem produto gerado com id_grade_produto
+                const id = data && (
+                    data.id_grade_produto != null
+                        ? data.id_grade_produto
+                        : (data.id_grade != null ? data.id_grade : data.id)
+                )
                 return id != null ? Number(id) : undefined
             }
             case HttpStatusCode.noContent: return undefined

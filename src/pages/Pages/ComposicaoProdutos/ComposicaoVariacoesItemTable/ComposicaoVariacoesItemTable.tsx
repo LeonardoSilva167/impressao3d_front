@@ -53,9 +53,13 @@ const ComposicaoVariacoesItemTable = ({
     const [filamentoLookupOptions, setFilamentoLookupOptions] = useState<FilamentoLookupOption[]>([])
     const [filamentoDetalhes, setFilamentoDetalhes] = useState<Record<string, FilamentoLookupOption>>({})
 
-    const getListFilamentos = async (inputValue: string): Promise<FilamentoLookupOption[]> => {
+    const getListFilamentos = async (
+        inputValue: string,
+        idCor?: string | number | null
+    ): Promise<FilamentoLookupOption[]> => {
         const params: Record<string, unknown> = {}
         if (inputValue) params.palavra_chave = inputValue
+        if (idCor != null && idCor !== '') params.id_cor = idCor
 
         const list = await filamentosService.AsyncListFilamentos(params)
         if (!list || !list.length) return []
@@ -71,6 +75,12 @@ const ComposicaoVariacoesItemTable = ({
             return merged
         })
         return options
+    }
+
+    const obterIdCorVariacao = (linha: ComposicaoVariacaoItemModel): string | number | null => {
+        if (linha.id_cor_primaria != null && linha.id_cor_primaria !== '') return linha.id_cor_primaria
+        if (linha.id_cor != null && linha.id_cor !== '') return linha.id_cor
+        return null
     }
 
     const resolverFilamentoDetalhe = async (option: FilamentoLookupOption) => {
@@ -144,7 +154,7 @@ const ComposicaoVariacoesItemTable = ({
     }, [])
 
     if (variacoes.length === 0) {
-        return <p className="text-muted mb-0">Gere as variações para configurar filamentos.</p>
+        return <p className="text-muted mb-0">Gere as configurações para selecionar filamentos.</p>
     }
 
     return (
@@ -153,7 +163,7 @@ const ComposicaoVariacoesItemTable = ({
                 <thead className="table-light">
                     <tr>
                         <th>Parte</th>
-                        <th>Item</th>
+                        <th>Config. impressão</th>
                         <th>Cor</th>
                         <th>Descrição</th>
                         <th style={{ minWidth: '220px' }}>Filamento</th>
@@ -181,15 +191,12 @@ const ComposicaoVariacoesItemTable = ({
                                         className="react-select-container"
                                         classNamePrefix="react-select"
                                         isClearable
-                                        cacheOptions
-                                        defaultOptions={filamentoLookupOptions}
-                                        placeholder="Buscar resumo, código ou cor..."
-                                        loadOptions={(inputValue) => {
-                                            if (inputValue.length > 2) {
-                                                return getListFilamentos(inputValue)
-                                            }
-                                            return Promise.resolve(filamentoLookupOptions)
-                                        }}
+                                        cacheOptions={false}
+                                        defaultOptions
+                                        placeholder="Filamentos da cor selecionada..."
+                                        loadOptions={(inputValue) => (
+                                            getListFilamentos(inputValue, obterIdCorVariacao(linha))
+                                        )}
                                         getOptionLabel={(option) => option.label || ''}
                                         getOptionValue={(option) => String(option.value)}
                                         value={obterOptionFilamento(linha)}

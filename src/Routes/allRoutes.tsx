@@ -83,6 +83,7 @@ import GradeProdutosPage from "../pages/Pages/GradeProdutos/GradeProdutosPage";
 import GradeProdutosForm from "../pages/Pages/GradeProdutos/GradeProdutosForm/GradeProdutosForm";
 import GradeProdutosViewPage from "../pages/Pages/GradeProdutos/GradeProdutosView/GradeProdutosView";
 import GradeProdutoGeradoViewPage from "../pages/Pages/GradeProdutos/GradeProdutoGeradoView/GradeProdutoGeradoView";
+import FluxoProducaoPage from "../pages/Pages/FluxoProducao/FluxoProducaoPage";
 import ConfiguracoesPage from "../pages/Pages/Configuracoes/ConfiguracoesPage";
 
 
@@ -194,14 +195,17 @@ const authProtectedRoutes = [
   { path: "/partes-base-produtos/edit/:id", component: <PartesBaseProdutosForm /> },
   { path: "/partes-base-produtos/view/:id", component: <PartesBaseProdutosViewPage /> },
 
-  // Composição do Produto
+  // Fluxo guiado Produto → Produção
+  { path: "/fluxo-producao", component: <FluxoProducaoPage /> },
+
+  // Vínculo Produto–Projeto (legado: composição)
   { path: "/composicao-produtos", component: <ComposicaoProdutosPage /> },
   { path: "/composicao-produtos/add", component: <ComposicaoProdutosForm /> },
   { path: "/composicao-produtos/edit/:id", component: <ComposicaoProdutosForm /> },
   { path: "/composicao-produtos/view/:id", component: <ComposicaoProdutosViewPage /> },
   { path: "/composicao-produtos/:id/parte/:idParte/configurar", component: <ComposicaoParteConfig /> },
 
-  // Grade de Produtos
+  // Montagem de Produtos (legado: grade)
   { path: "/grade-produtos", component: <GradeProdutosPage /> },
   { path: "/grade-produtos/add", component: <GradeProdutosForm /> },
   { path: "/grade-produtos/edit/:id", component: <GradeProdutosForm /> },

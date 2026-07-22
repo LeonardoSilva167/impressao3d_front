@@ -9,6 +9,7 @@ import {
 import { ComposicaoItemConfigModel, ComposicaoParteConfigView } from 'interfaces/ComposicaoProdutos/ComposicaoProdutosInterface'
 import { LookupItem } from 'interfaces/Produtos/ProdutosInterface'
 import { ComposicaoProdutosService } from 'services/ComposicaoProdutos/ComposicaoProdutosService'
+import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import ComposicaoParteItensCores, { CampoCoresItem } from '../ComposicaoParteItensCores/ComposicaoParteItensCores'
 import ComposicaoVariacoesItemTable from '../ComposicaoVariacoesItemTable/ComposicaoVariacoesItemTable'
 import {
@@ -31,13 +32,12 @@ const ComposicaoParteConfig = () => {
     const composicaoService = new ComposicaoProdutosService()
 
     const [loading, setLoading] = useState(true)
-    const [salvandoCores, setSalvandoCores] = useState(false)
-    const [salvandoFilamentos, setSalvandoFilamentos] = useState(false)
+    const [preparando, setPreparando] = useState(false)
+    const [salvando, setSalvando] = useState(false)
     const [nomeParte, setNomeParte] = useState('')
     const [itensParte, setItensParte] = useState<ComposicaoItemConfigModel[]>([])
     const [variacoesParte, setVariacoesParte] = useState<ReturnType<typeof mapVariacoesApiLista>>([])
     const [coresLookup, setCoresLookup] = useState<LookupItem[]>([])
-    const [coresSalvas, setCoresSalvas] = useState(false)
     const [variacoesGeradas, setVariacoesGeradas] = useState(false)
     const [erro, setErro] = useState('')
 
@@ -47,8 +47,6 @@ const ComposicaoParteConfig = () => {
             mapVariacoesApiLista(item.variacoes || [], itensInicial)
         ))
 
-        const temCores = itensInicial.length > 0
-            && itensInicial.every((item) => itemTemCoresConfiguradas(item))
         const temVariacoes = variacoesExistentes.length > 0
 
         setNomeParte(configParte.parte.nome_parte || 'Parte')
@@ -59,7 +57,6 @@ const ComposicaoParteConfig = () => {
             descricao: cor.descricao,
             codigo: cor.codigo,
         })))
-        setCoresSalvas(temCores)
         setVariacoesGeradas(temVariacoes)
     }
 
@@ -94,13 +91,13 @@ const ComposicaoParteConfig = () => {
     const handleCoresChange = (itemIndex: number, campo: CampoCoresItem, ids: number[]) => {
         setVariacoesGeradas(false)
         setVariacoesParte([])
-        setCoresSalvas(false)
         setItensParte((prev) => prev.map((item, idx) => (
             idx === itemIndex ? { ...item, [campo]: ids } : item
         )))
     }
 
-    const salvarCores = async () => {
+    /** Salva cores + gera variações em um único passo do usuário. */
+    const prepararConfiguracoes = async () => {
         setErro('')
         const erroValidacao = validarCoresItensParte(itensParte)
         if (erroValidacao) {
@@ -110,68 +107,42 @@ const ComposicaoParteConfig = () => {
 
         if (!id || !idParte) return
 
-        setSalvandoCores(true)
+        setPreparando(true)
         try {
-            const payload = prepararPayloadSalvarCoresParte(
+            const payloadCores = prepararPayloadSalvarCoresParte(
                 Number(id),
                 idParte,
                 itensParte
             )
 
-            const response = await composicaoService.salvarCoresParte(payload)
-            const configParte = extrairDataRespostaApi<ComposicaoParteConfigView>(response)
-
+            const responseCores = await composicaoService.salvarCoresParte(payloadCores)
+            const configParte = extrairDataRespostaApi<ComposicaoParteConfigView>(responseCores)
             if (configParte) {
                 aplicarConfiguracaoParte(configParte)
-            } else {
-                setCoresSalvas(true)
-                setVariacoesGeradas(false)
-                setVariacoesParte([])
             }
 
-            toast.success('Cores salvas com sucesso.')
-        } catch (error) {
-            console.error('Erro ao salvar cores:', error)
-            toast.error('Erro ao salvar cores.')
-        } finally {
-            setSalvandoCores(false)
-        }
-    }
-
-    const handleGerarVariacoes = async () => {
-        setErro('')
-        if (!coresSalvas) {
-            toast.warning('Salve as cores antes de gerar as variações.')
-            return
-        }
-
-        const erroValidacao = validarCoresItensParte(itensParte)
-        if (erroValidacao) {
-            toast.warning(erroValidacao)
-            return
-        }
-
-        if (!id || !idParte) return
-
-        try {
-            const response = await composicaoService.gerarVariacoesParte({
+            const responseVariacoes = await composicaoService.gerarVariacoesParte({
                 id: Number(id),
                 idParte,
             })
 
-            const preview = extrairVariacoesRespostaApi(response, itensParte)
+            const preview = extrairVariacoesRespostaApi(responseVariacoes, itensParte)
 
             if (preview.length === 0) {
-                toast.warning('Nenhuma variação gerada. Selecione cores para os itens.')
+                toast.warning('Nenhuma configuração gerada. Selecione cores para os itens.')
+                setVariacoesGeradas(false)
+                setVariacoesParte([])
                 return
             }
 
             setVariacoesParte(preview)
             setVariacoesGeradas(true)
-            toast.info('Variações individuais geradas. Configure os filamentos e salve.')
+            toast.success('Configurações geradas. Selecione o filamento de cada uma e salve.')
         } catch (error) {
-            console.error('Erro ao gerar variações:', error)
-            toast.error('Erro ao gerar variações.')
+            console.error('Erro ao preparar configurações da parte:', error)
+            toast.error('Erro ao gerar configurações da parte.')
+        } finally {
+            setPreparando(false)
         }
     }
 
@@ -188,23 +159,23 @@ const ComposicaoParteConfig = () => {
         setVariacoesParte((prev) => atualizarFilamentoVariacaoItem(prev, chave, filamento))
     }
 
-    const salvarFilamentos = async () => {
+    const salvarConfiguracaoParte = async () => {
         setErro('')
 
         if (!variacoesGeradas || variacoesParte.length === 0) {
-            setErro('Gere as variações antes de salvar os filamentos.')
+            setErro('Gere as configurações antes de salvar os filamentos.')
             return
         }
 
         const semFilamento = variacoesParte.some((v) => !v.id_filamento)
         if (semFilamento) {
-            setErro('Selecione o filamento para todas as variações.')
+            setErro('Selecione o filamento para todas as configurações.')
             return
         }
 
         if (!id || !idParte) return
 
-        setSalvandoFilamentos(true)
+        setSalvando(true)
         try {
             const confirmResponse = await composicaoService.confirmarVariacoes({
                 id_composicao: Number(id),
@@ -249,7 +220,7 @@ const ComposicaoParteConfig = () => {
             console.error('Erro ao salvar filamentos:', error)
             setErro('Erro ao salvar configuração. Tente novamente.')
         } finally {
-            setSalvandoFilamentos(false)
+            setSalvando(false)
         }
     }
 
@@ -260,6 +231,9 @@ const ComposicaoParteConfig = () => {
     useEffect(() => {
         loadDados()
     }, [id, idParte])
+
+    const temCoresSelecionadas = itensParte.length > 0
+        && itensParte.every((item) => itemTemCoresConfiguradas(item))
 
     return (
         <React.Fragment>
@@ -276,7 +250,9 @@ const ComposicaoParteConfig = () => {
                                 </div>
                                 <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                                     <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
-                                    <BreadcrumbItem><Link to="/composicao-produtos">Composição do Produto</Link></BreadcrumbItem>
+                                    <BreadcrumbItem>
+                                        <Link to="/composicao-produtos">{DominioProducaoLabels.vinculo}</Link>
+                                    </BreadcrumbItem>
                                     {id && (
                                         <BreadcrumbItem>
                                             <Link to={`/composicao-produtos/view/${id}`}>Visualizar</Link>
@@ -299,11 +275,11 @@ const ComposicaoParteConfig = () => {
                                     ) : (
                                         <>
                                             <p className="text-muted mb-4">
-                                                Configure as cores de cada item desta parte, gere as variações
-                                                individuais e selecione o filamento de cada uma.
+                                                Escolha as cores de cada {DominioProducaoLabels.configuracaoImpressao.toLowerCase()},
+                                                gere as opções e selecione o filamento. Tudo em dois passos.
                                             </p>
 
-                                            <h5 className="mb-3">Itens da Parte</h5>
+                                            <h5 className="mb-3">1. Cores por item</h5>
                                             <ComposicaoParteItensCores
                                                 nomeParte={nomeParte}
                                                 itens={itensParte}
@@ -315,38 +291,29 @@ const ComposicaoParteConfig = () => {
                                                 <Button
                                                     color="primary"
                                                     type="button"
-                                                    onClick={salvarCores}
-                                                    disabled={salvandoCores}
+                                                    onClick={prepararConfiguracoes}
+                                                    disabled={preparando || !temCoresSelecionadas}
                                                 >
-                                                    {salvandoCores ? 'Salvando...' : 'Salvar Cores'}
+                                                    {preparando
+                                                        ? 'Gerando...'
+                                                        : (variacoesGeradas
+                                                            ? 'Atualizar configurações'
+                                                            : 'Gerar configurações')}
                                                 </Button>
                                             </div>
 
-                                            {coresSalvas && (
-                                                <>
-                                                    <hr />
-                                                    <div className="d-flex justify-content-end mb-3">
-                                                        <Button
-                                                            color="info"
-                                                            type="button"
-                                                            onClick={handleGerarVariacoes}
-                                                        >
-                                                            <i className="ri-stack-line me-1"></i>
-                                                            Gerar Variações
-                                                        </Button>
-                                                    </div>
-                                                </>
-                                            )}
-
                                             {variacoesGeradas && (
                                                 <>
-                                                    <h5 className="mb-3">Variações Individuais dos Itens</h5>
+                                                    <hr />
+                                                    <h5 className="mb-3">
+                                                        2. Filamento por {DominioProducaoLabels.configuracaoImpressao.toLowerCase()}
+                                                    </h5>
                                                     <ComposicaoVariacoesItemTable
                                                         variacoes={variacoesParte}
                                                         onFilamentoChange={handleFilamentoChange}
                                                     />
                                                     <div className="text-muted mt-2">
-                                                        <strong>Total:</strong> {variacoesParte.length} variação(ões)
+                                                        <strong>Total:</strong> {variacoesParte.length} configuração(ões)
                                                     </div>
                                                 </>
                                             )}
@@ -363,10 +330,10 @@ const ComposicaoParteConfig = () => {
                                                             <button
                                                                 type="button"
                                                                 className="btn btn-primary"
-                                                                onClick={salvarFilamentos}
-                                                                disabled={salvandoFilamentos}
+                                                                onClick={salvarConfiguracaoParte}
+                                                                disabled={salvando}
                                                             >
-                                                                {salvandoFilamentos ? 'Salvando...' : 'Salvar Parte'}
+                                                                {salvando ? 'Salvando...' : 'Salvar configuração'}
                                                             </button>
                                                         )}
                                                         <button

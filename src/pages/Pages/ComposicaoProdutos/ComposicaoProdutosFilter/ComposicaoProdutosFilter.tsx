@@ -7,6 +7,7 @@ import {
 } from 'reactstrap'
 import { InputTextControlled } from 'Components/ComponentController/Inputs/Text/InputTextControlled'
 import { ComposicaoProdutosSearch } from 'interfaces/ComposicaoProdutos/ComposicaoProdutosInterface'
+import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 
 export interface ComposicaoProdutosFilterProps {
     getRemoteComposicaoList: (data: any) => void
@@ -27,12 +28,12 @@ const ComposicaoProdutosFilter = ({ getRemoteComposicaoList }: ComposicaoProduto
                             <Link to="/dashboard" className="me-2">
                                 <i className="bx bx-arrow-back bx-sm"></i>
                             </Link>
-                            <h4 className="mb-0">Composição do Produto</h4>
+                            <h4 className="mb-0">{DominioProducaoLabels.vinculo}</h4>
                         </div>
                         <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                             <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
                             <BreadcrumbItem>Produtos</BreadcrumbItem>
-                            <BreadcrumbItem active>Composição do Produto</BreadcrumbItem>
+                            <BreadcrumbItem active>{DominioProducaoLabels.vinculo}</BreadcrumbItem>
                         </Breadcrumb>
                     </div>
                 </Col>

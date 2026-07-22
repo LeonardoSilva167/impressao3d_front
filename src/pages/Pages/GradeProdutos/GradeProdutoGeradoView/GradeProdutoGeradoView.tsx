@@ -15,6 +15,7 @@ import {
 } from '../hooks/useGradeProdutos'
 import ResumoCustosProducao from 'Components/Common/ResumoCustosProducao'
 import { extrairCustosProducao } from 'helpers/custosProducao_helpers'
+import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 
 const GradeProdutoGeradoViewPage = () => {
     const { id } = useParams()
@@ -75,7 +76,9 @@ const GradeProdutoGeradoViewPage = () => {
                                 <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                                     <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
                                     <BreadcrumbItem>Produtos</BreadcrumbItem>
-                                    <BreadcrumbItem><Link to="/grade-produtos">Grade de Produtos</Link></BreadcrumbItem>
+                                    <BreadcrumbItem>
+                                        <Link to="/grade-produtos">{DominioProducaoLabels.montagem}</Link>
+                                    </BreadcrumbItem>
                                     <BreadcrumbItem active>Produto Gerado</BreadcrumbItem>
                                 </Breadcrumb>
                             </div>

@@ -123,11 +123,11 @@ const ProdutosForm = () => {
                 navigate(`/produtos/view/${recordId}`)
             } else {
                 const newId = await produtosService.createProdutos(payload)
-                toast.success('Produto cadastrado com sucesso.')
+                toast.success('Produto cadastrado. Continue o fluxo de produção.')
                 if (newId) {
-                    navigate(`/produtos/view/${newId}`)
+                    navigate(`/fluxo-producao?produto=${newId}&etapa=2`)
                 } else {
-                    navigate('/produtos')
+                    navigate('/fluxo-producao?etapa=2')
                 }
             }
         } catch (error: any) {

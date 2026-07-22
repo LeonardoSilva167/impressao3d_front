@@ -154,7 +154,7 @@ const mapCombinacoesApi = (combinacoes: unknown): GradeCombinacao[] => {
         return {
             id: combinacao.id,
             descricao: combinacao.descricao || '',
-            partes: (combinacao.partes || []).map((parte) => {
+            partes: (Array.isArray(combinacao.partes) ? combinacao.partes : []).map((parte) => {
                 const idParte = parte.id_parte != null
                     ? parte.id_parte
                     : parte.id_parte_projeto
@@ -183,9 +183,19 @@ export const normalizarViewGradeProdutos = (
         codigo_base?: string | number
     } | undefined
 
+    const partesRaw = raw.partes
+    const partesUtilizadas = Array.isArray(raw.partes_utilizadas)
+        ? raw.partes_utilizadas as GradeParteResumo[]
+        : (Array.isArray(partesRaw)
+            ? (partesRaw as Array<{ nome_parte?: string | null }>).map((parte) => ({
+                nome_parte: parte.nome_parte,
+            }))
+            : undefined)
+
     return {
         id: raw.id as number | undefined,
-        descricao: raw.descricao as string | undefined,
+        descricao: (raw.descricao as string | undefined)
+            || (raw.descricao_grade as string | undefined),
         id_produto_base: raw.id_produto_base as number | undefined,
         codigo_base: (raw.codigo_base as string | number | undefined)
             || (produtoInfo && produtoInfo.codigo_base),
@@ -193,9 +203,11 @@ export const normalizarViewGradeProdutos = (
             || (produtoInfo && produtoInfo.descricao_produto),
         sku_base: (raw.sku_base as string | undefined)
             || (produtoInfo && produtoInfo.sku_base),
-        partes: raw.partes as GradeProdutosView['partes'],
-        partes_utilizadas: raw.partes_utilizadas as GradeParteResumo[] | undefined,
-        partes_descricao: raw.partes_descricao as string | undefined,
+        partes: (Array.isArray(partesRaw) ? partesRaw : undefined) as GradeProdutosView['partes'],
+        partes_utilizadas: partesUtilizadas,
+        partes_descricao: (raw.partes_descricao as string | undefined)
+            || (raw.nome_parte as string | undefined)
+            || (typeof partesRaw === 'string' ? partesRaw : undefined),
         quantidade_combinacoes: raw.quantidade_combinacoes as number | undefined,
         quantidade_produtos: raw.quantidade_produtos as number | undefined,
         status: raw.status as GradeProdutosStatus | undefined,
@@ -332,9 +344,14 @@ export const obterCodigoBaseGrade = (row: {
 }
 
 const extrairNomesPartesGrade = (
-    partes?: Array<GradeParteResumo | string | GradeCombinacaoParte>
+    partes?: Array<GradeParteResumo | string | GradeCombinacaoParte> | string | null
 ): string[] => {
-    if (!partes?.length) return []
+    if (partes == null) return []
+    if (typeof partes === 'string') {
+        const texto = partes.trim()
+        return texto ? [texto] : []
+    }
+    if (!Array.isArray(partes) || !partes.length) return []
 
     return partes
         .map((parte) => {
@@ -346,11 +363,14 @@ const extrairNomesPartesGrade = (
 }
 
 export const formatarPartesGrade = (row: {
-    partes?: Array<GradeParteResumo | string | GradeCombinacaoParte>
+    partes?: Array<GradeParteResumo | string | GradeCombinacaoParte> | string | null
     partes_utilizadas?: GradeParteResumo[]
     partes_descricao?: string | null
+    nome_parte?: string | null
 }): string => {
     if (row.partes_descricao?.trim()) return row.partes_descricao.trim()
+    if (row.nome_parte?.trim()) return row.nome_parte.trim()
+    if (typeof row.partes === 'string' && row.partes.trim()) return row.partes.trim()
 
     const nomes = extrairNomesPartesGrade(row.partes_utilizadas || row.partes)
     if (!nomes.length) return '—'

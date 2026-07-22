@@ -7,6 +7,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 import RightSidebar from '../Components/Common/RightSidebar';
+import FluxoProducaoStepper from '../pages/Pages/FluxoProducao/FluxoProducaoStepper';
 
 //import actions
 import {
@@ -143,6 +144,7 @@ const Layout = (props : any) => {
                     layoutType={layoutType}
                 />
                 <div className="main-content">
+                    <FluxoProducaoStepper />
                     {props.children}
                     <Footer />
                 </div>

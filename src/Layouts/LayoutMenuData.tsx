@@ -428,6 +428,12 @@ const Navdata = () => {
             },
             subItems: [
                 {
+                    id: "fluxo-producao",
+                    label: "Fluxo de Produção",
+                    link: "/fluxo-producao",
+                    parentId: "ProdutosMenu",
+                },
+                {
                     id: "categorias-produtos",
                     label: "Categorias",
                     link: "/categorias-produtos",
@@ -459,13 +465,13 @@ const Navdata = () => {
                 },
                 {
                     id: "composicao-produtos",
-                    label: "Composição do Produto",
+                    label: "Vínculo Produto–Projeto",
                     link: "/composicao-produtos",
                     parentId: "ProdutosMenu",
                 },
                 {
                     id: "grade-produtos",
-                    label: "Grade de Produtos",
+                    label: "Montagem de Produtos",
                     link: "/grade-produtos",
                     parentId: "ProdutosMenu",
                 },
