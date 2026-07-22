@@ -20,6 +20,8 @@ export interface ItemChecklistFluxo {
     icone?: string
     detalheLinha?: string
     linkAbrir?: { label: string; to: string }
+    /** Rota sugerida quando o item ainda está pendente (lista com seta) */
+    destino?: string
     acoes?: AcaoEtapaFluxo[]
 }
 
@@ -32,6 +34,8 @@ export interface ProdutoResumoFluxo {
 interface FluxoProducaoChecklistProps {
     itens: ItemChecklistFluxo[]
     contexto: FluxoProducaoQuery
+    /** Bloco "Importante" exibido após o card do próximo passo */
+    detalhesImportante?: string[]
 }
 
 const hrefAcao = (acao: AcaoEtapaFluxo, contexto: FluxoProducaoQuery) => (
@@ -63,7 +67,6 @@ export const montarItensChecklistFluxo = (params: {
     const e2Partes = partesConfiguradas
     const e3 = montagemCriada
 
-    // Primeiro subpasso incompleto = "próximo passo" (card azul com ações)
     const proximoCodigo: SubpassoFluxoCodigo | null = !e1
         ? 'E1_PRODUTO'
         : !e2Projeto
@@ -76,7 +79,6 @@ export const montarItensChecklistFluxo = (params: {
                         ? 'E3_MONTAGEM'
                         : null
 
-    // Na etapa 3, prioriza montagem como foco visual se ainda pendente
     const codigoAtual: SubpassoFluxoCodigo | null =
         etapaAtiva === 3 && !e3
             ? 'E3_MONTAGEM'
@@ -91,10 +93,10 @@ export const montarItensChecklistFluxo = (params: {
             codigo: 'E1_PRODUTO',
             titulo: e1
                 ? `${DominioProducaoLabels.produtoBase} cadastrado`
-                : `Cadastrar ${DominioProducaoLabels.produtoBase.toLowerCase()}`,
+                : 'Comece por aqui!',
             descricao: e1
                 ? undefined
-                : 'Cadastre o produto base: descrição, categoria, modelo e linha.',
+                : 'Clique no botão ao lado para iniciar o cadastro do seu produto base.',
             concluido: e1,
             atual: isAtual('E1_PRODUTO'),
             icone: 'ri-shopping-bag-3-line',
@@ -107,6 +109,7 @@ export const montarItensChecklistFluxo = (params: {
             linkAbrir: e1
                 ? { label: 'Abrir produto', to: `/produtos/view/${produtoId}` }
                 : undefined,
+            destino: '/produtos/add',
             acoes: isAtual('E1_PRODUTO')
                 ? [
                     {
@@ -129,17 +132,20 @@ export const montarItensChecklistFluxo = (params: {
             codigo: 'E2_PROJETO',
             titulo: e2Projeto
                 ? `${DominioProducaoLabels.projetoImpressao} definido`
-                : `Cadastrar ou escolher ${DominioProducaoLabels.projetoImpressao.toLowerCase()}`,
+                : isAtual('E2_PROJETO')
+                    ? 'Próximo passo'
+                    : `Cadastrar ou escolher ${DominioProducaoLabels.projetoImpressao.toLowerCase()}`,
             descricao: e2Projeto
                 ? undefined
                 : 'Cadastre um novo projeto ou selecione um já existente. Inclui o arquivo 3D (STL/3MF) e os dados do fatiador.',
             concluido: e2Projeto,
             atual: isAtual('E2_PROJETO'),
-            icone: 'ri-file-list-3-line',
+            icone: isAtual('E2_PROJETO') ? 'ri-flag-line' : 'ri-file-list-3-line',
             detalheLinha: e2Projeto ? `Projeto #${projetoId}` : undefined,
             linkAbrir: e2Projeto
                 ? { label: 'Abrir projeto', to: `/projetos-impressao/view/${projetoId}` }
                 : undefined,
+            destino: '/projetos-impressao/add',
             acoes: isAtual('E2_PROJETO')
                 ? [
                     {
@@ -163,7 +169,9 @@ export const montarItensChecklistFluxo = (params: {
             codigo: 'E2_VINCULO',
             titulo: e2Vinculo
                 ? `${DominioProducaoLabels.vinculo} criado`
-                : `Criar ${DominioProducaoLabels.vinculo.toLowerCase()}`,
+                : isAtual('E2_VINCULO')
+                    ? 'Próximo passo'
+                    : `Criar ${DominioProducaoLabels.vinculo.toLowerCase()}`,
             descricao: e2Vinculo
                 ? undefined
                 : `Vincule o ${DominioProducaoLabels.produtoBase.toLowerCase()} ao ${DominioProducaoLabels.projetoImpressao.toLowerCase()}.`,
@@ -174,6 +182,7 @@ export const montarItensChecklistFluxo = (params: {
             linkAbrir: e2Vinculo
                 ? { label: 'Abrir vínculo', to: `/composicao-produtos/view/${composicaoId}` }
                 : undefined,
+            destino: '/composicao-produtos/add',
             acoes: isAtual('E2_VINCULO')
                 ? [
                     {
@@ -194,7 +203,11 @@ export const montarItensChecklistFluxo = (params: {
         },
         {
             codigo: 'E2_PARTES',
-            titulo: e2Partes ? 'Partes configuradas' : 'Configurar partes',
+            titulo: e2Partes
+                ? 'Partes configuradas'
+                : isAtual('E2_PARTES')
+                    ? 'Próximo passo'
+                    : 'Configurar partes',
             descricao: e2Partes
                 ? undefined
                 : 'Defina cores, configurações de impressão e filamento de cada parte.',
@@ -204,6 +217,9 @@ export const montarItensChecklistFluxo = (params: {
             linkAbrir: e2Partes && composicaoId
                 ? { label: 'Abrir vínculo', to: `/composicao-produtos/view/${composicaoId}` }
                 : undefined,
+            destino: composicaoId
+                ? `/composicao-produtos/view/${composicaoId}`
+                : '/composicao-produtos',
             acoes: isAtual('E2_PARTES') && composicaoId
                 ? [
                     {
@@ -220,13 +236,16 @@ export const montarItensChecklistFluxo = (params: {
             codigo: 'E3_MONTAGEM',
             titulo: e3
                 ? `${DominioProducaoLabels.montagem} criada`
-                : `Criar ${DominioProducaoLabels.montagemCurta.toLowerCase()}`,
+                : isAtual('E3_MONTAGEM')
+                    ? 'Próximo passo'
+                    : `Criar ${DominioProducaoLabels.montagemCurta.toLowerCase()}`,
             descricao: e3
                 ? undefined
                 : 'Monte as partes para finalizar o produto e gerar os SKUs.',
             concluido: e3,
             atual: isAtual('E3_MONTAGEM'),
-            icone: 'ri-stack-line',
+            icone: 'ri-puzzle-line',
+            destino: '/grade-produtos/add',
             acoes: isAtual('E3_MONTAGEM')
                 ? [
                     {
@@ -248,15 +267,15 @@ export const montarItensChecklistFluxo = (params: {
     ]
 }
 
-const IconeItem = ({
-    item,
-    numero,
-}: {
-    item: ItemChecklistFluxo
-    numero: number
-}) => {
-    if (item.concluido) {
-        return (
+const CardConcluido = ({ item }: { item: ItemChecklistFluxo }) => (
+    <div
+        className="rounded-3 bg-white p-3"
+        style={{
+            border: '1px solid rgba(10, 179, 156, 0.28)',
+            borderLeft: '4px solid var(--vz-success, #0ab39c)',
+        }}
+    >
+        <div className="d-flex align-items-center gap-3">
             <div
                 className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 bg-success text-white"
                 style={{ width: 40, height: 40 }}
@@ -264,130 +283,208 @@ const IconeItem = ({
             >
                 <i className="ri-check-line fs-5" />
             </div>
-        )
-    }
+            <div className="flex-grow-1 min-w-0">
+                <div className="fw-semibold text-success">{item.titulo}</div>
+                {item.detalheLinha && (
+                    <div className="small text-body mt-1">{item.detalheLinha}</div>
+                )}
+            </div>
+            {item.linkAbrir && (
+                <Link
+                    to={item.linkAbrir.to}
+                    className="btn btn-sm btn-soft-success d-inline-flex align-items-center gap-1 flex-shrink-0"
+                >
+                    {item.linkAbrir.label}
+                    <i className="ri-external-link-line" aria-hidden />
+                </Link>
+            )}
+        </div>
+    </div>
+)
 
-    if (item.atual) {
-        return (
+const CardProximoPasso = ({
+    item,
+    contexto,
+}: {
+    item: ItemChecklistFluxo
+    contexto: FluxoProducaoQuery
+}) => (
+    <div
+        className="rounded-3 p-3 p-md-4"
+        style={{
+            backgroundColor: 'var(--vz-primary-bg-subtle, rgba(64, 81, 137, 0.07))',
+            border: '1px solid var(--vz-primary, #405189)',
+        }}
+    >
+        <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-3">
+            <div className="d-flex gap-3 flex-grow-1 min-w-0">
+                <div
+                    className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 bg-white text-primary border border-primary-subtle"
+                    style={{ width: 44, height: 44 }}
+                    aria-hidden
+                >
+                    <i className={`${item.icone || 'ri-flag-line'} fs-4`} />
+                </div>
+                <div className="min-w-0">
+                    <h5 className="mb-1 text-primary">{item.titulo}</h5>
+                    {item.descricao && (
+                        <p className="mb-0 text-muted small">{item.descricao}</p>
+                    )}
+                </div>
+            </div>
+
+            {item.acoes && item.acoes.length > 0 && (
+                <div className="d-flex flex-column gap-2 flex-shrink-0" style={{ minWidth: 200 }}>
+                    {item.acoes.map((acao) => (
+                        <Link
+                            key={acao.to + acao.label}
+                            to={hrefAcao(acao, contexto)}
+                            className={`btn d-inline-flex align-items-center justify-content-center gap-1 ${classeBotaoAcaoFluxo(acao.nivel || 'primary')}`}
+                        >
+                            {acao.icone && <i className={acao.icone} aria-hidden />}
+                            {acao.label}
+                        </Link>
+                    ))}
+                </div>
+            )}
+        </div>
+    </div>
+)
+
+const CardImportante = ({ detalhes }: { detalhes: string[] }) => (
+    <div
+        className="rounded-3 p-3 p-md-4"
+        style={{
+            backgroundColor: 'rgba(10, 179, 156, 0.08)',
+            border: '1px solid rgba(10, 179, 156, 0.28)',
+        }}
+    >
+        <div className="d-flex gap-3">
             <div
-                className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 bg-primary-subtle text-primary border border-primary-subtle"
-                style={{ width: 40, height: 40 }}
+                className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 text-success bg-white"
+                style={{
+                    width: 40,
+                    height: 40,
+                    border: '1px solid rgba(10, 179, 156, 0.35)',
+                }}
                 aria-hidden
             >
-                <i className={`${item.icone || 'ri-flag-line'} fs-5`} />
+                <i className="ri-lightbulb-flash-line fs-5" />
             </div>
+            <div className="flex-grow-1">
+                <h6 className="text-success mb-2">Importante</h6>
+                <ul className="list-unstyled mb-0">
+                    {detalhes.map((detalhe, index) => (
+                        <li
+                            key={detalhe}
+                            className={`d-flex gap-2 ${index < detalhes.length - 1 ? 'mb-2' : ''}`}
+                        >
+                            <i className="ri-checkbox-circle-fill text-success mt-1 flex-shrink-0" aria-hidden />
+                            <span className="text-muted">{detalhe}</span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </div>
+    </div>
+)
+
+const LinhaPendente = ({
+    item,
+    numero,
+    contexto,
+}: {
+    item: ItemChecklistFluxo
+    numero: number
+    contexto: FluxoProducaoQuery
+}) => {
+    const href = item.acoes?.[0]
+        ? hrefAcao(item.acoes[0], contexto)
+        : item.destino
+            ? anexarContextoFluxo(item.destino, contexto, { forcarFluxo: true })
+            : item.linkAbrir?.to
+
+    const conteudo = (
+        <div className="d-flex align-items-center gap-3 py-3 px-2">
+            <div
+                className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 bg-light text-muted border"
+                style={{ width: 36, height: 36 }}
+                aria-hidden
+            >
+                {item.icone ? <i className={item.icone} /> : <span className="small fw-semibold">{numero}</span>}
+            </div>
+            <div className="flex-grow-1 min-w-0">
+                <div className="fw-semibold text-body">{item.titulo}</div>
+                {item.descricao && (
+                    <div className="small text-muted">{item.descricao}</div>
+                )}
+            </div>
+            <i className="ri-arrow-right-s-line text-muted fs-4 flex-shrink-0" aria-hidden />
+        </div>
+    )
+
+    if (href) {
+        return (
+            <Link
+                to={href}
+                className="text-decoration-none d-block border-bottom"
+                style={{ borderColor: 'var(--vz-border-color, #e9ebec)' }}
+            >
+                {conteudo}
+            </Link>
         )
     }
 
     return (
-        <div
-            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 bg-light text-muted border"
-            style={{ width: 36, height: 36, fontSize: '0.85rem' }}
-            aria-hidden
-        >
-            {item.icone ? <i className={item.icone} /> : numero}
+        <div className="border-bottom" style={{ borderColor: 'var(--vz-border-color, #e9ebec)' }}>
+            {conteudo}
         </div>
     )
 }
 
-const FluxoProducaoChecklist = ({ itens, contexto }: FluxoProducaoChecklistProps) => {
+const FluxoProducaoChecklist = ({
+    itens,
+    contexto,
+    detalhesImportante,
+}: FluxoProducaoChecklistProps) => {
+    const concluidos = itens.filter((item) => item.concluido)
+    const atual = itens.find((item) => item.atual && !item.concluido)
+    const pendentes = itens.filter((item) => !item.concluido && !item.atual)
+
     return (
         <div className="fluxo-producao-checklist mb-4">
-            <h6 className="text-muted text-uppercase small mb-3 fw-semibold" style={{ letterSpacing: '0.04em' }}>
+            <h6
+                className="text-muted text-uppercase small mb-3 fw-semibold"
+                style={{ letterSpacing: '0.04em' }}
+            >
                 Progresso do fluxo
             </h6>
 
-            <div className="d-flex flex-column gap-2">
-                {itens.map((item, index) => {
-                    const concluido = item.concluido
-                    const atual = Boolean(item.atual && !concluido)
-                    const pendente = !concluido && !atual
+            <div className="d-flex flex-column gap-3">
+                {concluidos.map((item) => (
+                    <CardConcluido key={item.codigo} item={item} />
+                ))}
 
-                    const cardClass = [
-                        'rounded-3 border p-3',
-                        atual ? 'border-primary shadow-sm' : '',
-                    ].filter(Boolean).join(' ')
+                {atual && (
+                    <CardProximoPasso item={atual} contexto={contexto} />
+                )}
 
-                    const cardStyle: React.CSSProperties = concluido
-                        ? {
-                            backgroundColor: 'rgba(10, 179, 156, 0.06)',
-                            borderColor: 'rgba(10, 179, 156, 0.35)',
-                        }
-                        : atual
-                            ? { backgroundColor: 'var(--vz-primary-bg-subtle, rgba(64, 81, 137, 0.08))' }
-                            : {
-                                backgroundColor: 'var(--vz-secondary-bg, #fff)',
-                                borderColor: 'var(--vz-border-color, #e9ebec)',
-                            }
+                {detalhesImportante && detalhesImportante.length > 0 && (
+                    <CardImportante detalhes={detalhesImportante} />
+                )}
 
-                    return (
-                        <div key={item.codigo} className={cardClass} style={cardStyle}>
-                            <div className="d-flex gap-3 align-items-start">
-                                <IconeItem item={item} numero={index + 1} />
-
-                                <div className="flex-grow-1 min-w-0">
-                                    <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
-                                        <span
-                                            className={[
-                                                'fw-semibold',
-                                                concluido ? 'text-success' : '',
-                                                atual ? 'text-body' : '',
-                                                pendente ? 'text-muted' : '',
-                                            ].filter(Boolean).join(' ')}
-                                        >
-                                            {item.titulo}
-                                        </span>
-                                        {atual && (
-                                            <span className="badge bg-primary">Próximo passo</span>
-                                        )}
-                                    </div>
-
-                                    {item.detalheLinha && (
-                                        <div className={concluido ? 'small text-body' : 'small text-muted'}>
-                                            {item.detalheLinha}
-                                        </div>
-                                    )}
-
-                                    {!concluido && item.descricao && (
-                                        <p className={`small mb-0 ${atual ? 'text-muted' : 'text-muted'}`}>
-                                            {item.descricao}
-                                        </p>
-                                    )}
-
-                                    {atual && item.acoes && item.acoes.length > 0 && (
-                                        <div className="d-flex flex-wrap gap-2 mt-3">
-                                            {item.acoes.map((acao) => (
-                                                <Link
-                                                    key={acao.to + acao.label}
-                                                    to={hrefAcao(acao, contexto)}
-                                                    className={`btn btn-sm d-inline-flex align-items-center gap-1 ${classeBotaoAcaoFluxo(acao.nivel || 'primary')}`}
-                                                >
-                                                    {acao.icone && <i className={acao.icone} aria-hidden />}
-                                                    {acao.label}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex-shrink-0 d-flex align-items-center gap-2">
-                                    {concluido && item.linkAbrir && (
-                                        <Link
-                                            to={item.linkAbrir.to}
-                                            className="btn btn-sm btn-soft-success d-inline-flex align-items-center gap-1"
-                                        >
-                                            {item.linkAbrir.label}
-                                            <i className="ri-external-link-line" aria-hidden />
-                                        </Link>
-                                    )}
-                                    {!concluido && (
-                                        <i className="ri-arrow-right-s-line text-muted fs-4" aria-hidden />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )
-                })}
+                {pendentes.length > 0 && (
+                    <div className="rounded-3 border bg-white overflow-hidden">
+                        {pendentes.map((item, index) => (
+                            <LinhaPendente
+                                key={item.codigo}
+                                item={item}
+                                numero={concluidos.length + (atual ? 1 : 0) + index + 1}
+                                contexto={contexto}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     )

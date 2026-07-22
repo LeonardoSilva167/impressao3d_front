@@ -189,7 +189,7 @@ export const classeBotaoAcaoFluxo = (nivel?: AcaoEtapaFluxo['nivel']): string =>
         case 'primary':
             return 'btn-primary'
         case 'secondary':
-            return 'btn-soft-primary'
+            return 'btn-outline-primary'
         case 'tertiary':
             return 'btn-soft-secondary'
         default:
