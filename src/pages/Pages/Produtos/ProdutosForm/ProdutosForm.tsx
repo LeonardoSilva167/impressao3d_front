@@ -125,9 +125,9 @@ const ProdutosForm = () => {
                 const newId = await produtosService.createProdutos(payload)
                 toast.success('Produto cadastrado. Continue o fluxo de produção.')
                 if (newId) {
-                    navigate(`/fluxo-producao?produto=${newId}&etapa=2`)
+                    navigate(`/fluxo-producao?produto=${newId}&etapa=2&fluxo=1`)
                 } else {
-                    navigate('/fluxo-producao?etapa=2')
+                    navigate('/fluxo-producao?etapa=2&fluxo=1')
                 }
             }
         } catch (error: any) {

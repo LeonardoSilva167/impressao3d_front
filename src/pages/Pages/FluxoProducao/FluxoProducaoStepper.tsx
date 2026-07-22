@@ -9,6 +9,7 @@ import {
     montarHrefEtapaFluxo,
     obterContextoRotaFluxo,
 } from './fluxoProducaoConfig'
+import { lerContextoFluxo } from './fluxoProducaoContext'
 
 const HEADER_HEIGHT_PX = 70
 const STYLE_ID = 'fluxo-producao-stepper-offset'
@@ -77,14 +78,15 @@ const FluxoProducaoStepper = () => {
         return null
     }
 
-    const etapaQuery = Number(searchParams.get('etapa'))
-    const produtoId = searchParams.get('produto')
+    const contextoFluxo = lerContextoFluxo(searchParams)
+    const etapaQuery = Number(contextoFluxo.etapa)
     const etapaAtiva = inferirEtapaPorRota(
         pathname,
         Number.isNaN(etapaQuery) ? null : etapaQuery
     )
-    const contexto = obterContextoRotaFluxo(pathname)
+    const contextoRota = obterContextoRotaFluxo(pathname)
     const noHub = pathname === '/fluxo-producao' || pathname.startsWith('/fluxo-producao/')
+    const hrefVoltarEtapa = montarHrefEtapaFluxo(etapaAtiva, contextoFluxo)
 
     return (
         <div
@@ -102,20 +104,20 @@ const FluxoProducaoStepper = () => {
                 <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                     <div className="d-flex align-items-center gap-2 flex-wrap">
                         <Link
-                            to={montarHrefEtapaFluxo(etapaAtiva, produtoId)}
+                            to={hrefVoltarEtapa}
                             className="fw-semibold text-decoration-none"
                         >
                             {DominioProducaoLabels.fluxoProducao}
                         </Link>
                         {!noHub && (
                             <span className="text-muted small">
-                                · Você está em: <strong>{contexto}</strong>
+                                · Você está em: <strong>{contextoRota}</strong>
                             </span>
                         )}
                     </div>
                     {!noHub && (
                         <Link
-                            to={montarHrefEtapaFluxo(etapaAtiva, produtoId)}
+                            to={hrefVoltarEtapa}
                             className="btn btn-sm btn-soft-primary"
                         >
                             <i className="ri-arrow-go-back-line me-1"></i>
@@ -127,7 +129,7 @@ const FluxoProducaoStepper = () => {
                 <div className="d-flex flex-wrap gap-2">
                     {FLUXO_PRODUCAO_ETAPAS.map((etapa, index) => {
                         const ativa = etapa.id === etapaAtiva
-                        const href = montarHrefEtapaFluxo(etapa.id as EtapaFluxoId, produtoId)
+                        const href = montarHrefEtapaFluxo(etapa.id as EtapaFluxoId, contextoFluxo)
 
                         return (
                             <React.Fragment key={etapa.id}>

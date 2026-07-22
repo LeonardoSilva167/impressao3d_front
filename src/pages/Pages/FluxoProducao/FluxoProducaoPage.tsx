@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
-    Alert,
     Breadcrumb,
     BreadcrumbItem,
     Card,
@@ -9,24 +8,34 @@ import {
     Col,
     Container,
     Row,
+    Spinner,
 } from 'reactstrap'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import UiContent from 'Components/Common/UiContent'
+import { ProdutosService } from 'services/ProdutosService/ProdutosService'
+import { normalizarProdutoView } from 'pages/Pages/Produtos/hooks/useProdutos'
 import {
     EtapaFluxoId,
     FLUXO_PRODUCAO_ETAPAS,
     inferirEtapaPorRota,
-    montarHrefAcaoFluxo,
 } from './fluxoProducaoConfig'
+import { lerContextoFluxo } from './fluxoProducaoContext'
+import { ProdutoResumoFluxo, montarItensChecklistFluxo } from './FluxoProducaoChecklist'
+import FluxoProducaoEtapaPainel from './FluxoProducaoEtapaPainel'
 
 const FluxoProducaoPage = () => {
     const [searchParams, setSearchParams] = useSearchParams()
-    const produtoId = searchParams.get('produto')
-    const etapaParam = Number(searchParams.get('etapa'))
+    const contexto = useMemo(() => lerContextoFluxo(searchParams), [searchParams])
+    const produtoId = contexto.produto
+    const projetoId = contexto.projeto
+    const composicaoId = contexto.composicao
+    const etapaParam = Number(contexto.etapa)
     const [etapaAtiva, setEtapaAtiva] = useState<EtapaFluxoId>(
         inferirEtapaPorRota('/fluxo-producao', Number.isNaN(etapaParam) ? null : etapaParam)
     )
+    const [produtoResumo, setProdutoResumo] = useState<ProdutoResumoFluxo | null>(null)
+    const [carregandoProduto, setCarregandoProduto] = useState(false)
 
     const etapas = useMemo(() => FLUXO_PRODUCAO_ETAPAS, [])
 
@@ -47,7 +56,66 @@ const FluxoProducaoPage = () => {
         )
     }, [etapaParam])
 
+    useEffect(() => {
+        let cancelado = false
+
+        const carregarProduto = async () => {
+            if (!produtoId) {
+                setProdutoResumo(null)
+                return
+            }
+
+            const idNumerico = Number(produtoId)
+            if (Number.isNaN(idNumerico)) {
+                setProdutoResumo({ id: produtoId })
+                return
+            }
+
+            setCarregandoProduto(true)
+            try {
+                const service = new ProdutosService()
+                const view = await service.getViewProdutos({ id: idNumerico })
+                if (cancelado) return
+
+                if (view) {
+                    const normalizado = normalizarProdutoView(view as Record<string, any>)
+                    setProdutoResumo({
+                        id: normalizado.id ?? idNumerico,
+                        descricao: normalizado.descricao_produto,
+                        sku_base: normalizado.sku_base,
+                    })
+                } else {
+                    setProdutoResumo({ id: idNumerico })
+                }
+            } catch (error) {
+                console.error('Erro ao carregar produto do fluxo:', error)
+                if (!cancelado) {
+                    setProdutoResumo({ id: idNumerico })
+                }
+            } finally {
+                if (!cancelado) setCarregandoProduto(false)
+            }
+        }
+
+        carregarProduto()
+        return () => {
+            cancelado = true
+        }
+    }, [produtoId])
+
     const etapaAtual = etapas.find((etapa) => etapa.id === etapaAtiva) || etapas[0]
+    const mostrarChecklist = Boolean(produtoId) || etapaAtiva === 2 || etapaAtiva === 3
+
+    const itensChecklist = useMemo(
+        () => montarItensChecklistFluxo({
+            produtoId,
+            projetoId,
+            composicaoId,
+            etapaAtiva,
+            produto: produtoResumo,
+        }),
+        [produtoId, projetoId, composicaoId, etapaAtiva, produtoResumo]
+    )
 
     return (
         <React.Fragment>
@@ -74,87 +142,24 @@ const FluxoProducaoPage = () => {
                         </Col>
                     </Row>
 
-                    <Alert color="info" className="mb-4">
-                        Use a barra de etapas no topo para navegar entre os passos a qualquer momento —
-                        mesmo enquanto cadastra partes, itens ou filamentos.
-                    </Alert>
-
-                    {produtoId && (
-                        <Alert color="success" className="mb-4">
-                            Produto <strong>#{produtoId}</strong> cadastrado.
-                            Continue pela etapa 2 para vincular o projeto de impressão.
-                            {' '}
-                            <Link to={`/produtos/view/${produtoId}`}>Abrir produto</Link>
-                        </Alert>
+                    {carregandoProduto && produtoId && (
+                        <div className="mb-3 text-muted small d-inline-flex align-items-center gap-2">
+                            <Spinner size="sm" /> Carregando produto…
+                        </div>
                     )}
 
-                    <Row className="g-3 mb-4">
-                        {etapas.map((etapa) => {
-                            const ativa = etapa.id === etapaAtiva
-                            return (
-                                <Col md={4} key={etapa.id}>
-                                    <Card
-                                        className={`h-100 border ${ativa ? 'border-primary' : ''}`}
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={() => selecionarEtapa(etapa.id)}
-                                    >
-                                        <CardBody>
-                                            <div className="d-flex align-items-center justify-content-between mb-2">
-                                                <h5 className="mb-0">{etapa.titulo}</h5>
-                                                {ativa && (
-                                                    <span className="badge bg-primary">Atual</span>
-                                                )}
-                                            </div>
-                                            <p className="text-muted mb-0 small">{etapa.resumo}</p>
-                                        </CardBody>
-                                    </Card>
-                                </Col>
-                            )
-                        })}
-                    </Row>
-
-                    <Card>
-                        <CardBody>
-                            <h5 className="mb-3">{etapaAtual.titulo}</h5>
-                            <p className="text-muted">{etapaAtual.resumo}</p>
-                            <ul className="mb-4">
-                                {etapaAtual.detalhes.map((detalhe) => (
-                                    <li key={detalhe}>{detalhe}</li>
-                                ))}
-                            </ul>
-
-                            <div className="d-flex flex-wrap gap-2">
-                                {etapaAtual.acoes.map((acao) => (
-                                    <Link
-                                        key={acao.to + acao.label}
-                                        to={montarHrefAcaoFluxo(acao.to, produtoId)}
-                                        className={`btn ${acao.primary ? 'btn-primary' : 'btn-soft-primary'}`}
-                                    >
-                                        {acao.label}
-                                    </Link>
-                                ))}
-                            </div>
-
-                            <hr />
-
-                            <div className="d-flex justify-content-between">
-                                <button
-                                    type="button"
-                                    className="btn btn-soft-secondary"
-                                    disabled={etapaAtiva === 1}
-                                    onClick={() => selecionarEtapa((etapaAtiva - 1) as EtapaFluxoId)}
-                                >
-                                    Etapa anterior
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn btn-soft-secondary"
-                                    disabled={etapaAtiva === 3}
-                                    onClick={() => selecionarEtapa((etapaAtiva + 1) as EtapaFluxoId)}
-                                >
-                                    Próxima etapa
-                                </button>
-                            </div>
+                    <Card className="border-0 shadow-sm">
+                        <CardBody className="p-3 p-md-4">
+                            <FluxoProducaoEtapaPainel
+                                etapa={etapaAtual}
+                                totalEtapas={etapas.length}
+                                contexto={contexto}
+                                mostrarChecklist={mostrarChecklist}
+                                itensChecklist={itensChecklist}
+                                onEtapaAnterior={() => selecionarEtapa((etapaAtiva - 1) as EtapaFluxoId)}
+                                onProximaEtapa={() => selecionarEtapa((etapaAtiva + 1) as EtapaFluxoId)}
+                                onSelecionarEtapa={selecionarEtapa}
+                            />
                         </CardBody>
                     </Card>
                 </Container>
