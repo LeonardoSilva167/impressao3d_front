@@ -19,6 +19,7 @@ interface GradeCombinacaoModalProps {
     toggle: () => void
     partesDisponiveis: GradeParteDisponivel[]
     combinacaoEdicao?: GradeCombinacao | null
+    descricaoPadrao?: string
     onSalvar: (combinacao: GradeCombinacao) => void
 }
 
@@ -27,6 +28,7 @@ const GradeCombinacaoModal = ({
     toggle,
     partesDisponiveis,
     combinacaoEdicao,
+    descricaoPadrao = '',
     onSalvar,
 }: GradeCombinacaoModalProps) => {
     const [partesCombinacao, setPartesCombinacao] = useState<GradeCombinacaoParte[]>([])
@@ -99,11 +101,11 @@ const GradeCombinacaoModal = ({
                 reset({ descricao: combinacaoEdicao.descricao, id_parte: '' })
                 setPartesCombinacao([...combinacaoEdicao.partes])
             } else {
-                reset({ descricao: '', id_parte: '' })
+                reset({ descricao: descricaoPadrao, id_parte: '' })
                 setPartesCombinacao([])
             }
         }
-    }, [isOpen, combinacaoEdicao, reset])
+    }, [isOpen, combinacaoEdicao, descricaoPadrao, reset])
 
     return (
         <Modal isOpen={isOpen} toggle={toggle} size="lg" centered>

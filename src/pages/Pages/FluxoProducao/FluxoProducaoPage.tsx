@@ -17,6 +17,7 @@ import {
     EtapaFluxoId,
     FLUXO_PRODUCAO_ETAPAS,
     inferirEtapaPorRota,
+    montarHrefAcaoFluxo,
 } from './fluxoProducaoConfig'
 
 const FluxoProducaoPage = () => {
@@ -126,7 +127,7 @@ const FluxoProducaoPage = () => {
                                 {etapaAtual.acoes.map((acao) => (
                                     <Link
                                         key={acao.to + acao.label}
-                                        to={acao.to}
+                                        to={montarHrefAcaoFluxo(acao.to, produtoId)}
                                         className={`btn ${acao.primary ? 'btn-primary' : 'btn-soft-primary'}`}
                                     >
                                         {acao.label}

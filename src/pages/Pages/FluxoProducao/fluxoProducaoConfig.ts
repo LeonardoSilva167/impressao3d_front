@@ -110,3 +110,13 @@ export const montarHrefEtapaFluxo = (etapa: EtapaFluxoId, produtoId?: string | n
     if (produtoId) params.set('produto', produtoId)
     return `/fluxo-producao?${params.toString()}`
 }
+
+export const montarHrefAcaoFluxo = (to: string, produtoId?: string | null): string => {
+    if (!produtoId) return to
+
+    const [pathname, query = ''] = to.split('?')
+    const params = new URLSearchParams(query)
+    params.set('produto', produtoId)
+    const queryString = params.toString()
+    return queryString ? `${pathname}?${queryString}` : pathname
+}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { useNavegacao } from 'helpers/functions_helpers'
@@ -24,9 +24,21 @@ interface ComposicaoFormFields {
     id_projeto_impressao: string | number | null
 }
 
+const formatarLabelProduto = (produto: {
+    id?: number | string
+    sku_base?: string | null
+    descricao_produto?: string | null
+}): string => {
+    if (produto.sku_base) {
+        return `${produto.sku_base} - ${produto.descricao_produto || ''}`
+    }
+    return produto.descricao_produto || String(produto.id || '')
+}
+
 const ComposicaoProdutosForm = () => {
     const { id } = useParams()
     const { state } = useLocation()
+    const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const { voltarParaRotaAnterior } = useNavegacao()
 
@@ -37,6 +49,8 @@ const ComposicaoProdutosForm = () => {
     const isEditing = Boolean(id)
     const [loading, setLoading] = useState(isEditing)
     const [salvando, setSalvando] = useState(false)
+    const [produtoDefaultOption, setProdutoDefaultOption] = useState<SelectOptions | undefined>()
+    const [produtoSelectKey, setProdutoSelectKey] = useState(0)
 
     const { control, setValue, handleSubmit } = useForm<ComposicaoFormFields>({
         defaultValues: {
@@ -45,6 +59,14 @@ const ComposicaoProdutosForm = () => {
         },
     })
 
+    const aplicarProdutoBase = (produtoId: string | number, label?: string) => {
+        setValue('id_produto_base', produtoId)
+        if (label) {
+            setProdutoDefaultOption({ value: produtoId, label })
+            setProdutoSelectKey((prev) => prev + 1)
+        }
+    }
+
     const getListProdutos = async (inputValue: string): Promise<SelectOptions[]> => {
         const list = await produtosService.AsyncListProdutos({ palavra_chave: inputValue })
         if (!list) return [{ value: '', label: 'Selecione' }]
@@ -52,9 +74,7 @@ const ComposicaoProdutosForm = () => {
             { value: '', label: 'Selecione' },
             ...list.map((item: ProdutosList) => ({
                 value: item.id,
-                label: item.sku_base
-                    ? `${item.sku_base} - ${item.descricao_produto || ''}`
-                    : (item.descricao_produto || String(item.id)),
+                label: formatarLabelProduto(item),
             })),
         ]
     }
@@ -88,7 +108,16 @@ const ComposicaoProdutosForm = () => {
                 toast.error('Vínculo não encontrado.')
                 return
             }
-            setValue('id_produto_base', view.id_produto_base || null)
+            if (view.id_produto_base) {
+                aplicarProdutoBase(
+                    view.id_produto_base,
+                    formatarLabelProduto({
+                        id: view.id_produto_base,
+                        sku_base: view.sku_base,
+                        descricao_produto: view.produto_descricao,
+                    })
+                )
+            }
             setValue('id_projeto_impressao', view.id_projeto_impressao || null)
         } catch (error) {
             console.error('Erro ao carregar vínculo:', error)
@@ -96,6 +125,40 @@ const ComposicaoProdutosForm = () => {
         } finally {
             setLoading(false)
         }
+    }
+
+    const precarregarProdutoDoFluxo = async () => {
+        const produtoQuery = searchParams.get('produto')
+        const produtoState = state && state.source
+            ? (state.source.id_produto_base || state.source.id)
+            : null
+        const produtoId = produtoQuery || produtoState
+        if (!produtoId) return
+
+        const idNumerico = Number(produtoId)
+        if (Number.isNaN(idNumerico)) {
+            aplicarProdutoBase(produtoId)
+            return
+        }
+
+        try {
+            const view = await produtosService.getViewProdutos({ id: idNumerico })
+            if (view) {
+                aplicarProdutoBase(
+                    view.id || idNumerico,
+                    formatarLabelProduto({
+                        id: view.id || idNumerico,
+                        sku_base: view.sku_base,
+                        descricao_produto: view.descricao_produto,
+                    })
+                )
+                return
+            }
+        } catch (error) {
+            console.error('Erro ao pré-carregar produto do fluxo:', error)
+        }
+
+        aplicarProdutoBase(idNumerico)
     }
 
     const onSubmit = async (data: ComposicaoFormFields) => {
@@ -137,9 +200,11 @@ const ComposicaoProdutosForm = () => {
     useEffect(() => {
         if (isEditing) {
             loadRecord()
-        } else if (state && state.source) {
-            setValue('id_produto_base', state.source.id_produto_base || null)
-            setValue('id_projeto_impressao', state.source.id_projeto_impressao || null)
+        } else {
+            if (state && state.source && state.source.id_projeto_impressao) {
+                setValue('id_projeto_impressao', state.source.id_projeto_impressao)
+            }
+            precarregarProdutoDoFluxo()
         }
     }, [id])
 
@@ -188,10 +253,13 @@ const ComposicaoProdutosForm = () => {
                                                     <div className="mb-3">
                                                         <Label htmlFor="id_produto_base" className="form-label">Produto Base</Label>
                                                         <AsyncSelectListControlled<ComposicaoFormFields>
+                                                            key={produtoSelectKey}
                                                             field="id_produto_base"
                                                             control={control}
                                                             callback={getListProdutos}
                                                             required={required}
+                                                            defaultValue={produtoDefaultOption}
+                                                            defaultOptions={produtoDefaultOption ? [produtoDefaultOption] : undefined}
                                                         />
                                                     </div>
                                                 </Col>

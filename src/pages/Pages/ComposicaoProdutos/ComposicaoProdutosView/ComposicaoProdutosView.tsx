@@ -120,7 +120,11 @@ const ComposicaoProdutosViewPage = () => {
                                         <>
                                             <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
                                                 <Link
-                                                    to="/fluxo-producao?etapa=2"
+                                                    to={
+                                                        registro.id_produto_base
+                                                            ? `/fluxo-producao?etapa=2&produto=${registro.id_produto_base}`
+                                                            : '/fluxo-producao?etapa=2'
+                                                    }
                                                     className="btn btn-soft-secondary"
                                                 >
                                                     <i className="ri-guide-line me-1"></i>
@@ -133,7 +137,11 @@ const ComposicaoProdutosViewPage = () => {
                                                     <i className="ri-edit-line me-1"></i> Editar
                                                 </Link>
                                                 <Link
-                                                    to="/fluxo-producao?etapa=3"
+                                                    to={
+                                                        registro.id_produto_base
+                                                            ? `/fluxo-producao?etapa=3&produto=${registro.id_produto_base}`
+                                                            : '/fluxo-producao?etapa=3'
+                                                    }
                                                     className="btn btn-success"
                                                 >
                                                     <i className="ri-arrow-right-line me-1"></i>
