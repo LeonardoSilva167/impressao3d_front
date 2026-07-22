@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { useNavegacao } from 'helpers/functions_helpers'
@@ -21,9 +21,19 @@ import { normalizarPartesProjeto, normalizarProjetoImpressao, calcularResumoPart
 import PartesProjetoTable from '../PartesProjetoTable/PartesProjetoTable'
 import ResumoCustosProducao from 'Components/Common/ResumoCustosProducao'
 import { extrairCustosProducao } from 'helpers/custosProducao_helpers'
+import FluxoProducaoContinuidadeProjeto from 'pages/Pages/FluxoProducao/FluxoProducaoContinuidadeProjeto'
+import {
+    anexarContextoFluxo,
+    estaNoFluxoGuiado,
+    lerContextoFluxo,
+    montarParamsFluxo,
+} from 'pages/Pages/FluxoProducao/fluxoProducaoContext'
 
 const ProjetosImpressaoViewPage = () => {
     const { id } = useParams()
+    const [searchParams, setSearchParams] = useSearchParams()
+    const contextoFluxo = useMemo(() => lerContextoFluxo(searchParams), [searchParams])
+    const noFluxoGuiado = estaNoFluxoGuiado(contextoFluxo)
     const { voltarParaRotaAnterior } = useNavegacao()
     const projetosImpressaoService = new ProjetosImpressaoService()
 
@@ -63,6 +73,25 @@ const ProjetosImpressaoViewPage = () => {
         loadProjeto()
     }, [id])
 
+    useEffect(() => {
+        if (!id || !noFluxoGuiado) return
+        if (contextoFluxo.projeto === id) return
+
+        const params = montarParamsFluxo(contextoFluxo, {
+            projeto: id,
+            fluxo: contextoFluxo.fluxo || '1',
+        })
+        setSearchParams(params, { replace: true })
+    }, [id, noFluxoGuiado, contextoFluxo.produto, contextoFluxo.fluxo, contextoFluxo.projeto, setSearchParams])
+
+    const hrefEditarProjeto = projeto?.id
+        ? anexarContextoFluxo(
+            `/projetos-impressao/edit/${projeto.id}`,
+            { ...contextoFluxo, projeto: String(projeto.id) },
+            { forcarFluxo: noFluxoGuiado }
+        )
+        : '#'
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -96,28 +125,47 @@ const ProjetosImpressaoViewPage = () => {
                                         <div className="text-center py-5 text-muted">Projeto não encontrado.</div>
                                     ) : (
                                         <>
-                                            <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
-                                                <Link
-                                                    to="/fluxo-producao?etapa=2"
-                                                    className="btn btn-soft-secondary"
-                                                >
-                                                    <i className="ri-guide-line me-1"></i>
-                                                    Voltar à etapa 2
-                                                </Link>
-                                                <Link
-                                                    to="/composicao-produtos/add"
-                                                    className="btn btn-success"
-                                                >
-                                                    <i className="ri-link me-1"></i>
-                                                    Continuar: criar vínculo
-                                                </Link>
-                                                <Link
-                                                    to={`/projetos-impressao/edit/${projeto.id}`}
-                                                    className="btn btn-soft-primary"
-                                                >
-                                                    <i className="ri-edit-line me-1"></i> Editar Projeto
-                                                </Link>
-                                            </div>
+                                            {noFluxoGuiado && projeto.id ? (
+                                                <FluxoProducaoContinuidadeProjeto
+                                                    contexto={contextoFluxo}
+                                                    projetoId={projeto.id}
+                                                    mostrarBanner
+                                                    mostrarAcoes
+                                                    alinhamentoAcoes="end"
+                                                    acoesAdicionais={(
+                                                        <Link
+                                                            to={hrefEditarProjeto}
+                                                            className="btn btn-soft-primary"
+                                                        >
+                                                            <i className="ri-edit-line me-1" aria-hidden />
+                                                            Editar Projeto
+                                                        </Link>
+                                                    )}
+                                                />
+                                            ) : (
+                                                <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
+                                                    <Link
+                                                        to="/fluxo-producao?etapa=2"
+                                                        className="btn btn-soft-secondary"
+                                                    >
+                                                        <i className="ri-guide-line me-1"></i>
+                                                        Voltar à etapa 2
+                                                    </Link>
+                                                    <Link
+                                                        to="/composicao-produtos/add"
+                                                        className="btn btn-success"
+                                                    >
+                                                        <i className="ri-link me-1"></i>
+                                                        Continuar: criar vínculo
+                                                    </Link>
+                                                    <Link
+                                                        to={hrefEditarProjeto}
+                                                        className="btn btn-soft-primary"
+                                                    >
+                                                        <i className="ri-edit-line me-1"></i> Editar Projeto
+                                                    </Link>
+                                                </div>
+                                            )}
 
                                             <h5 className="mb-3">Dados do Projeto</h5>
                                             <Row>
@@ -161,6 +209,21 @@ const ProjetosImpressaoViewPage = () => {
                                                             custos={custosProjeto}
                                                         />
                                                     </div>
+
+                                                    {noFluxoGuiado && (
+                                                        <div className="mt-4 pt-3 border-top">
+                                                            <p className="text-muted small mb-2">
+                                                                Próximo passo: criar o vínculo produto–projeto.
+                                                            </p>
+                                                            <FluxoProducaoContinuidadeProjeto
+                                                                contexto={contextoFluxo}
+                                                                projetoId={projeto.id}
+                                                                mostrarAcoes
+                                                                alinhamentoAcoes="end"
+                                                                classNameAcoes=""
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
 

@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { useNavegacao } from 'helpers/functions_helpers'
-import { Breadcrumb, BreadcrumbItem, Card, CardBody, Col, Container, Label, Row, Spinner } from 'reactstrap'
+import { Alert, Breadcrumb, BreadcrumbItem, Card, CardBody, Col, Container, Label, Row, Spinner } from 'reactstrap'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { required } from 'Components/ComponentController/ValidatorForm/ValidatorForm'
 import { InputTextControlled } from 'Components/ComponentController/Inputs/Text/InputTextControlled'
@@ -12,9 +12,17 @@ import {
     ProjetosImpressaoModel,
 } from 'interfaces/ProjetosImpressao/ProjetosImpressaoInterface'
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
+import {
+    estaNoFluxoGuiado,
+    lerContextoFluxo,
+    montarParamsFluxo,
+} from 'pages/Pages/FluxoProducao/fluxoProducaoContext'
 
 const ProjetosImpressaoForm = () => {
     const { state } = useLocation()
+    const [searchParams] = useSearchParams()
+    const contextoFluxo = useMemo(() => lerContextoFluxo(searchParams), [searchParams])
+    const noFluxoGuiado = estaNoFluxoGuiado(contextoFluxo)
     const { id } = useParams()
     const recordId = state && state.source && state.source.id ? state.source.id : (id ? Number(id) : null)
     const isEditing = recordId != null
@@ -61,15 +69,36 @@ const ProjetosImpressaoForm = () => {
                 descricao_projeto: data.descricao_projeto,
             }
 
+            const navegarParaView = (projetoId: number) => {
+                const params = noFluxoGuiado
+                    ? montarParamsFluxo(contextoFluxo, {
+                        projeto: String(projetoId),
+                        fluxo: '1',
+                    })
+                    : null
+
+                const query = params?.toString()
+                navigate(query
+                    ? `/projetos-impressao/view/${projetoId}?${query}`
+                    : `/projetos-impressao/view/${projetoId}`)
+            }
+
             if (isEditing) {
                 await projetosImpressaoService.editProjetosImpressao(payload)
                 toast.success('Projeto de impressão atualizado com sucesso.')
-                navigate(`/projetos-impressao/view/${recordId}`)
+                navegarParaView(recordId!)
             } else {
                 const newId = await projetosImpressaoService.createProjetosImpressao(payload)
-                toast.success('Projeto cadastrado com sucesso.')
+                toast.success(
+                    noFluxoGuiado
+                        ? 'Projeto cadastrado. Adicione partes/itens e depois crie o vínculo.'
+                        : 'Projeto cadastrado com sucesso.'
+                )
                 if (newId) {
-                    navigate(`/projetos-impressao/view/${newId}`)
+                    navegarParaView(newId)
+                } else if (noFluxoGuiado) {
+                    toast.error('Não foi possível obter o id do projeto criado. Verifique o contrato da API.')
+                    navigate('/projetos-impressao')
                 } else {
                     navigate('/projetos-impressao')
                 }
@@ -123,6 +152,16 @@ const ProjetosImpressaoForm = () => {
                         <Col xxl={12}>
                             <Card>
                                 <CardBody>
+                                    {noFluxoGuiado && !isEditing && (
+                                        <Alert color="info" className="mb-4">
+                                            <strong>Etapa 2</strong> · Cadastre o projeto de impressão para continuar o fluxo.
+                                            {contextoFluxo.produto && (
+                                                <span className="d-block mt-1 small mb-0">
+                                                    Produto base #{contextoFluxo.produto} já selecionado no fluxo.
+                                                </span>
+                                            )}
+                                        </Alert>
+                                    )}
                                     {loadingRecord ? (
                                         <div className="text-center py-5">
                                             <Spinner animation="border" variant="primary" />
