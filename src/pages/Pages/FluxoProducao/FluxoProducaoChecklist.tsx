@@ -392,55 +392,41 @@ const CardImportante = ({ detalhes }: { detalhes: string[] }) => (
 const LinhaPendente = ({
     item,
     numero,
-    contexto,
 }: {
     item: ItemChecklistFluxo
     numero: number
-    contexto: FluxoProducaoQuery
-}) => {
-    const href = item.acoes?.[0]
-        ? hrefAcao(item.acoes[0], contexto)
-        : item.destino
-            ? anexarContextoFluxo(item.destino, contexto, { forcarFluxo: true })
-            : item.linkAbrir?.to
-
-    const conteudo = (
+}) => (
+    <div
+        className="border-bottom"
+        style={{
+            borderColor: 'var(--vz-border-color, #e9ebec)',
+            opacity: 0.72,
+        }}
+        aria-disabled="true"
+        title="Conclua o passo atual para liberar esta etapa"
+    >
         <div className="d-flex align-items-center gap-3 py-3 px-2">
             <div
                 className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 bg-light text-muted border"
                 style={{ width: 36, height: 36 }}
                 aria-hidden
             >
-                {item.icone ? <i className={item.icone} /> : <span className="small fw-semibold">{numero}</span>}
+                <i className="ri-lock-line" />
             </div>
             <div className="flex-grow-1 min-w-0">
-                <div className="fw-semibold text-body">{item.titulo}</div>
+                <div className="fw-semibold text-muted">
+                    {numero}. {item.titulo}
+                </div>
                 {item.descricao && (
-                    <div className="small text-muted">{item.descricao}</div>
+                    <div className="small text-muted">
+                        Bloqueado — conclua o passo anterior primeiro.
+                    </div>
                 )}
             </div>
-            <i className="ri-arrow-right-s-line text-muted fs-4 flex-shrink-0" aria-hidden />
+            <i className="ri-lock-2-line text-muted fs-5 flex-shrink-0" aria-hidden />
         </div>
-    )
-
-    if (href) {
-        return (
-            <Link
-                to={href}
-                className="text-decoration-none d-block border-bottom"
-                style={{ borderColor: 'var(--vz-border-color, #e9ebec)' }}
-            >
-                {conteudo}
-            </Link>
-        )
-    }
-
-    return (
-        <div className="border-bottom" style={{ borderColor: 'var(--vz-border-color, #e9ebec)' }}>
-            {conteudo}
-        </div>
-    )
-}
+    </div>
+)
 
 const FluxoProducaoChecklist = ({
     itens,
@@ -480,7 +466,6 @@ const FluxoProducaoChecklist = ({
                                 key={item.codigo}
                                 item={item}
                                 numero={concluidos.length + (atual ? 1 : 0) + index + 1}
-                                contexto={contexto}
                             />
                         ))}
                     </div>

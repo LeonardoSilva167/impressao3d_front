@@ -230,3 +230,53 @@ export const textosProximoPassoEtapa2 = (params: {
         opcaoB: `Depois, avance para a ${DominioProducaoLabels.montagemCurta.toLowerCase()}.`,
     }
 }
+
+/** Progresso mínimo usado para liberar etapas do hub. */
+export interface ProgressoEtapasFluxo {
+    produtoOk: boolean
+    projetoOk: boolean
+    vinculoOk: boolean
+    partesOk: boolean
+    montagemOk: boolean
+}
+
+export const montarProgressoEtapasFluxo = (params: {
+    produtoId?: string | null
+    projetoId?: string | null
+    composicaoId?: string | null
+    partesConfiguradas?: boolean
+    montagemCriada?: boolean
+}): ProgressoEtapasFluxo => ({
+    produtoOk: Boolean(params.produtoId),
+    projetoOk: Boolean(params.projetoId),
+    vinculoOk: Boolean(params.composicaoId),
+    partesOk: Boolean(params.partesConfiguradas),
+    montagemOk: Boolean(params.montagemCriada),
+})
+
+/**
+ * Etapa 2 exige produto.
+ * Etapa 3 exige vínculo (partes ficam como subpasso da etapa 2 no checklist).
+ */
+export const etapaFluxoLiberada = (
+    etapa: EtapaFluxoId,
+    progresso: ProgressoEtapasFluxo
+): boolean => {
+    if (etapa === 1) return true
+    if (etapa === 2) return progresso.produtoOk
+    return progresso.vinculoOk
+}
+
+export const obterEtapaMaximaLiberada = (progresso: ProgressoEtapasFluxo): EtapaFluxoId => {
+    if (etapaFluxoLiberada(3, progresso)) return 3
+    if (etapaFluxoLiberada(2, progresso)) return 2
+    return 1
+}
+
+export const normalizarEtapaFluxo = (
+    etapaDesejada: EtapaFluxoId,
+    progresso: ProgressoEtapasFluxo
+): EtapaFluxoId => {
+    const maxima = obterEtapaMaximaLiberada(progresso)
+    return etapaDesejada > maxima ? maxima : etapaDesejada
+}

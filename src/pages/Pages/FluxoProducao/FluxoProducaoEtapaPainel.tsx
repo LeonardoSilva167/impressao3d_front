@@ -1,11 +1,14 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import {
     AcaoEtapaFluxo,
     EtapaFluxoConfig,
     EtapaFluxoId,
     FLUXO_PRODUCAO_ETAPAS,
+    ProgressoEtapasFluxo,
     classeBotaoAcaoFluxo,
+    etapaFluxoLiberada,
 } from './fluxoProducaoConfig'
 import { FluxoProducaoQuery, anexarContextoFluxo } from './fluxoProducaoContext'
 import FluxoProducaoChecklist, { ItemChecklistFluxo } from './FluxoProducaoChecklist'
@@ -14,8 +17,10 @@ interface FluxoProducaoEtapaPainelProps {
     etapa: EtapaFluxoConfig
     totalEtapas: number
     contexto: FluxoProducaoQuery
+    progresso: ProgressoEtapasFluxo
     mostrarChecklist: boolean
     itensChecklist: ItemChecklistFluxo[]
+    proximaEtapaLiberada: boolean
     onEtapaAnterior: () => void
     onProximaEtapa: () => void
     onSelecionarEtapa: (etapa: EtapaFluxoId) => void
@@ -28,24 +33,28 @@ const hrefAcao = (acao: AcaoEtapaFluxo, contexto: FluxoProducaoQuery) => (
 const statusMacroEtapa = (
     etapaId: EtapaFluxoId,
     etapaAtiva: EtapaFluxoId,
-    itensChecklist: ItemChecklistFluxo[]
+    progresso: ProgressoEtapasFluxo,
+    liberada: boolean
 ): { label: string; classe: string } => {
-    const e1Ok = itensChecklist.some((i) => i.codigo === 'E1_PRODUTO' && i.concluido)
-    const e2Ok = itensChecklist.some((i) => i.codigo === 'E2_VINCULO' && i.concluido)
-        && itensChecklist.some((i) => i.codigo === 'E2_PARTES' && i.concluido)
-    const e3Ok = itensChecklist.some((i) => i.codigo === 'E3_MONTAGEM' && i.concluido)
-
-    if (etapaId === 1 && e1Ok) return { label: 'Concluído', classe: 'text-success' }
-    if (etapaId === 2 && e2Ok) return { label: 'Concluído', classe: 'text-success' }
-    if (etapaId === 3 && e3Ok) return { label: 'Concluído', classe: 'text-success' }
+    if (etapaId === 1 && progresso.produtoOk && etapaAtiva !== 1) {
+        return { label: 'Concluído', classe: 'text-success' }
+    }
+    if (etapaId === 2 && progresso.vinculoOk && etapaAtiva !== 2) {
+        return { label: 'Concluído', classe: 'text-success' }
+    }
+    if (etapaId === 3 && progresso.montagemOk) {
+        return { label: 'Concluído', classe: 'text-success' }
+    }
 
     if (etapaId === etapaAtiva) {
         return { label: 'Em andamento', classe: 'text-primary' }
     }
 
+    if (!liberada) {
+        return { label: 'Bloqueado', classe: 'text-muted' }
+    }
+
     if (etapaId < etapaAtiva) {
-        // Ex.: etapa 1 atrás na navegação, mas produto já existe
-        if (etapaId === 1 && e1Ok) return { label: 'Concluído', classe: 'text-success' }
         return { label: 'Concluído', classe: 'text-success' }
     }
 
@@ -56,8 +65,10 @@ const FluxoProducaoEtapaPainel = ({
     etapa,
     totalEtapas,
     contexto,
+    progresso,
     mostrarChecklist,
     itensChecklist,
+    proximaEtapaLiberada,
     onEtapaAnterior,
     onProximaEtapa,
     onSelecionarEtapa,
@@ -69,7 +80,6 @@ const FluxoProducaoEtapaPainel = ({
     const acoesSecundarias = etapa.acoes.filter((acao) => acao !== acaoPrimaria && acao.nivel !== 'tertiary')
     const acoesTerciarias = etapa.acoes.filter((acao) => acao.nivel === 'tertiary')
 
-    // Dicas do "Importante" focadas no próximo passo atual
     const detalhesImportante = (() => {
         const atual = itensChecklist.find((i) => i.atual && !i.concluido)
         if (atual?.codigo === 'E2_PROJETO') {
@@ -98,7 +108,6 @@ const FluxoProducaoEtapaPainel = ({
 
     return (
         <div className="d-flex gap-3 gap-lg-4">
-            {/* Rail vertical — etapas macro */}
             <div
                 className="d-none d-md-flex flex-column flex-shrink-0 pe-2"
                 style={{ width: 160 }}
@@ -107,15 +116,23 @@ const FluxoProducaoEtapaPainel = ({
                 {FLUXO_PRODUCAO_ETAPAS.map((macro, index) => {
                     const numero = macro.id as EtapaFluxoId
                     const ativo = numero === etapaId
-                    const status = statusMacroEtapa(numero, etapaId, itensChecklist)
+                    const liberada = etapaFluxoLiberada(numero, progresso)
+                    const status = statusMacroEtapa(numero, etapaId, progresso, liberada)
                     const concluidoVisual = status.label === 'Concluído'
+                    const bloqueada = !liberada
 
                     return (
                         <React.Fragment key={macro.id}>
                             <button
                                 type="button"
                                 className="btn btn-link text-decoration-none text-start p-0 d-flex gap-2 align-items-start"
-                                onClick={() => onSelecionarEtapa(numero)}
+                                onClick={() => liberada && onSelecionarEtapa(numero)}
+                                disabled={bloqueada}
+                                title={bloqueada ? 'Conclua a etapa anterior para liberar' : undefined}
+                                style={{
+                                    opacity: bloqueada ? 0.55 : 1,
+                                    cursor: bloqueada ? 'not-allowed' : 'pointer',
+                                }}
                             >
                                 <div className="d-flex flex-column align-items-center flex-shrink-0">
                                     <div
@@ -125,11 +142,15 @@ const FluxoProducaoEtapaPainel = ({
                                                 ? 'bg-primary text-white'
                                                 : concluidoVisual
                                                     ? 'bg-success text-white'
-                                                    : 'bg-light text-muted border',
+                                                    : bloqueada
+                                                        ? 'bg-light text-muted border'
+                                                        : 'bg-light text-muted border',
                                         ].join(' ')}
                                         style={{ width: 32, height: 32, fontSize: '0.85rem' }}
                                     >
-                                        {concluidoVisual && !ativo ? (
+                                        {bloqueada ? (
+                                            <i className="ri-lock-line" aria-hidden />
+                                        ) : concluidoVisual && !ativo ? (
                                             <i className="ri-check-line" aria-hidden />
                                         ) : (
                                             numero
@@ -292,9 +313,17 @@ const FluxoProducaoEtapaPainel = ({
                     <button
                         type="button"
                         className="btn btn-primary"
-                        disabled={etapaId === totalEtapas}
+                        disabled={etapaId === totalEtapas || !proximaEtapaLiberada}
+                        title={
+                            !proximaEtapaLiberada && etapaId < totalEtapas
+                                ? 'Conclua esta etapa para avançar'
+                                : undefined
+                        }
                         onClick={onProximaEtapa}
                     >
+                        {!proximaEtapaLiberada && etapaId < totalEtapas && (
+                            <i className="ri-lock-line me-1" aria-hidden />
+                        )}
                         Próxima etapa
                         <i className="ri-arrow-right-line ms-1" aria-hidden />
                     </button>

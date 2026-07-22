@@ -4,9 +4,12 @@ import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import {
     FLUXO_PRODUCAO_ETAPAS,
     EtapaFluxoId,
+    etapaFluxoLiberada,
     inferirEtapaPorRota,
     isRotaFluxoProducao,
     montarHrefEtapaFluxo,
+    montarProgressoEtapasFluxo,
+    normalizarEtapaFluxo,
     obterContextoRotaFluxo,
 } from './fluxoProducaoConfig'
 import { lerContextoFluxo } from './fluxoProducaoContext'
@@ -80,10 +83,18 @@ const FluxoProducaoStepper = () => {
 
     const contextoFluxo = lerContextoFluxo(searchParams)
     const etapaQuery = Number(contextoFluxo.etapa)
-    const etapaAtiva = inferirEtapaPorRota(
+    const progresso = montarProgressoEtapasFluxo({
+        produtoId: contextoFluxo.produto,
+        projetoId: contextoFluxo.projeto,
+        composicaoId: contextoFluxo.composicao,
+    })
+    const etapaSolicitada = inferirEtapaPorRota(
         pathname,
         Number.isNaN(etapaQuery) ? null : etapaQuery
     )
+    const etapaAtiva = pathname === '/fluxo-producao' || pathname.startsWith('/fluxo-producao/')
+        ? normalizarEtapaFluxo(etapaSolicitada, progresso)
+        : etapaSolicitada
     const contextoRota = obterContextoRotaFluxo(pathname)
     const noHub = pathname === '/fluxo-producao' || pathname.startsWith('/fluxo-producao/')
     const hrefVoltarEtapa = montarHrefEtapaFluxo(etapaAtiva, contextoFluxo)
@@ -129,6 +140,7 @@ const FluxoProducaoStepper = () => {
                 <div className="d-flex flex-wrap gap-2">
                     {FLUXO_PRODUCAO_ETAPAS.map((etapa, index) => {
                         const ativa = etapa.id === etapaAtiva
+                        const liberada = etapaFluxoLiberada(etapa.id as EtapaFluxoId, progresso)
                         const href = montarHrefEtapaFluxo(etapa.id as EtapaFluxoId, contextoFluxo)
 
                         return (
@@ -141,17 +153,32 @@ const FluxoProducaoStepper = () => {
                                         <i className="ri-arrow-right-s-line"></i>
                                     </div>
                                 )}
-                                <Link
-                                    to={href}
-                                    className={[
-                                        'btn btn-sm flex-grow-1 flex-md-grow-0 text-start',
-                                        ativa ? 'btn-primary' : 'btn-soft-secondary',
-                                    ].join(' ')}
-                                    style={{ minWidth: '160px' }}
-                                >
-                                    <span className="d-block small opacity-75">Etapa {etapa.id}</span>
-                                    <span className="fw-semibold">{etapa.tituloCurto}</span>
-                                </Link>
+                                {liberada ? (
+                                    <Link
+                                        to={href}
+                                        className={[
+                                            'btn btn-sm flex-grow-1 flex-md-grow-0 text-start',
+                                            ativa ? 'btn-primary' : 'btn-soft-secondary',
+                                        ].join(' ')}
+                                        style={{ minWidth: '160px' }}
+                                    >
+                                        <span className="d-block small opacity-75">Etapa {etapa.id}</span>
+                                        <span className="fw-semibold">{etapa.tituloCurto}</span>
+                                    </Link>
+                                ) : (
+                                    <span
+                                        className="btn btn-sm btn-soft-secondary flex-grow-1 flex-md-grow-0 text-start disabled"
+                                        style={{ minWidth: '160px', opacity: 0.55, cursor: 'not-allowed' }}
+                                        title="Conclua a etapa anterior para liberar"
+                                        aria-disabled="true"
+                                    >
+                                        <span className="d-block small opacity-75">
+                                            <i className="ri-lock-line me-1" aria-hidden />
+                                            Etapa {etapa.id}
+                                        </span>
+                                        <span className="fw-semibold">{etapa.tituloCurto}</span>
+                                    </span>
+                                )}
                             </React.Fragment>
                         )
                     })}

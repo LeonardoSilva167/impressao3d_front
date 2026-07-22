@@ -18,7 +18,10 @@ import { normalizarProdutoView } from 'pages/Pages/Produtos/hooks/useProdutos'
 import {
     EtapaFluxoId,
     FLUXO_PRODUCAO_ETAPAS,
+    etapaFluxoLiberada,
     inferirEtapaPorRota,
+    montarProgressoEtapasFluxo,
+    normalizarEtapaFluxo,
 } from './fluxoProducaoConfig'
 import { lerContextoFluxo } from './fluxoProducaoContext'
 import { ProdutoResumoFluxo, montarItensChecklistFluxo } from './FluxoProducaoChecklist'
@@ -31,16 +34,32 @@ const FluxoProducaoPage = () => {
     const projetoId = contexto.projeto
     const composicaoId = contexto.composicao
     const etapaParam = Number(contexto.etapa)
-    const [etapaAtiva, setEtapaAtiva] = useState<EtapaFluxoId>(
-        inferirEtapaPorRota('/fluxo-producao', Number.isNaN(etapaParam) ? null : etapaParam)
+    const etapaSolicitada = inferirEtapaPorRota(
+        '/fluxo-producao',
+        Number.isNaN(etapaParam) ? null : etapaParam
     )
     const [produtoResumo, setProdutoResumo] = useState<ProdutoResumoFluxo | null>(null)
     const [carregandoProduto, setCarregandoProduto] = useState(false)
 
     const etapas = useMemo(() => FLUXO_PRODUCAO_ETAPAS, [])
 
+    const progresso = useMemo(
+        () => montarProgressoEtapasFluxo({
+            produtoId,
+            projetoId,
+            composicaoId,
+        }),
+        [produtoId, projetoId, composicaoId]
+    )
+
+    const etapaAtiva = useMemo(
+        () => normalizarEtapaFluxo(etapaSolicitada, progresso),
+        [etapaSolicitada, progresso]
+    )
+
     const selecionarEtapa = (etapa: EtapaFluxoId) => {
-        setEtapaAtiva(etapa)
+        if (!etapaFluxoLiberada(etapa, progresso)) return
+
         const next = new URLSearchParams(searchParams)
         next.set('etapa', String(etapa))
         setSearchParams(next, { replace: true })
@@ -50,11 +69,14 @@ const FluxoProducaoPage = () => {
         setActiveMenu('/fluxo-producao')
     }, [])
 
+    // Corrige URL se o usuário tentar abrir etapa ainda bloqueada
     useEffect(() => {
-        setEtapaAtiva(
-            inferirEtapaPorRota('/fluxo-producao', Number.isNaN(etapaParam) ? null : etapaParam)
-        )
-    }, [etapaParam])
+        if (etapaSolicitada !== etapaAtiva) {
+            const next = new URLSearchParams(searchParams)
+            next.set('etapa', String(etapaAtiva))
+            setSearchParams(next, { replace: true })
+        }
+    }, [etapaSolicitada, etapaAtiva, searchParams, setSearchParams])
 
     useEffect(() => {
         let cancelado = false
@@ -105,6 +127,7 @@ const FluxoProducaoPage = () => {
 
     const etapaAtual = etapas.find((etapa) => etapa.id === etapaAtiva) || etapas[0]
     const mostrarChecklist = Boolean(produtoId) || etapaAtiva === 2 || etapaAtiva === 3
+    const proximaEtapaLiberada = etapaAtiva < 3 && etapaFluxoLiberada((etapaAtiva + 1) as EtapaFluxoId, progresso)
 
     const itensChecklist = useMemo(
         () => montarItensChecklistFluxo({
@@ -154,8 +177,10 @@ const FluxoProducaoPage = () => {
                                 etapa={etapaAtual}
                                 totalEtapas={etapas.length}
                                 contexto={contexto}
+                                progresso={progresso}
                                 mostrarChecklist={mostrarChecklist}
                                 itensChecklist={itensChecklist}
+                                proximaEtapaLiberada={proximaEtapaLiberada}
                                 onEtapaAnterior={() => selecionarEtapa((etapaAtiva - 1) as EtapaFluxoId)}
                                 onProximaEtapa={() => selecionarEtapa((etapaAtiva + 1) as EtapaFluxoId)}
                                 onSelecionarEtapa={selecionarEtapa}
