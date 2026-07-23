@@ -284,14 +284,19 @@ Colunas mínimas:
 
 **Critérios de aceite**
 
-- [ ] Partes configuradas vs pendentes são óbvias na tabela.
-- [ ] Coluna com total de variações por parte.
-- [ ] CTA de montagem visível no rodapé.
+- [x] Partes configuradas vs pendentes são óbvias na tabela.
+- [x] Coluna com total de variações por parte.
+- [x] CTA de montagem visível no rodapé.
 
 **Dependência backend (desejável):**
 
 - Expor `total_variacoes` (e idealmente `configurada`) por parte no view da composição.
 - Enquanto não houver, o front pode calcular `total_variacoes` a partir de `variacoes_itens` já retornados.
+
+**Implementação (front):**
+- `ComposicaoProdutosView.tsx` — tabela com status/itens/variações; CTA montagem no topo e rodapé → hub etapa 3 com contexto.
+- `useComposicaoProdutos.ts` — `obterPartesResumoComposicao` (API `partes_resumo` ou cálculo via `variacoes_itens`).
+- `ComposicaoParteConfig.tsx` — toast “Parte salva…” + redirect para view preservando query do fluxo.
 
 ---
 

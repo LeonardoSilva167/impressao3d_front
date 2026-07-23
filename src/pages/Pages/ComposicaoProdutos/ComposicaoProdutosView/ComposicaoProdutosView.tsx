@@ -12,10 +12,10 @@ import { ComposicaoProdutosService } from 'services/ComposicaoProdutos/Composica
 import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
 import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import {
-    montarPartesResumo,
     normalizarComposicaoView,
     obterClasseBadgeStatus,
     obterLabelStatus,
+    obterPartesResumoComposicao,
 } from '../hooks/useComposicaoProdutos'
 import { montarHrefEtapaFluxo } from 'pages/Pages/FluxoProducao/fluxoProducaoConfig'
 import {
@@ -36,13 +36,13 @@ const ComposicaoProdutosViewPage = () => {
     const [projeto, setProjeto] = useState<ProjetosImpressaoView>()
     const [loading, setLoading] = useState(true)
 
-    const partesResumo = registro && projeto
-        ? montarPartesResumo(
-            projeto,
-            registro.configuracao_itens || [],
-            registro.variacoes_itens || []
-        )
-        : []
+    const partesResumo = useMemo(
+        () => obterPartesResumoComposicao(registro, projeto),
+        [registro, projeto]
+    )
+
+    const partesPendentes = partesResumo.filter((parte) => !parte.configurada).length
+    const todasPartesConfiguradas = partesResumo.length > 0 && partesPendentes === 0
 
     const loadRegistro = async () => {
         if (!id) return
@@ -87,10 +87,10 @@ const ComposicaoProdutosViewPage = () => {
     useEffect(() => {
         if (!registro?.id) return
 
-        const produto = registro.id_produto_base != null
-            ? String(registro.id_produto_base)
+        const produto = (registro.id_produto_base ?? registro.id_produto) != null
+            ? String(registro.id_produto_base ?? registro.id_produto)
             : contextoFluxo.produto
-        const projeto = registro.id_projeto_impressao != null
+        const projetoId = registro.id_projeto_impressao != null
             ? String(registro.id_projeto_impressao)
             : contextoFluxo.projeto
         const composicao = String(registro.id)
@@ -98,7 +98,7 @@ const ComposicaoProdutosViewPage = () => {
         const precisaAtualizar = (
             contextoFluxo.composicao !== composicao
             || (produto && contextoFluxo.produto !== produto)
-            || (projeto && contextoFluxo.projeto !== projeto)
+            || (projetoId && contextoFluxo.projeto !== projetoId)
             || contextoFluxo.fluxo !== '1'
         )
 
@@ -107,7 +107,7 @@ const ComposicaoProdutosViewPage = () => {
         setSearchParams(
             montarParamsFluxo(contextoFluxo, {
                 produto: produto || undefined,
-                projeto: projeto || undefined,
+                projeto: projetoId || undefined,
                 composicao,
                 fluxo: '1',
             }),
@@ -116,6 +116,7 @@ const ComposicaoProdutosViewPage = () => {
     }, [
         registro?.id,
         registro?.id_produto_base,
+        registro?.id_produto,
         registro?.id_projeto_impressao,
         contextoFluxo.produto,
         contextoFluxo.projeto,
@@ -127,16 +128,16 @@ const ComposicaoProdutosViewPage = () => {
     const obterNomeProjeto = (): string => {
         if (!registro) return '—'
         const partes = [
-            registro.codigo_projeto,
-            registro.nome_projeto,
-            registro.descricao_projeto,
+            registro.codigo_projeto || registro.projeto?.codigo_projeto,
+            registro.nome_projeto || registro.projeto?.nome_original_projeto,
+            registro.descricao_projeto || registro.projeto?.descricao_projeto,
         ].filter(Boolean)
         return partes.length > 0 ? partes.join(' - ') : '—'
     }
 
     const contextoContinuidade = useMemo(() => ({
-        produto: registro?.id_produto_base != null
-            ? String(registro.id_produto_base)
+        produto: (registro?.id_produto_base ?? registro?.id_produto) != null
+            ? String(registro?.id_produto_base ?? registro?.id_produto)
             : contextoFluxo.produto,
         projeto: registro?.id_projeto_impressao != null
             ? String(registro.id_projeto_impressao)
@@ -152,6 +153,31 @@ const ComposicaoProdutosViewPage = () => {
     const hrefEditarVinculo = registro?.id
         ? anexarContextoFluxo(`/composicao-produtos/edit/${registro.id}`, contextoContinuidade, { forcarFluxo: true })
         : '/composicao-produtos'
+
+    const hrefConfigurarParte = (idParte: string | number | null | undefined) => (
+        anexarContextoFluxo(
+            `/composicao-produtos/${registro?.id}/parte/${idParte}/configurar`,
+            contextoContinuidade,
+            { forcarFluxo: true }
+        )
+    )
+
+    const AcoesContinuidade = ({ className = '' }: { className?: string }) => (
+        <div className={`d-flex flex-wrap justify-content-end gap-2 ${className}`.trim()}>
+            <Link to={hrefHubEtapa2} className="btn btn-soft-secondary">
+                <i className="ri-guide-line me-1" aria-hidden />
+                Voltar à etapa 2
+            </Link>
+            <Link to={hrefEditarVinculo} className="btn btn-soft-primary">
+                <i className="ri-edit-line me-1" aria-hidden />
+                Editar
+            </Link>
+            <Link to={hrefHubEtapa3} className="btn btn-success">
+                <i className="ri-arrow-right-line me-1" aria-hidden />
+                Continuar: montagem
+            </Link>
+        </div>
+    )
 
     return (
         <React.Fragment>
@@ -186,28 +212,7 @@ const ComposicaoProdutosViewPage = () => {
                                         <div className="text-center py-5 text-muted">Vínculo não encontrado.</div>
                                     ) : (
                                         <>
-                                            <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
-                                                <Link
-                                                    to={hrefHubEtapa2}
-                                                    className="btn btn-soft-secondary"
-                                                >
-                                                    <i className="ri-guide-line me-1"></i>
-                                                    Voltar à etapa 2
-                                                </Link>
-                                                <Link
-                                                    to={hrefEditarVinculo}
-                                                    className="btn btn-soft-primary"
-                                                >
-                                                    <i className="ri-edit-line me-1"></i> Editar
-                                                </Link>
-                                                <Link
-                                                    to={hrefHubEtapa3}
-                                                    className="btn btn-success"
-                                                >
-                                                    <i className="ri-arrow-right-line me-1"></i>
-                                                    Continuar: montagem
-                                                </Link>
-                                            </div>
+                                            <AcoesContinuidade className="mb-4" />
 
                                             <h5 className="mb-3">Dados do Vínculo</h5>
                                             <Row>
@@ -230,7 +235,16 @@ const ComposicaoProdutosViewPage = () => {
                                             </Row>
 
                                             <hr />
-                                            <h5 className="mb-3">Partes do Projeto</h5>
+                                            <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                                <h5 className="mb-0">Partes do Projeto</h5>
+                                                {partesResumo.length > 0 && (
+                                                    <span className="small text-muted">
+                                                        {todasPartesConfiguradas
+                                                            ? 'Todas as partes configuradas'
+                                                            : `${partesPendentes} parte(s) pendente(s)`}
+                                                    </span>
+                                                )}
+                                            </div>
 
                                             {partesResumo.length === 0 ? (
                                                 <p className="text-muted">Nenhuma parte encontrada no projeto.</p>
@@ -240,30 +254,80 @@ const ComposicaoProdutosViewPage = () => {
                                                         <thead className="table-light">
                                                             <tr>
                                                                 <th>Parte</th>
-                                                                <th>Config. de impressão</th>
-                                                                <th style={{ width: '200px' }}>Ação</th>
+                                                                <th>Status configuração</th>
+                                                                <th>Itens</th>
+                                                                <th>Total de variações</th>
+                                                                <th style={{ width: '220px' }}>Ação</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {partesResumo.map((parte) => (
-                                                                <tr key={String(parte.id_projeto_impressao_parte)}>
-                                                                    <td>{parte.nome_parte}</td>
-                                                                    <td>{parte.quantidade_itens ?? 0}</td>
-                                                                    <td>
-                                                                        <Link
-                                                                            to={`/composicao-produtos/${registro.id}/parte/${parte.id_projeto_impressao_parte}/configurar`}
-                                                                            className="btn btn-sm btn-primary"
-                                                                        >
-                                                                            <i className="ri-settings-3-line me-1"></i>
-                                                                            Configurar Parte
-                                                                        </Link>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
+                                                            {partesResumo.map((parte) => {
+                                                                const idParte = parte.id_projeto_impressao_parte ?? parte.id
+                                                                const configurada = Boolean(parte.configurada)
+                                                                const totalVariacoes = parte.total_variacoes
+                                                                    ?? parte.quantidade_variacoes
+                                                                    ?? 0
+
+                                                                return (
+                                                                    <tr key={String(idParte)}>
+                                                                        <td className="fw-medium">{parte.nome_parte}</td>
+                                                                        <td>
+                                                                            <Badge color={configurada ? 'success' : 'warning'}>
+                                                                                {configurada ? 'Configurada' : 'Pendente'}
+                                                                            </Badge>
+                                                                        </td>
+                                                                        <td>{parte.quantidade_itens ?? 0}</td>
+                                                                        <td>
+                                                                            {totalVariacoes}
+                                                                            {typeof parte.variacoes_com_filamento === 'number' && totalVariacoes > 0 && (
+                                                                                <span className="text-muted small ms-1">
+                                                                                    ({parte.variacoes_com_filamento}/{totalVariacoes} c/ filamento)
+                                                                                </span>
+                                                                            )}
+                                                                        </td>
+                                                                        <td>
+                                                                            <Link
+                                                                                to={hrefConfigurarParte(idParte)}
+                                                                                className={`btn btn-sm ${configurada ? 'btn-soft-primary' : 'btn-primary'}`}
+                                                                            >
+                                                                                <i className="ri-settings-3-line me-1" aria-hidden />
+                                                                                {configurada ? 'Editar configuração' : 'Configurar parte'}
+                                                                            </Link>
+                                                                        </td>
+                                                                    </tr>
+                                                                )
+                                                            })}
                                                         </tbody>
                                                     </Table>
                                                 </div>
                                             )}
+
+                                            <div className="mt-4 pt-3 border-top">
+                                                <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                                                    <div>
+                                                        <h6 className="mb-1">
+                                                            {todasPartesConfiguradas
+                                                                ? 'Pronto para montagem'
+                                                                : 'Continuidade do fluxo'}
+                                                        </h6>
+                                                        <p className="text-muted small mb-0">
+                                                            {todasPartesConfiguradas
+                                                                ? 'Todas as partes estão configuradas. Avance para a etapa 3 e crie a montagem.'
+                                                                : 'Configure as partes pendentes ou avance para a montagem quando estiver pronto.'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="d-flex flex-wrap gap-2">
+                                                        <Link to={hrefHubEtapa2} className="btn btn-soft-secondary">
+                                                            <i className="ri-guide-line me-1" aria-hidden />
+                                                            Voltar à etapa 2
+                                                        </Link>
+                                                        <Link to={hrefHubEtapa3} className="btn btn-success">
+                                                            <i className="ri-arrow-right-line me-1" aria-hidden />
+                                                            Continuar: montagem
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                            </div>
 
                                             <hr />
                                             <Row className="mt-4">

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { useNavegacao } from 'helpers/functions_helpers'
@@ -23,9 +23,16 @@ import {
     prepararPayloadSalvarFilamentosParte,
     validarCoresItensParte,
 } from '../hooks/useComposicaoProdutos'
+import {
+    anexarContextoFluxo,
+    lerContextoFluxo,
+    montarParamsFluxo,
+} from 'pages/Pages/FluxoProducao/fluxoProducaoContext'
 
 const ComposicaoParteConfig = () => {
     const { id, idParte } = useParams()
+    const [searchParams] = useSearchParams()
+    const contextoFluxo = useMemo(() => lerContextoFluxo(searchParams), [searchParams])
     const navigate = useNavigate()
     const { voltarParaRotaAnterior } = useNavegacao()
 
@@ -214,8 +221,16 @@ const ComposicaoParteConfig = () => {
             )
 
             await composicaoService.salvarFilamentosParte(payload)
-            toast.success('Configuração da parte salva com sucesso.')
-            navigate(`/composicao-produtos/view/${id}`)
+            toast.success('Parte salva. Configure as demais ou continue para montagem.')
+
+            const params = montarParamsFluxo(contextoFluxo, {
+                composicao: id ? String(id) : contextoFluxo.composicao,
+                fluxo: contextoFluxo.fluxo || '1',
+            })
+            const query = params.toString()
+            navigate(query
+                ? `/composicao-produtos/view/${id}?${query}`
+                : `/composicao-produtos/view/${id}`)
         } catch (error) {
             console.error('Erro ao salvar filamentos:', error)
             setErro('Erro ao salvar configuração. Tente novamente.')
@@ -235,6 +250,14 @@ const ComposicaoParteConfig = () => {
     const temCoresSelecionadas = itensParte.length > 0
         && itensParte.every((item) => itemTemCoresConfiguradas(item))
 
+    const hrefVoltarView = id
+        ? anexarContextoFluxo(
+            `/composicao-produtos/view/${id}`,
+            { ...contextoFluxo, composicao: String(id) },
+            { forcarFluxo: Boolean(contextoFluxo.fluxo || contextoFluxo.produto) }
+        )
+        : '/composicao-produtos'
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -243,7 +266,7 @@ const ComposicaoParteConfig = () => {
                         <Col xs={12}>
                             <div className="page-title-box d-sm-flex align-items-center justify-content-between">
                                 <div className="d-sm-flex align-items-center justify-content-between">
-                                    <Link to={id ? `/composicao-produtos/view/${id}` : '/composicao-produtos'}>
+                                    <Link to={hrefVoltarView}>
                                         <i className="bx bx-arrow-back bx-sm"></i>
                                     </Link>
                                     <h4 className="mb-sm-0 ms-3">Configurar Parte — {nomeParte}</h4>
@@ -255,7 +278,7 @@ const ComposicaoParteConfig = () => {
                                     </BreadcrumbItem>
                                     {id && (
                                         <BreadcrumbItem>
-                                            <Link to={`/composicao-produtos/view/${id}`}>Visualizar</Link>
+                                            <Link to={hrefVoltarView}>Visualizar</Link>
                                         </BreadcrumbItem>
                                     )}
                                     <BreadcrumbItem active>Configurar Parte</BreadcrumbItem>

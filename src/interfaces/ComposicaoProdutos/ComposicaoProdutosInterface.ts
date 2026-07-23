@@ -22,9 +22,15 @@ export interface ComposicaoProdutosList {
 }
 
 export interface ComposicaoParteResumo {
+    id?: number | string | null
     id_projeto_impressao_parte?: number | string | null
     nome_parte?: string | null
     quantidade_itens?: number
+    cores_configuradas?: boolean
+    variacoes_geradas?: boolean
+    quantidade_variacoes?: number
+    total_variacoes?: number
+    variacoes_com_filamento?: number
     configurada?: boolean
 }
 
@@ -73,6 +79,7 @@ export interface ComposicaoVariacaoItemModel {
 
 export interface ComposicaoProdutosView {
     id?: number
+    id_produto?: number
     id_produto_base?: number
     id_projeto_impressao?: number
     produto_descricao?: string
@@ -82,8 +89,15 @@ export interface ComposicaoProdutosView {
     descricao_projeto?: string
     status?: ComposicaoStatus | null
     data_cadastro?: string
+    partes_resumo?: ComposicaoParteResumo[]
     configuracao_itens?: ComposicaoItemConfigModel[]
     variacoes_itens?: ComposicaoVariacaoItemModel[]
+    projeto?: {
+        nome_original_projeto?: string
+        codigo_projeto?: string
+        descricao_projeto?: string
+        partes?: ComposicaoParteResumo[]
+    }
 }
 
 export interface ComposicaoProdutosModel {

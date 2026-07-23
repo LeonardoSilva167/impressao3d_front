@@ -88,6 +88,63 @@ export const filtrarItensConfigPorParte = (
     itensConfig.filter((item) => String(item.id_projeto_impressao_parte) === String(idParte))
 )
 
+export const normalizarParteResumoApi = (parte: Record<string, unknown>): ComposicaoParteResumo => {
+    const idParte = (parte.id_projeto_impressao_parte ?? parte.id) as number | string | null
+    const totalVariacoes = Number(
+        parte.total_variacoes ?? parte.quantidade_variacoes ?? 0
+    )
+    const variacoesComFilamento = Number(parte.variacoes_com_filamento ?? 0)
+    const coresConfiguradas = Boolean(parte.cores_configuradas)
+    const variacoesGeradas = Boolean(parte.variacoes_geradas)
+    const configurada = typeof parte.configurada === 'boolean'
+        ? parte.configurada
+        : (
+            coresConfiguradas
+            && variacoesGeradas
+            && totalVariacoes > 0
+            && variacoesComFilamento === totalVariacoes
+        )
+
+    return {
+        id: idParte,
+        id_projeto_impressao_parte: idParte,
+        nome_parte: (parte.nome_parte as string) || '—',
+        quantidade_itens: Number(parte.quantidade_itens ?? 0),
+        cores_configuradas: coresConfiguradas,
+        variacoes_geradas: variacoesGeradas,
+        quantidade_variacoes: totalVariacoes,
+        total_variacoes: totalVariacoes,
+        variacoes_com_filamento: variacoesComFilamento,
+        configurada,
+    }
+}
+
+/** Prefere `partes_resumo` da API; fallback para cálculo client-side. */
+export const obterPartesResumoComposicao = (
+    view?: ComposicaoProdutosView | null,
+    projeto?: ProjetosImpressaoView | null
+): ComposicaoParteResumo[] => {
+    const apiPartes = view?.partes_resumo || []
+
+    // Só usa payload da API quando traz métricas de configuração (evita confundir com partes do projeto).
+    if (apiPartes.length > 0 && apiPartes.some((p) => (
+        typeof p.configurada === 'boolean'
+        || typeof p.total_variacoes === 'number'
+        || typeof p.quantidade_variacoes === 'number'
+        || typeof p.variacoes_com_filamento === 'number'
+    ))) {
+        return apiPartes.map((parte) => normalizarParteResumoApi(parte as Record<string, unknown>))
+    }
+
+    if (!projeto) return []
+
+    return montarPartesResumo(
+        projeto,
+        view?.configuracao_itens || [],
+        view?.variacoes_itens || []
+    )
+}
+
 export const montarPartesResumo = (
     projeto: ProjetosImpressaoView,
     itensConfig: ComposicaoItemConfigModel[],
@@ -102,15 +159,25 @@ export const montarPartesResumo = (
 
         const coresDefinidas = configParte.length > 0
             && configParte.every((c) => itemTemCoresConfiguradas(c))
-        const variacoesGeradas = variacoesParte.length > 0
-        const filamentosOk = variacoesParte.length > 0
-            && variacoesParte.every((v) => v.id_filamento != null)
+        const totalVariacoes = variacoesParte.length
+        const variacoesComFilamento = variacoesParte.filter((v) => v.id_filamento != null).length
+        const variacoesGeradas = totalVariacoes > 0
+        const configurada = coresDefinidas
+            && variacoesGeradas
+            && totalVariacoes > 0
+            && variacoesComFilamento === totalVariacoes
 
         return {
+            id: parte.id,
             id_projeto_impressao_parte: parte.id,
             nome_parte: parte.nome_parte || '—',
             quantidade_itens: itensParte.length,
-            configurada: coresDefinidas && variacoesGeradas && filamentosOk,
+            cores_configuradas: coresDefinidas,
+            variacoes_geradas: variacoesGeradas,
+            quantidade_variacoes: totalVariacoes,
+            total_variacoes: totalVariacoes,
+            variacoes_com_filamento: variacoesComFilamento,
+            configurada,
         }
     })
 )
@@ -457,16 +524,27 @@ export const normalizarComposicaoView = (
         configuracao_itens,
     })
 
-    let status = view.status
-    if (projeto) {
-        const partes = montarPartesResumo(projeto, configuracao_itens, variacoes_itens)
-        status = calcularStatusComposicao(partes)
-    }
-
-    return {
+    const viewNormalizada: ComposicaoProdutosView = {
         ...view,
+        id_produto_base: view.id_produto_base ?? view.id_produto,
+        produto_descricao: view.produto_descricao
+            || (raw.produto as { descricao_produto?: string } | undefined)?.descricao_produto,
+        sku_base: view.sku_base
+            || (raw.produto as { sku_base?: string } | undefined)?.sku_base,
+        codigo_projeto: view.codigo_projeto || view.projeto?.codigo_projeto,
+        nome_projeto: view.nome_projeto || view.projeto?.nome_original_projeto,
+        descricao_projeto: view.descricao_projeto || view.projeto?.descricao_projeto,
+        partes_resumo: view.partes_resumo,
         configuracao_itens,
         variacoes_itens,
+    }
+
+    const partes = obterPartesResumoComposicao(viewNormalizada, projeto)
+    const status = calcularStatusComposicao(partes)
+
+    return {
+        ...viewNormalizada,
+        partes_resumo: partes,
         status,
     }
 }
