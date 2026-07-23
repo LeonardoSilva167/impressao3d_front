@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { useNavegacao } from 'helpers/functions_helpers'
 import {
-    Breadcrumb, BreadcrumbItem, Button, Card, CardBody, Col, Container,
+    Alert, Breadcrumb, BreadcrumbItem, Button, Card, CardBody, Col, Container,
     Label, Row, Spinner, Table
 } from 'reactstrap'
 import { useForm } from 'react-hook-form'
@@ -26,6 +26,12 @@ import {
     mapCombinacoesView,
     obterQuantidadePartesCombinacao,
 } from '../hooks/useGradeProdutos'
+import {
+    estaNoFluxoGuiado,
+    lerContextoFluxo,
+    montarParamsFluxo,
+} from 'pages/Pages/FluxoProducao/fluxoProducaoContext'
+import { montarHrefEtapaFluxo } from 'pages/Pages/FluxoProducao/fluxoProducaoConfig'
 
 interface GradeFormFields {
     id_produto_base: string | number | null
@@ -48,6 +54,8 @@ const GradeProdutosForm = () => {
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const { voltarParaRotaAnterior } = useNavegacao()
+    const contextoFluxo = useMemo(() => lerContextoFluxo(searchParams), [searchParams])
+    const noFluxoGuiado = estaNoFluxoGuiado(contextoFluxo)
 
     const gradeService = new GradeProdutosService()
     const produtosService = new ProdutosService()
@@ -63,6 +71,7 @@ const GradeProdutosForm = () => {
     const [combinacaoEdicao, setCombinacaoEdicao] = useState<GradeCombinacao | null>(null)
     const [produtoDefaultOption, setProdutoDefaultOption] = useState<SelectOptions | undefined>()
     const [produtoSelectKey, setProdutoSelectKey] = useState(0)
+    const [produtoFluxoLabel, setProdutoFluxoLabel] = useState<string | null>(null)
 
     const { control, setValue, watch, handleSubmit } = useForm<GradeFormFields>({
         defaultValues: { id_produto_base: null },
@@ -175,21 +184,21 @@ const GradeProdutosForm = () => {
         try {
             const view = await produtosService.getViewProdutos({ id: idNumerico })
             if (view) {
-                aplicarProdutoBase(
-                    view.id || idNumerico,
-                    formatarLabelProduto({
-                        id: view.id || idNumerico,
-                        sku_base: view.sku_base,
-                        descricao_produto: view.descricao_produto,
-                    })
-                )
+                const label = formatarLabelProduto({
+                    id: view.id || idNumerico,
+                    sku_base: view.sku_base,
+                    descricao_produto: view.descricao_produto,
+                })
+                setProdutoFluxoLabel(view.descricao_produto || label)
+                aplicarProdutoBase(view.id || idNumerico, label)
                 return
             }
         } catch (error) {
             console.error('Erro ao pré-carregar produto do fluxo:', error)
         }
 
-        aplicarProdutoBase(idNumerico)
+        setProdutoFluxoLabel(`Produto #${idNumerico}`)
+        aplicarProdutoBase(idNumerico, `Produto #${idNumerico}`)
     }
 
     const abrirModalNovaCombinacao = () => {
@@ -268,13 +277,22 @@ const GradeProdutosForm = () => {
 
             const destinoId = gradeId != null ? gradeId : (isEditing ? Number(id) : null)
             if (destinoId != null) {
-                navigate(`/grade-produtos/view/${destinoId}`)
+                const params = noFluxoGuiado
+                    ? montarParamsFluxo(contextoFluxo, {
+                        produto: idProdutoBase != null ? String(idProdutoBase) : contextoFluxo.produto,
+                        fluxo: '1',
+                    })
+                    : null
+                const query = params?.toString()
+                navigate(query
+                    ? `/grade-produtos/view/${destinoId}?${query}`
+                    : `/grade-produtos/view/${destinoId}`)
             } else {
                 navigate('/grade-produtos')
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao gerar montagem:', error)
-            toast.error('Erro ao gerar montagem.')
+            toast.error(error?.message || 'Erro ao gerar montagem.')
         } finally {
             setGerando(false)
         }
@@ -284,13 +302,19 @@ const GradeProdutosForm = () => {
         setActiveMenu('/grade-produtos')
     }, [])
 
+    const produtoQuery = searchParams.get('produto')
+
     useEffect(() => {
         if (isEditing) {
             loadRecord()
-        } else {
-            precarregarProdutoDoFluxo()
+            return
         }
-    }, [id])
+        precarregarProdutoDoFluxo()
+    }, [id, produtoQuery])
+
+    const hrefVoltar = noFluxoGuiado && !isEditing
+        ? montarHrefEtapaFluxo(3, contextoFluxo)
+        : '/grade-produtos'
 
     useEffect(() => {
         if (!isEditing && idProdutoBase) {
@@ -308,7 +332,7 @@ const GradeProdutosForm = () => {
                         <Col xs={12}>
                             <div className="page-title-box d-sm-flex align-items-center justify-content-between">
                                 <div className="d-sm-flex align-items-center justify-content-between">
-                                    <Link to="/grade-produtos"><i className="bx bx-arrow-back bx-sm"></i></Link>
+                                    <Link to={hrefVoltar}><i className="bx bx-arrow-back bx-sm"></i></Link>
                                     <h4 className="mb-sm-0 ms-3">
                                         {isEditing ? 'Editar' : 'Adicionar'} {DominioProducaoLabels.montagem}
                                     </h4>
@@ -316,7 +340,17 @@ const GradeProdutosForm = () => {
                                 <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                                     <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
                                     <BreadcrumbItem>Produtos</BreadcrumbItem>
-                                    <BreadcrumbItem><Link to="/grade-produtos">{DominioProducaoLabels.montagem}</Link></BreadcrumbItem>
+                                    {noFluxoGuiado && !isEditing ? (
+                                        <BreadcrumbItem>
+                                            <Link to={montarHrefEtapaFluxo(3, contextoFluxo)}>
+                                                Fluxo · Etapa 3
+                                            </Link>
+                                        </BreadcrumbItem>
+                                    ) : (
+                                        <BreadcrumbItem>
+                                            <Link to="/grade-produtos">{DominioProducaoLabels.montagem}</Link>
+                                        </BreadcrumbItem>
+                                    )}
                                     <BreadcrumbItem active>{isEditing ? 'Editar' : 'Adicionar'}</BreadcrumbItem>
                                 </Breadcrumb>
                             </div>
@@ -333,6 +367,22 @@ const GradeProdutosForm = () => {
                                         </div>
                                     ) : (
                                         <form onSubmit={handleSubmit(onSubmit)}>
+                                            {noFluxoGuiado && !isEditing && (
+                                                <Alert color="info" className="mb-4">
+                                                    <strong>Etapa 3</strong>
+                                                    {' '}· Criar montagem do produto #
+                                                    {contextoFluxo.produto || idProdutoBase || '—'}
+                                                    {produtoFluxoLabel && (
+                                                        <span className="d-block mt-1 small mb-0">
+                                                            {produtoFluxoLabel}
+                                                            {contextoFluxo.composicao
+                                                                ? ` · Vínculo #${contextoFluxo.composicao}`
+                                                                : ''}
+                                                        </span>
+                                                    )}
+                                                </Alert>
+                                            )}
+
                                             <p className="text-muted mb-4">
                                                 Defina o kit: selecione o produto base e as combinações de partes
                                                 que geram os produtos finais (SKU, peso, tempo e custos).
@@ -450,7 +500,13 @@ const GradeProdutosForm = () => {
                                                         <button
                                                             type="button"
                                                             className="btn btn-soft-success"
-                                                            onClick={voltarParaRotaAnterior}
+                                                            onClick={() => {
+                                                                if (noFluxoGuiado && !isEditing) {
+                                                                    navigate(hrefVoltar)
+                                                                    return
+                                                                }
+                                                                voltarParaRotaAnterior()
+                                                            }}
                                                         >
                                                             Voltar
                                                         </button>

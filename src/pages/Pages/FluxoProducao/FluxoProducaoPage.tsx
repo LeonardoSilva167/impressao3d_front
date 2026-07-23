@@ -14,7 +14,10 @@ import { setActiveMenu } from 'helpers/system_helpers'
 import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import UiContent from 'Components/Common/UiContent'
 import { ProdutosService } from 'services/ProdutosService/ProdutosService'
+import { ComposicaoProdutosService } from 'services/ComposicaoProdutos/ComposicaoProdutosService'
 import { normalizarProdutoView } from 'pages/Pages/Produtos/hooks/useProdutos'
+import { normalizarComposicaoView, obterPartesResumoComposicao } from 'pages/Pages/ComposicaoProdutos/hooks/useComposicaoProdutos'
+import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
 import {
     EtapaFluxoId,
     FLUXO_PRODUCAO_ETAPAS,
@@ -23,7 +26,7 @@ import {
     montarProgressoEtapasFluxo,
     normalizarEtapaFluxo,
 } from './fluxoProducaoConfig'
-import { lerContextoFluxo } from './fluxoProducaoContext'
+import { lerContextoFluxo, montarParamsFluxo } from './fluxoProducaoContext'
 import { ProdutoResumoFluxo, montarItensChecklistFluxo } from './FluxoProducaoChecklist'
 import FluxoProducaoEtapaPainel from './FluxoProducaoEtapaPainel'
 
@@ -40,6 +43,7 @@ const FluxoProducaoPage = () => {
     )
     const [produtoResumo, setProdutoResumo] = useState<ProdutoResumoFluxo | null>(null)
     const [carregandoProduto, setCarregandoProduto] = useState(false)
+    const [partesConfiguradas, setPartesConfiguradas] = useState(false)
 
     const etapas = useMemo(() => FLUXO_PRODUCAO_ETAPAS, [])
 
@@ -48,8 +52,9 @@ const FluxoProducaoPage = () => {
             produtoId,
             projetoId,
             composicaoId,
+            partesConfiguradas,
         }),
-        [produtoId, projetoId, composicaoId]
+        [produtoId, projetoId, composicaoId, partesConfiguradas]
     )
 
     const etapaAtiva = useMemo(
@@ -125,6 +130,77 @@ const FluxoProducaoPage = () => {
         }
     }, [produtoId])
 
+    // Atualiza status das partes no checklist (histórico da etapa 3)
+    useEffect(() => {
+        let cancelado = false
+
+        const carregarPartes = async () => {
+            if (!composicaoId) {
+                setPartesConfiguradas(false)
+                return
+            }
+
+            const idNumerico = Number(composicaoId)
+            if (Number.isNaN(idNumerico)) {
+                setPartesConfiguradas(false)
+                return
+            }
+
+            try {
+                const composicaoService = new ComposicaoProdutosService()
+                const view = await composicaoService.getViewComposicaoProdutos({ id: idNumerico })
+                if (cancelado || !view) return
+
+                let projetoView = undefined
+                if (view.id_projeto_impressao) {
+                    const projetosService = new ProjetosImpressaoService()
+                    projetoView = await projetosService.getViewProjetosImpressao({
+                        id: Number(view.id_projeto_impressao),
+                    })
+                }
+
+                const viewNormalizada = normalizarComposicaoView(view, projetoView)
+                const partes = obterPartesResumoComposicao(viewNormalizada, projetoView)
+                setPartesConfiguradas(
+                    partes.length > 0 && partes.every((parte) => Boolean(parte.configurada))
+                )
+
+                // Completa contexto faltante a partir do vínculo (histórico da etapa 3)
+                const produtoDaView = viewNormalizada.id_produto_base ?? viewNormalizada.id_produto
+                const projetoDaView = viewNormalizada.id_projeto_impressao
+                const precisaProduto = !produtoId && produtoDaView != null
+                const precisaProjeto = !projetoId && projetoDaView != null
+
+                if (precisaProduto || precisaProjeto) {
+                    setSearchParams(
+                        montarParamsFluxo(
+                            {
+                                produto: produtoId,
+                                projeto: projetoId,
+                                composicao: composicaoId,
+                                fluxo: '1',
+                                etapa: String(etapaSolicitada),
+                            },
+                            {
+                                produto: precisaProduto ? String(produtoDaView) : produtoId,
+                                projeto: precisaProjeto ? String(projetoDaView) : projetoId,
+                            }
+                        ),
+                        { replace: true }
+                    )
+                }
+            } catch (error) {
+                console.error('Erro ao carregar status das partes do fluxo:', error)
+                if (!cancelado) setPartesConfiguradas(false)
+            }
+        }
+
+        carregarPartes()
+        return () => {
+            cancelado = true
+        }
+    }, [composicaoId, produtoId, projetoId, etapaSolicitada, setSearchParams])
+
     const etapaAtual = etapas.find((etapa) => etapa.id === etapaAtiva) || etapas[0]
     const mostrarChecklist = Boolean(produtoId) || etapaAtiva === 2 || etapaAtiva === 3
     const proximaEtapaLiberada = etapaAtiva < 3 && etapaFluxoLiberada((etapaAtiva + 1) as EtapaFluxoId, progresso)
@@ -134,10 +210,11 @@ const FluxoProducaoPage = () => {
             produtoId,
             projetoId,
             composicaoId,
+            partesConfiguradas,
             etapaAtiva,
             produto: produtoResumo,
         }),
-        [produtoId, projetoId, composicaoId, etapaAtiva, produtoResumo]
+        [produtoId, projetoId, composicaoId, partesConfiguradas, etapaAtiva, produtoResumo]
     )
 
     return (

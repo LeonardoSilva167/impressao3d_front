@@ -137,7 +137,21 @@ export class GradeProdutosService implements GradeProdutosInterface {
             }
             case HttpStatusCode.noContent: return undefined
             case HttpStatusCode.unauthorized: throw new AccessDeniedError()
-            case HttpStatusCode.invalidForm: throw new ValidationError(response.body)
+            case HttpStatusCode.invalidForm: {
+                const body = response.body as Record<string, any> | undefined
+                if (body?.partes_pendentes) {
+                    const nomes = (body.partes_pendentes as Array<{ nome_parte?: string }>)
+                        .map((p) => p.nome_parte)
+                        .filter(Boolean)
+                        .join(', ')
+                    const msg = body.message
+                        || 'Não é possível montar: existem partes sem configuração completa.'
+                    throw new UnexpectedError(
+                        nomes ? `${msg} Pendentes: ${nomes}.` : msg
+                    )
+                }
+                throw new ValidationError(response.body)
+            }
             default: throw new UnexpectedError(response.message)
         }
     }

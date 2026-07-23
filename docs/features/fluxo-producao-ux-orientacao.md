@@ -315,10 +315,17 @@ Colunas mínimas:
 
 **Critérios de aceite**
 
-- [ ] Campo produto já vem preenchido quando o usuário veio do fluxo.
-- [ ] Checklist da etapa 3 mostra histórico das etapas anteriores.
+- [x] Campo produto já vem preenchido quando o usuário veio do fluxo.
+- [x] Checklist da etapa 3 mostra histórico das etapas anteriores.
 
 **Dependência backend:** nenhuma obrigatória além dos GETs já existentes.
+
+**Implementação (front):**
+- `GradeProdutosForm.tsx` — banner `Etapa 3 · Criar montagem do produto #{id}`; produto pré-selecionado via `?produto=`; breadcrumb/voltar ao hub etapa 3; redirect da view preserva contexto; toast com partes pendentes no 422.
+- Backend **B3:** montagem bloqueia se houver partes sem configuração completa (`partes_pendentes`).
+- `GradeProdutosView.tsx` — alerta de etapa concluída + CTA “Voltar ao fluxo” quando `fluxo=1`.
+- `FluxoProducaoPage.tsx` — carrega `partes_resumo` da composição para marcar E2_PARTES no checklist da etapa 3; completa `produto`/`projeto` faltantes na URL a partir do vínculo.
+- `FluxoProducaoChecklist.tsx` — descrição do passo E3 com produto e status das partes.
 
 ---
 

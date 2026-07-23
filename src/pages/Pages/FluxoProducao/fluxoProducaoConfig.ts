@@ -107,7 +107,7 @@ export const FLUXO_PRODUCAO_ETAPAS: EtapaFluxoConfig[] = [
         ctaDescricao: 'Com o vínculo e as partes configurados, crie a montagem do produto.',
         ctaIcone: 'ri-stack-line',
         detalhes: [
-            'Só funciona depois que o vínculo e as partes estiverem configurados.',
+            'Revise o histórico acima: produto, projeto, vínculo e partes.',
             'Cada combinação gera produtos com peso, tempo e custos agregados.',
         ],
         acoes: [

@@ -1,15 +1,20 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { useNavegacao } from 'helpers/functions_helpers'
 import {
-    Badge, Breadcrumb, BreadcrumbItem, Card, CardBody, Col, Container,
+    Alert, Badge, Breadcrumb, BreadcrumbItem, Card, CardBody, Col, Container,
     Label, Row, Spinner, Table
 } from 'reactstrap'
 import { GradeProdutosView } from 'interfaces/GradeProdutos/GradeProdutosInterface'
 import { GradeProdutosService } from 'services/GradeProdutos/GradeProdutosService'
 import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
+import {
+    estaNoFluxoGuiado,
+    lerContextoFluxo,
+} from 'pages/Pages/FluxoProducao/fluxoProducaoContext'
+import { montarHrefEtapaFluxo } from 'pages/Pages/FluxoProducao/fluxoProducaoConfig'
 import {
     formatarCustoGrade,
     formatarPartesCombinacao,
@@ -26,8 +31,11 @@ import {
 const GradeProdutosViewPage = () => {
     const { id } = useParams()
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
     const { voltarParaRotaAnterior } = useNavegacao()
     const gradeService = new GradeProdutosService()
+    const contextoFluxo = useMemo(() => lerContextoFluxo(searchParams), [searchParams])
+    const noFluxoGuiado = estaNoFluxoGuiado(contextoFluxo)
 
     const [registro, setRegistro] = useState<GradeProdutosView>()
     const [loading, setLoading] = useState(true)
@@ -83,6 +91,17 @@ const GradeProdutosViewPage = () => {
         loadRegistro()
     }, [id])
 
+    const contextoContinuidade = useMemo(() => ({
+        ...contextoFluxo,
+        produto: registro?.id_produto_base != null
+            ? String(registro.id_produto_base)
+            : contextoFluxo.produto,
+        fluxo: noFluxoGuiado ? '1' : contextoFluxo.fluxo,
+    }), [registro, contextoFluxo, noFluxoGuiado])
+
+    const hrefHubEtapa3 = montarHrefEtapaFluxo(3, contextoContinuidade)
+    const hrefVoltar = noFluxoGuiado ? hrefHubEtapa3 : '/grade-produtos'
+
     return (
         <React.Fragment>
             <div className="page-content">
@@ -91,13 +110,21 @@ const GradeProdutosViewPage = () => {
                         <Col xs={12}>
                             <div className="page-title-box d-sm-flex align-items-center justify-content-between">
                                 <div className="d-sm-flex align-items-center justify-content-between">
-                                    <Link to="/grade-produtos"><i className="bx bx-arrow-back bx-sm"></i></Link>
+                                    <Link to={hrefVoltar}><i className="bx bx-arrow-back bx-sm"></i></Link>
                                     <h4 className="mb-sm-0 ms-3">Visualizar {DominioProducaoLabels.montagem}</h4>
                                 </div>
                                 <Breadcrumb pageTitle="" listClassName="mb-sm-0 pt-1 py-2">
                                     <BreadcrumbItem><Link to="/dashboard"><i className="ri-home-5-fill"></i></Link></BreadcrumbItem>
                                     <BreadcrumbItem>Produtos</BreadcrumbItem>
-                                    <BreadcrumbItem><Link to="/grade-produtos">{DominioProducaoLabels.montagem}</Link></BreadcrumbItem>
+                                    {noFluxoGuiado ? (
+                                        <BreadcrumbItem>
+                                            <Link to={hrefHubEtapa3}>Fluxo · Etapa 3</Link>
+                                        </BreadcrumbItem>
+                                    ) : (
+                                        <BreadcrumbItem>
+                                            <Link to="/grade-produtos">{DominioProducaoLabels.montagem}</Link>
+                                        </BreadcrumbItem>
+                                    )}
                                     <BreadcrumbItem active>Visualizar</BreadcrumbItem>
                                 </Breadcrumb>
                             </div>
@@ -116,7 +143,23 @@ const GradeProdutosViewPage = () => {
                                         <div className="text-center py-5 text-muted">Montagem não encontrada.</div>
                                     ) : (
                                         <>
-                                            <div className="d-flex justify-content-end gap-2 mb-4">
+                                            {noFluxoGuiado && (
+                                                <Alert color="success" className="mb-4">
+                                                    <strong>Etapa 3 concluída</strong>
+                                                    {' '}· Montagem gerada com sucesso.
+                                                    <span className="d-block mt-1 small mb-0">
+                                                        Os SKUs finais estão listados abaixo. Você pode voltar ao hub do fluxo quando quiser.
+                                                    </span>
+                                                </Alert>
+                                            )}
+
+                                            <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
+                                                {noFluxoGuiado && (
+                                                    <Link to={hrefHubEtapa3} className="btn btn-soft-secondary">
+                                                        <i className="ri-guide-line me-1" aria-hidden />
+                                                        Voltar ao fluxo
+                                                    </Link>
+                                                )}
                                                 <Link
                                                     to={`/grade-produtos/edit/${registro.id}`}
                                                     className="btn btn-soft-primary"
@@ -235,7 +278,13 @@ const GradeProdutosViewPage = () => {
                                                         <button
                                                             type="button"
                                                             className="btn btn-soft-success"
-                                                            onClick={voltarParaRotaAnterior}
+                                                            onClick={() => {
+                                                                if (noFluxoGuiado) {
+                                                                    navigate(hrefVoltar)
+                                                                    return
+                                                                }
+                                                                voltarParaRotaAnterior()
+                                                            }}
                                                         >
                                                             Voltar
                                                         </button>

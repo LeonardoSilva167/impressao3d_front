@@ -214,6 +214,11 @@ export const montarItensChecklistFluxo = (params: {
             concluido: e2Partes,
             atual: isAtual('E2_PARTES'),
             icone: 'ri-box-3-line',
+            detalheLinha: e2Partes
+                ? 'Todas as partes com cores e filamento'
+                : e2Vinculo
+                    ? 'Aguardando configuração das partes'
+                    : undefined,
             linkAbrir: e2Partes && composicaoId
                 ? { label: 'Abrir vínculo', to: `/composicao-produtos/view/${composicaoId}` }
                 : undefined,
@@ -241,7 +246,9 @@ export const montarItensChecklistFluxo = (params: {
                     : `Criar ${DominioProducaoLabels.montagemCurta.toLowerCase()}`,
             descricao: e3
                 ? undefined
-                : 'Monte as partes para finalizar o produto e gerar os SKUs.',
+                : e1
+                    ? `Crie a montagem do produto #${produtoId}${e2Partes ? ' — partes já configuradas.' : '.'}`
+                    : 'Monte as partes para finalizar o produto e gerar os SKUs.',
             concluido: e3,
             atual: isAtual('E3_MONTAGEM'),
             icone: 'ri-puzzle-line',
