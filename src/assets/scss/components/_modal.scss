@@ -6,6 +6,26 @@
     font-weight: $font-weight-semibold;
 }
 
+// Form wrapping header/body/footer breaks Bootstrap scrollable flex.
+// Keep the form as a flex column so .modal-body can overflow on mobile.
+.modal-dialog-scrollable {
+    .modal-content > form {
+        display: flex;
+        flex-direction: column;
+        max-height: 100%;
+        min-height: 0;
+        overflow: hidden;
+        flex: 1 1 auto;
+    }
+
+    .modal-content > form > .modal-body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+}
+
 .modal-dialog:not(.modal-dialog-scrollable) {
     .modal-header {
         padding-bottom: 0;

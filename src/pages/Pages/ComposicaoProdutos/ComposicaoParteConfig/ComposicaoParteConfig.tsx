@@ -335,7 +335,7 @@ const ComposicaoParteConfig = () => {
                                                         variacoes={variacoesParte}
                                                         onFilamentoChange={handleFilamentoChange}
                                                     />
-                                                    <div className="text-muted mt-2">
+                                                    <div className="text-muted mt-2 mb-5">
                                                         <strong>Total:</strong> {variacoesParte.length} configuração(ões)
                                                     </div>
                                                 </>
@@ -346,7 +346,7 @@ const ComposicaoParteConfig = () => {
                                             )}
 
                                             <hr />
-                                            <Row className="mt-4">
+                                            <Row className="mt-4 mb-2">
                                                 <Col md={12}>
                                                     <div className="hstack gap-2 justify-content-end">
                                                         {variacoesGeradas && (

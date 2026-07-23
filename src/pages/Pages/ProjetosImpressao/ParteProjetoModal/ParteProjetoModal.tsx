@@ -69,11 +69,11 @@ const ParteProjetoModal = ({
     }
 
     return (
-        <Modal isOpen={isOpen} toggle={toggle} size="xl" scrollable>
-            <ModalHeader toggle={toggle}>
-                {parte && parte.id ? 'Editar Parte' : 'Adicionar Parte'}
-            </ModalHeader>
+        <Modal isOpen={isOpen} toggle={toggle} size="xl" scrollable centered>
             <form onSubmit={handleSubmit(salvarParte)}>
+                <ModalHeader toggle={toggle}>
+                    {parte && parte.id ? 'Editar Parte' : 'Adicionar Parte'}
+                </ModalHeader>
                 <ModalBody>
                     <Row>
                         <Col md={6}>

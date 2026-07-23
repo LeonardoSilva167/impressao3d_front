@@ -157,8 +157,20 @@ const ComposicaoVariacoesItemTable = ({
         return <p className="text-muted mb-0">Gere as configurações para selecionar filamentos.</p>
     }
 
+    const filamentoSelectStyles = {
+        menuPortal: (base: Record<string, unknown>) => ({
+            ...base,
+            zIndex: 9999,
+        }),
+        menu: (base: Record<string, unknown>) => ({
+            ...base,
+            zIndex: 9999,
+        }),
+    }
+
     return (
-        <div className="table-responsive">
+        // Espaço inferior + menuPortal evitam a lista ficar escondida na última linha
+        <div className="table-responsive mb-4" style={{ paddingBottom: '14rem' }}>
             <Table className="table align-middle table-nowrap table-striped-columns mb-0">
                 <thead className="table-light">
                     <tr>
@@ -193,6 +205,10 @@ const ComposicaoVariacoesItemTable = ({
                                         isClearable
                                         cacheOptions={false}
                                         defaultOptions
+                                        menuPlacement="auto"
+                                        menuPosition="fixed"
+                                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                        styles={filamentoSelectStyles}
                                         placeholder="Filamentos da cor selecionada..."
                                         loadOptions={(inputValue) => (
                                             getListFilamentos(inputValue, obterIdCorVariacao(linha))
