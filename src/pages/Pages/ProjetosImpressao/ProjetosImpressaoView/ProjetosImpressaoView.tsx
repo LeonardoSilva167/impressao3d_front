@@ -152,7 +152,13 @@ const ProjetosImpressaoViewPage = () => {
                                                         Voltar à etapa 2
                                                     </Link>
                                                     <Link
-                                                        to="/composicao-produtos/add"
+                                                        to={anexarContextoFluxo(
+                                                            '/composicao-produtos/add',
+                                                            {
+                                                                produto: contextoFluxo.produto,
+                                                                projeto: String(projeto.id),
+                                                            }
+                                                        )}
                                                         className="btn btn-success"
                                                     >
                                                         <i className="ri-link me-1"></i>

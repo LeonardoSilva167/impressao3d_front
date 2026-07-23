@@ -90,12 +90,19 @@ export class ComposicaoProdutosService implements ComposicaoProdutosInterface {
         switch (response.statusCode) {
             case HttpStatusCode.ok: {
                 const body = response.body as Record<string, any>
-                const payload = (body && body.composicaoProduto)
-                    ? body.composicaoProduto
-                    : ((body && body.composicao) ? body.composicao : body)
-                const data = (payload && payload.data) ? payload.data : payload
-                const id = data && data.id
-                return id != null ? Number(id) : undefined
+                // Envelope canônico do template: produtoComposicao.data.id
+                const payload = body?.produtoComposicao
+                    ?? body?.composicaoProduto
+                    ?? body?.composicao
+                    ?? body
+                const data = payload?.data ?? payload
+                const id = data?.id
+
+                if (id == null || Number.isNaN(Number(id))) {
+                    return undefined
+                }
+
+                return Number(id)
             }
             case HttpStatusCode.noContent: return undefined
             case HttpStatusCode.unauthorized: throw new AccessDeniedError()

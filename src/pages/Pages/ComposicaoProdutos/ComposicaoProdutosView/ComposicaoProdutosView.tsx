@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { setActiveMenu } from 'helpers/system_helpers'
 import { useNavegacao } from 'helpers/functions_helpers'
@@ -17,9 +17,17 @@ import {
     obterClasseBadgeStatus,
     obterLabelStatus,
 } from '../hooks/useComposicaoProdutos'
+import { montarHrefEtapaFluxo } from 'pages/Pages/FluxoProducao/fluxoProducaoConfig'
+import {
+    anexarContextoFluxo,
+    lerContextoFluxo,
+    montarParamsFluxo,
+} from 'pages/Pages/FluxoProducao/fluxoProducaoContext'
 
 const ComposicaoProdutosViewPage = () => {
     const { id } = useParams()
+    const [searchParams, setSearchParams] = useSearchParams()
+    const contextoFluxo = useMemo(() => lerContextoFluxo(searchParams), [searchParams])
     const { voltarParaRotaAnterior } = useNavegacao()
     const composicaoService = new ComposicaoProdutosService()
     const projetosService = new ProjetosImpressaoService()
@@ -75,6 +83,47 @@ const ComposicaoProdutosViewPage = () => {
         loadRegistro()
     }, [id])
 
+    // Garante contexto do fluxo na URL (produto/projeto/composicao/fluxo)
+    useEffect(() => {
+        if (!registro?.id) return
+
+        const produto = registro.id_produto_base != null
+            ? String(registro.id_produto_base)
+            : contextoFluxo.produto
+        const projeto = registro.id_projeto_impressao != null
+            ? String(registro.id_projeto_impressao)
+            : contextoFluxo.projeto
+        const composicao = String(registro.id)
+
+        const precisaAtualizar = (
+            contextoFluxo.composicao !== composicao
+            || (produto && contextoFluxo.produto !== produto)
+            || (projeto && contextoFluxo.projeto !== projeto)
+            || contextoFluxo.fluxo !== '1'
+        )
+
+        if (!precisaAtualizar) return
+
+        setSearchParams(
+            montarParamsFluxo(contextoFluxo, {
+                produto: produto || undefined,
+                projeto: projeto || undefined,
+                composicao,
+                fluxo: '1',
+            }),
+            { replace: true }
+        )
+    }, [
+        registro?.id,
+        registro?.id_produto_base,
+        registro?.id_projeto_impressao,
+        contextoFluxo.produto,
+        contextoFluxo.projeto,
+        contextoFluxo.composicao,
+        contextoFluxo.fluxo,
+        setSearchParams,
+    ])
+
     const obterNomeProjeto = (): string => {
         if (!registro) return '—'
         const partes = [
@@ -84,6 +133,25 @@ const ComposicaoProdutosViewPage = () => {
         ].filter(Boolean)
         return partes.length > 0 ? partes.join(' - ') : '—'
     }
+
+    const contextoContinuidade = useMemo(() => ({
+        produto: registro?.id_produto_base != null
+            ? String(registro.id_produto_base)
+            : contextoFluxo.produto,
+        projeto: registro?.id_projeto_impressao != null
+            ? String(registro.id_projeto_impressao)
+            : contextoFluxo.projeto,
+        composicao: registro?.id != null
+            ? String(registro.id)
+            : contextoFluxo.composicao || id || undefined,
+        fluxo: '1' as const,
+    }), [registro, contextoFluxo, id])
+
+    const hrefHubEtapa2 = montarHrefEtapaFluxo(2, contextoContinuidade)
+    const hrefHubEtapa3 = montarHrefEtapaFluxo(3, contextoContinuidade)
+    const hrefEditarVinculo = registro?.id
+        ? anexarContextoFluxo(`/composicao-produtos/edit/${registro.id}`, contextoContinuidade, { forcarFluxo: true })
+        : '/composicao-produtos'
 
     return (
         <React.Fragment>
@@ -120,28 +188,20 @@ const ComposicaoProdutosViewPage = () => {
                                         <>
                                             <div className="d-flex flex-wrap justify-content-end gap-2 mb-4">
                                                 <Link
-                                                    to={
-                                                        registro.id_produto_base
-                                                            ? `/fluxo-producao?etapa=2&produto=${registro.id_produto_base}`
-                                                            : '/fluxo-producao?etapa=2'
-                                                    }
+                                                    to={hrefHubEtapa2}
                                                     className="btn btn-soft-secondary"
                                                 >
                                                     <i className="ri-guide-line me-1"></i>
                                                     Voltar à etapa 2
                                                 </Link>
                                                 <Link
-                                                    to={`/composicao-produtos/edit/${registro.id}`}
+                                                    to={hrefEditarVinculo}
                                                     className="btn btn-soft-primary"
                                                 >
                                                     <i className="ri-edit-line me-1"></i> Editar
                                                 </Link>
                                                 <Link
-                                                    to={
-                                                        registro.id_produto_base
-                                                            ? `/fluxo-producao?etapa=3&produto=${registro.id_produto_base}`
-                                                            : '/fluxo-producao?etapa=3'
-                                                    }
+                                                    to={hrefHubEtapa3}
                                                     className="btn btn-success"
                                                 >
                                                     <i className="ri-arrow-right-line me-1"></i>

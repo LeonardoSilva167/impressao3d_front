@@ -237,10 +237,14 @@ Melhorias de UI:
 
 **Critérios de aceite**
 
-- [ ] Entrando pelo fluxo completo, produto e projeto já vêm preenchidos.
-- [ ] Salvando no fluxo, abre a **view do vínculo criado**, não a listagem.
+- [x] Entrando pelo fluxo completo, produto e projeto já vêm preenchidos.
+- [x] Salvando no fluxo, abre a **view do vínculo criado**, não a listagem.
 
 **Dependência backend (bloqueante se falhar):** retorno estável de `id` em `composicao-produtos/cadastrar`.
+
+**Implementação (front):**
+- `ComposicaoProdutosForm.tsx` — banner Passo 2.2, preload `?produto=` + `?projeto=`, redirect para view com contexto.
+- `ComposicaoProdutosService.ts` — extrai `id` de `produtoComposicao.data` (e fallbacks); sem `id` → erro de contrato (toast + log), sem cair na listagem no fluxo.
 
 ---
 
