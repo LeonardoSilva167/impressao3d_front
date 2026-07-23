@@ -31,6 +31,12 @@ export interface ProdutoResumoFluxo {
     sku_base?: string | null
 }
 
+export interface ProjetoResumoFluxo {
+    id: string | number
+    nome?: string | null
+    codigo?: string | null
+}
+
 interface FluxoProducaoChecklistProps {
     itens: ItemChecklistFluxo[]
     contexto: FluxoProducaoQuery
@@ -46,19 +52,27 @@ export const montarItensChecklistFluxo = (params: {
     produtoId?: string | null
     projetoId?: string | null
     composicaoId?: string | null
+    gradeId?: string | null
     partesConfiguradas?: boolean
     montagemCriada?: boolean
+    totalPartes?: number
+    partesConfiguradasCount?: number
     etapaAtiva?: number
     produto?: ProdutoResumoFluxo | null
+    projeto?: ProjetoResumoFluxo | null
 }): ItemChecklistFluxo[] => {
     const {
         produtoId,
         projetoId,
         composicaoId,
+        gradeId,
         partesConfiguradas = false,
         montagemCriada = false,
+        totalPartes,
+        partesConfiguradasCount,
         etapaAtiva,
         produto,
+        projeto,
     } = params
 
     const e1 = Boolean(produtoId)
@@ -141,7 +155,12 @@ export const montarItensChecklistFluxo = (params: {
             concluido: e2Projeto,
             atual: isAtual('E2_PROJETO'),
             icone: isAtual('E2_PROJETO') ? 'ri-flag-line' : 'ri-file-list-3-line',
-            detalheLinha: e2Projeto ? `Projeto #${projetoId}` : undefined,
+            detalheLinha: e2Projeto
+                ? [
+                    projeto?.nome || projeto?.codigo || `Projeto #${projetoId}`,
+                    projeto?.codigo && projeto?.nome ? `Cód: ${projeto.codigo}` : null,
+                ].filter(Boolean).join(' · ')
+                : undefined,
             linkAbrir: e2Projeto
                 ? { label: 'Abrir projeto', to: `/projetos-impressao/view/${projetoId}` }
                 : undefined,
@@ -215,9 +234,13 @@ export const montarItensChecklistFluxo = (params: {
             atual: isAtual('E2_PARTES'),
             icone: 'ri-box-3-line',
             detalheLinha: e2Partes
-                ? 'Todas as partes com cores e filamento'
+                ? totalPartes != null
+                    ? `${totalPartes} parte(s) configuradas`
+                    : 'Todas as partes com cores e filamento'
                 : e2Vinculo
-                    ? 'Aguardando configuração das partes'
+                    ? totalPartes != null && partesConfiguradasCount != null
+                        ? `${partesConfiguradasCount}/${totalPartes} parte(s) configuradas`
+                        : 'Aguardando configuração das partes'
                     : undefined,
             linkAbrir: e2Partes && composicaoId
                 ? { label: 'Abrir vínculo', to: `/composicao-produtos/view/${composicaoId}` }
@@ -252,7 +275,13 @@ export const montarItensChecklistFluxo = (params: {
             concluido: e3,
             atual: isAtual('E3_MONTAGEM'),
             icone: 'ri-puzzle-line',
-            destino: '/grade-produtos/add',
+            detalheLinha: e3 && gradeId ? `Montagem #${gradeId}` : undefined,
+            linkAbrir: e3 && gradeId
+                ? { label: 'Abrir montagem', to: `/grade-produtos/view/${gradeId}` }
+                : undefined,
+            destino: e3 && gradeId
+                ? `/grade-produtos/view/${gradeId}`
+                : '/grade-produtos/add',
             acoes: isAtual('E3_MONTAGEM')
                 ? [
                     {
@@ -264,7 +293,7 @@ export const montarItensChecklistFluxo = (params: {
                     },
                     {
                         label: `Ver ${DominioProducaoLabels.montagem.toLowerCase()}`,
-                        to: '/grade-produtos',
+                        to: gradeId ? `/grade-produtos/view/${gradeId}` : '/grade-produtos',
                         nivel: 'secondary',
                         icone: 'ri-folder-open-line',
                     },

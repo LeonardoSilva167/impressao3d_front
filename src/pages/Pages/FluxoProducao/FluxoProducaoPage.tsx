@@ -13,22 +13,32 @@ import {
 import { setActiveMenu } from 'helpers/system_helpers'
 import { DominioProducaoLabels } from 'constants/dominioProducaoLabels'
 import UiContent from 'Components/Common/UiContent'
-import { ProdutosService } from 'services/ProdutosService/ProdutosService'
-import { ComposicaoProdutosService } from 'services/ComposicaoProdutos/ComposicaoProdutosService'
-import { normalizarProdutoView } from 'pages/Pages/Produtos/hooks/useProdutos'
-import { normalizarComposicaoView, obterPartesResumoComposicao } from 'pages/Pages/ComposicaoProdutos/hooks/useComposicaoProdutos'
-import { ProjetosImpressaoService } from 'services/ProjetosImpressao/ProjetosImpressaoService'
+import { FluxoProducaoService } from 'services/FluxoProducao/FluxoProducaoService'
+import { FluxoProducaoProgresso } from 'interfaces/FluxoProducao/FluxoProducaoInterface'
 import {
     EtapaFluxoId,
     FLUXO_PRODUCAO_ETAPAS,
+    ProgressoEtapasFluxo,
     etapaFluxoLiberada,
     inferirEtapaPorRota,
     montarProgressoEtapasFluxo,
     normalizarEtapaFluxo,
 } from './fluxoProducaoConfig'
 import { lerContextoFluxo, montarParamsFluxo } from './fluxoProducaoContext'
-import { ProdutoResumoFluxo, montarItensChecklistFluxo } from './FluxoProducaoChecklist'
+import {
+    ProdutoResumoFluxo,
+    ProjetoResumoFluxo,
+    montarItensChecklistFluxo,
+} from './FluxoProducaoChecklist'
 import FluxoProducaoEtapaPainel from './FluxoProducaoEtapaPainel'
+
+const progressoFromApi = (data: FluxoProducaoProgresso): ProgressoEtapasFluxo => ({
+    produtoOk: Boolean(data.subpassos.E1_PRODUTO),
+    projetoOk: Boolean(data.subpassos.E2_PROJETO),
+    vinculoOk: Boolean(data.subpassos.E2_VINCULO),
+    partesOk: Boolean(data.subpassos.E2_PARTES),
+    montagemOk: Boolean(data.subpassos.E3_MONTAGEM),
+})
 
 const FluxoProducaoPage = () => {
     const [searchParams, setSearchParams] = useSearchParams()
@@ -42,20 +52,37 @@ const FluxoProducaoPage = () => {
         Number.isNaN(etapaParam) ? null : etapaParam
     )
     const [produtoResumo, setProdutoResumo] = useState<ProdutoResumoFluxo | null>(null)
-    const [carregandoProduto, setCarregandoProduto] = useState(false)
-    const [partesConfiguradas, setPartesConfiguradas] = useState(false)
+    const [projetoResumo, setProjetoResumo] = useState<ProjetoResumoFluxo | null>(null)
+    const [carregandoProgresso, setCarregandoProgresso] = useState(false)
+    const [progressoApi, setProgressoApi] = useState<ProgressoEtapasFluxo | null>(null)
+    const [idsResolvidos, setIdsResolvidos] = useState<{
+        projeto?: string | null
+        composicao?: string | null
+        grade?: string | null
+    }>({})
+    const [contagemPartes, setContagemPartes] = useState<{
+        total: number
+        configuradas: number
+    } | null>(null)
 
     const etapas = useMemo(() => FLUXO_PRODUCAO_ETAPAS, [])
 
-    const progresso = useMemo(
+    const projetoEfetivo = projetoId || idsResolvidos.projeto || null
+    const composicaoEfetiva = composicaoId || idsResolvidos.composicao || null
+    const gradeEfetiva = idsResolvidos.grade || null
+
+    const progressoFallback = useMemo(
         () => montarProgressoEtapasFluxo({
             produtoId,
-            projetoId,
-            composicaoId,
-            partesConfiguradas,
+            projetoId: projetoEfetivo,
+            composicaoId: composicaoEfetiva,
+            partesConfiguradas: false,
+            montagemCriada: Boolean(gradeEfetiva),
         }),
-        [produtoId, projetoId, composicaoId, partesConfiguradas]
+        [produtoId, projetoEfetivo, composicaoEfetiva, gradeEfetiva]
     )
+
+    const progresso = progressoApi || progressoFallback
 
     const etapaAtiva = useMemo(
         () => normalizarEtapaFluxo(etapaSolicitada, progresso),
@@ -83,12 +110,64 @@ const FluxoProducaoPage = () => {
         }
     }, [etapaSolicitada, etapaAtiva, searchParams, setSearchParams])
 
+    // Progresso agregado (Fase 6 / B4): basta produto na query
     useEffect(() => {
         let cancelado = false
 
-        const carregarProduto = async () => {
+        const aplicarProgresso = (data: FluxoProducaoProgresso) => {
+            setProgressoApi(progressoFromApi(data))
+            setProdutoResumo({
+                id: data.produto.id,
+                descricao: data.produto.descricao_produto,
+                sku_base: data.produto.sku_base,
+            })
+            setProjetoResumo(data.projeto
+                ? {
+                    id: data.projeto.id,
+                    nome: data.projeto.nome_original_projeto,
+                    codigo: data.projeto.codigo_projeto,
+                }
+                : null)
+            setIdsResolvidos({
+                projeto: data.projeto_id != null ? String(data.projeto_id) : null,
+                composicao: data.composicao_id != null ? String(data.composicao_id) : null,
+                grade: data.grade_id != null ? String(data.grade_id) : null,
+            })
+            setContagemPartes({
+                total: data.partes_resumo.length,
+                configuradas: data.partes_resumo.filter((parte) => parte.configurada).length,
+            })
+
+            const precisaProjeto = !projetoId && data.projeto_id != null
+            const precisaComposicao = !composicaoId && data.composicao_id != null
+
+            if (precisaProjeto || precisaComposicao) {
+                setSearchParams(
+                    montarParamsFluxo(
+                        {
+                            produto: produtoId,
+                            projeto: projetoId,
+                            composicao: composicaoId,
+                            fluxo: '1',
+                            etapa: String(etapaSolicitada),
+                        },
+                        {
+                            projeto: precisaProjeto ? String(data.projeto_id) : projetoId,
+                            composicao: precisaComposicao ? String(data.composicao_id) : composicaoId,
+                        }
+                    ),
+                    { replace: true }
+                )
+            }
+        }
+
+        const carregarProgresso = async () => {
             if (!produtoId) {
                 setProdutoResumo(null)
+                setProjetoResumo(null)
+                setProgressoApi(null)
+                setIdsResolvidos({})
+                setContagemPartes(null)
                 return
             }
 
@@ -98,108 +177,37 @@ const FluxoProducaoPage = () => {
                 return
             }
 
-            setCarregandoProduto(true)
+            setCarregandoProgresso(true)
             try {
-                const service = new ProdutosService()
-                const view = await service.getViewProdutos({ id: idNumerico })
-                if (cancelado) return
+                const service = new FluxoProducaoService()
+                const data = await service.getProgresso({
+                    produto: idNumerico,
+                    projeto: projetoId,
+                    composicao: composicaoId,
+                })
 
-                if (view) {
-                    const normalizado = normalizarProdutoView(view as Record<string, any>)
-                    setProdutoResumo({
-                        id: normalizado.id ?? idNumerico,
-                        descricao: normalizado.descricao_produto,
-                        sku_base: normalizado.sku_base,
-                    })
-                } else {
-                    setProdutoResumo({ id: idNumerico })
-                }
+                if (cancelado || !data) return
+                aplicarProgresso(data)
             } catch (error) {
-                console.error('Erro ao carregar produto do fluxo:', error)
+                console.error('Erro ao carregar progresso do fluxo:', error)
                 if (!cancelado) {
+                    // Fallback: checklist usa só o que estiver na query
                     setProdutoResumo({ id: idNumerico })
+                    setProjetoResumo(null)
+                    setProgressoApi(null)
+                    setIdsResolvidos({})
+                    setContagemPartes(null)
                 }
             } finally {
-                if (!cancelado) setCarregandoProduto(false)
+                if (!cancelado) setCarregandoProgresso(false)
             }
         }
 
-        carregarProduto()
+        carregarProgresso()
         return () => {
             cancelado = true
         }
-    }, [produtoId])
-
-    // Atualiza status das partes no checklist (histórico da etapa 3)
-    useEffect(() => {
-        let cancelado = false
-
-        const carregarPartes = async () => {
-            if (!composicaoId) {
-                setPartesConfiguradas(false)
-                return
-            }
-
-            const idNumerico = Number(composicaoId)
-            if (Number.isNaN(idNumerico)) {
-                setPartesConfiguradas(false)
-                return
-            }
-
-            try {
-                const composicaoService = new ComposicaoProdutosService()
-                const view = await composicaoService.getViewComposicaoProdutos({ id: idNumerico })
-                if (cancelado || !view) return
-
-                let projetoView = undefined
-                if (view.id_projeto_impressao) {
-                    const projetosService = new ProjetosImpressaoService()
-                    projetoView = await projetosService.getViewProjetosImpressao({
-                        id: Number(view.id_projeto_impressao),
-                    })
-                }
-
-                const viewNormalizada = normalizarComposicaoView(view, projetoView)
-                const partes = obterPartesResumoComposicao(viewNormalizada, projetoView)
-                setPartesConfiguradas(
-                    partes.length > 0 && partes.every((parte) => Boolean(parte.configurada))
-                )
-
-                // Completa contexto faltante a partir do vínculo (histórico da etapa 3)
-                const produtoDaView = viewNormalizada.id_produto_base ?? viewNormalizada.id_produto
-                const projetoDaView = viewNormalizada.id_projeto_impressao
-                const precisaProduto = !produtoId && produtoDaView != null
-                const precisaProjeto = !projetoId && projetoDaView != null
-
-                if (precisaProduto || precisaProjeto) {
-                    setSearchParams(
-                        montarParamsFluxo(
-                            {
-                                produto: produtoId,
-                                projeto: projetoId,
-                                composicao: composicaoId,
-                                fluxo: '1',
-                                etapa: String(etapaSolicitada),
-                            },
-                            {
-                                produto: precisaProduto ? String(produtoDaView) : produtoId,
-                                projeto: precisaProjeto ? String(projetoDaView) : projetoId,
-                            }
-                        ),
-                        { replace: true }
-                    )
-                }
-            } catch (error) {
-                console.error('Erro ao carregar status das partes do fluxo:', error)
-                if (!cancelado) setPartesConfiguradas(false)
-            }
-        }
-
-        carregarPartes()
-        return () => {
-            cancelado = true
-        }
-    }, [composicaoId, produtoId, projetoId, etapaSolicitada, setSearchParams])
+    }, [produtoId, projetoId, composicaoId, etapaSolicitada, setSearchParams])
 
     const etapaAtual = etapas.find((etapa) => etapa.id === etapaAtiva) || etapas[0]
     const mostrarChecklist = Boolean(produtoId) || etapaAtiva === 2 || etapaAtiva === 3
@@ -208,13 +216,29 @@ const FluxoProducaoPage = () => {
     const itensChecklist = useMemo(
         () => montarItensChecklistFluxo({
             produtoId,
-            projetoId,
-            composicaoId,
-            partesConfiguradas,
+            projetoId: projetoEfetivo,
+            composicaoId: composicaoEfetiva,
+            gradeId: gradeEfetiva,
+            partesConfiguradas: progresso.partesOk,
+            montagemCriada: progresso.montagemOk,
+            totalPartes: contagemPartes?.total,
+            partesConfiguradasCount: contagemPartes?.configuradas,
             etapaAtiva,
             produto: produtoResumo,
+            projeto: projetoResumo,
         }),
-        [produtoId, projetoId, composicaoId, partesConfiguradas, etapaAtiva, produtoResumo]
+        [
+            produtoId,
+            projetoEfetivo,
+            composicaoEfetiva,
+            gradeEfetiva,
+            progresso.partesOk,
+            progresso.montagemOk,
+            contagemPartes,
+            etapaAtiva,
+            produtoResumo,
+            projetoResumo,
+        ]
     )
 
     return (
@@ -242,9 +266,9 @@ const FluxoProducaoPage = () => {
                         </Col>
                     </Row>
 
-                    {carregandoProduto && produtoId && (
+                    {carregandoProgresso && produtoId && (
                         <div className="mb-3 text-muted small d-inline-flex align-items-center gap-2">
-                            <Spinner size="sm" /> Carregando produto…
+                            <Spinner size="sm" /> Carregando progresso…
                         </div>
                     )}
 
@@ -253,7 +277,11 @@ const FluxoProducaoPage = () => {
                             <FluxoProducaoEtapaPainel
                                 etapa={etapaAtual}
                                 totalEtapas={etapas.length}
-                                contexto={contexto}
+                                contexto={{
+                                    ...contexto,
+                                    projeto: projetoEfetivo,
+                                    composicao: composicaoEfetiva,
+                                }}
                                 progresso={progresso}
                                 mostrarChecklist={mostrarChecklist}
                                 itensChecklist={itensChecklist}

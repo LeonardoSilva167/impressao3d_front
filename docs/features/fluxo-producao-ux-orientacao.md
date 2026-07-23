@@ -340,6 +340,18 @@ Retorna subpassos da seção 3.2 + ids relacionados (`projeto_id`, `composicao_i
 
 **Benefício:** hub e stepper passam a refletir progresso real mesmo se o usuário sair e voltar sem query params completos.
 
+**Critérios de aceite**
+
+- [x] Hub carrega progresso com apenas `?produto=` na URL.
+- [x] Query é completada com `projeto`/`composicao` quando a API devolve os ids.
+- [x] Checklist reflete `subpassos` + contagem de partes + link da montagem (`grade_id`).
+- [x] Se a API falhar, o hub continua com fallback pelos ids da query.
+
+**Implementação (front):**
+- `FluxoProducaoService.ts` + `FluxoProducaoInterface.ts` — `GET fluxo-producao/progresso` com normalização de envelope.
+- `FluxoProducaoPage.tsx` — consome progresso agregado; fallback local se a API falhar.
+- `FluxoProducaoChecklist.tsx` — detalhes de projeto/partes/montagem a partir do payload.
+
 ---
 
 ## 5. Mapa de navegação desejado (fluxo feliz)
@@ -382,8 +394,8 @@ Retorna subpassos da seção 3.2 + ids relacionados (`projeto_id`, `composicao_i
 - [ ] `composicao-produtos/cadastrar` sempre retorna `id` do vínculo criado.
 - [ ] Demais creates do fluxo retornam `id` de forma consistente.
 - [ ] (Fase 4+) View da composição inclui por parte: `configurada`, `total_variacoes` (e opcionalmente contadores auxiliares).
-- [ ] (Fase 6) Endpoint ou payload de progresso do fluxo por `produto_id`.
-- [ ] Confirmar regra de negócio: montagem exige **todas** as partes configuradas ou permite parcial?
+- [x] (Fase 6) Endpoint ou payload de progresso do fluxo por `produto_id`.
+- [x] Confirmar regra de negócio: montagem exige **todas** as partes configuradas ou permite parcial? **Exige todas** (B3).
 
 ---
 
